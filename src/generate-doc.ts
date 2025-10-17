@@ -39,10 +39,12 @@ function getParams() {
   return { BACKEND_URL, ENVIRONMENT };
 }
 
-export async function reflector() {
+export async function reflector(manual: boolean = false) {
   const { BACKEND_URL, ENVIRONMENT } = getParams();
 
-  if (ENVIRONMENT === "DEV") {
+  console.warn("opa");
+
+  if (ENVIRONMENT === "DEV" && !manual) {
     console.warn("[reflector] Ambiente DEV: para regerar os schemas manualmente, use: npx reflect");
     return breakReflector();
   }
@@ -55,7 +57,7 @@ export async function reflector() {
     data = documentation.data;
   } catch (e) {
     console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);
-    const backupPath = path.resolve(process.cwd(), "src/api/backup.json");
+    const backupPath = path.resolve(process.cwd(), "src/reflector/backup.json");
     data = JSON.parse(fs.readFileSync(backupPath, "utf8")) as OpenAPIObject;
   }
 

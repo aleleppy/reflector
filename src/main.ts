@@ -10,7 +10,7 @@ import { Module } from "./module.js";
 export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
-  readonly dir: string = "src/api";
+  readonly dir: string = "src";
   readonly generatedDir: string = `${this.dir}/reflector`;
   readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${this.dir}/backup.json`) });
 
