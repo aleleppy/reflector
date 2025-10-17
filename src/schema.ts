@@ -12,8 +12,8 @@ export class Schema {
     const { name, properties, requireds } = params;
     this.name = name;
 
-    Object.entries(properties).forEach(([key, value]) => {
-      if ("$ref" in value || !value?.type) return;
+    for (const [key, value] of Object.entries(properties)) {
+      if ("$ref" in value || !value?.type) continue;
 
       const required = requireds.includes(key);
 
@@ -26,7 +26,7 @@ export class Schema {
           required,
         })
       );
-    });
+    }
 
     this.type = `export type ${name} = z.infer<typeof ${name}Schema>;`;
     this.schema = `export const ${name}Schema = z.object({

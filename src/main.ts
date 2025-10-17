@@ -1,12 +1,13 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Source } from "./file.js";
-import { sanitizeKey, capitalizeFirstLetter } from "./helpers.js";
+import { getEndpointAndModuleName } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import { ComponentsObject, PathsObject, OpenAPIObject } from "./types/open-api-spec.interface.js";
 import { Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
+const methods = ["get", "patch", "post", "put", "delete"] as const;
 export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
@@ -39,8 +40,8 @@ export class Reflector {
 
     const schemas: Schema[] = [];
 
-    Object.entries(componentSchemas).forEach(([key, object]) => {
-      if ("$ref" in object || !object.properties) return;
+    for (const [key, object] of Object.entries(componentSchemas)) {
+      if ("$ref" in object || !object.properties) continue;
 
       const properties = object.properties;
 
@@ -51,31 +52,25 @@ export class Reflector {
           requireds: object.required || [],
         })
       );
-    });
+    }
 
     console.log(`${schemas.length} schemas gerados com sucesso.`);
     return schemas;
   }
 
-  getModules(): Module[] {
+  private getModules(): Module[] {
     const methodsMap = new Map<string, Info>();
     const modules: Module[] = [];
 
     for (const [rawEndpoint, object] of Object.entries(this.paths)) {
-      const methods = ["get", "patch", "post", "put", "delete"] as const;
-
-      let entity: string | undefined;
+      let entity;
       const operations: ReflectorOperation[] = [];
-
-      const splittedEntitys = rawEndpoint.split("/");
-      const filteredEntitys = splittedEntitys.filter((item) => item !== "" && !item.includes("{"));
-      const moduleName = filteredEntitys.map((x) => sanitizeKey(capitalizeFirstLetter(x))).join("");
-      const endpoint = filteredEntitys.join("/");
+      const { endpoint, moduleName } = getEndpointAndModuleName(rawEndpoint);
 
       for (const method of methods) {
         if (!object[method]) continue;
-        operations.push({ ...object[method], apiMethod: method });
 
+        operations.push({ ...object[method], apiMethod: method });
         const tags = object[method].tags;
 
         if (!entity && tags) {
@@ -110,9 +105,9 @@ export class Reflector {
     this.schemaFile.changeData([`import z from 'zod';`, ...this.schemas.map((s) => `${s.schema} ${s.type}`)].join("\n\n"));
     this.schemaFile.save();
 
-    this.modules.forEach((module) => {
+    for (const module of this.modules) {
       module.src.save();
-    });
+    }
 
     return {};
   }

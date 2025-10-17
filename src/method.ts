@@ -1,7 +1,7 @@
 import { Request } from "./request.js";
 import { ZodProperty } from "./property.js";
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage } from "./helpers.js";
+import { createDangerMessage } from "./helpers/helpers.js";
 
 export class Method {
   name: string;
@@ -31,15 +31,15 @@ export class Method {
 
     const parameters: ZodProperty[] = [];
 
-    operation.parameters.forEach((object) => {
-      if ("$ref" in object) return;
-      if (!object.schema) return;
+    for (const object of operation.parameters) {
+      if ("$ref" in object) continue;
+      if (!object.schema) continue;
 
       const { required, name, description, schema } = object;
 
-      if ("$ref" in schema) return;
+      if ("$ref" in schema) continue;
 
-      return parameters.push(
+      parameters.push(
         new ZodProperty({
           name,
           example: schema.default,
@@ -49,7 +49,7 @@ export class Method {
           required: required || true,
         })
       );
-    });
+    }
 
     return { parameters };
   }
@@ -75,23 +75,35 @@ export class Method {
       }
 
       if (this.request.attributeType === "list") {
-        beforeResponse.push(`const {data, ...params} = response`);
-        beforeResponse.push("\n\n");
-        beforeResponse.push(`this.list = data`);
-        beforeResponse.push(`repo.intercept.rebuild(this.parameters, params)`);
+        beforeResponse.push(
+          `const {data, ...params} = response`,
+          "\n\n",
+          `this.list = data`,
+          `repo.intercept.rebuild(this.parameters, params)`
+        );
+
+        return `
+          ${afterResponse.join(";")}
+          const response = await repo.api.get<{data: ${this.request.responseType}[]}, unknown>({
+            endpoint: this.endpoint, ${query}
+          })
+          ${beforeResponse.join(";")}
+
+          return response
+        `;
       } else if (this.request.attributeType === "entity") {
         beforeResponse.push(`this.entity = response`);
+
+        return `
+        ${afterResponse.join(";")}
+          const response = await repo.api.get<${this.request.responseType}, unknown>({
+            endpoint: this.endpoint, ${query}
+          })
+          ${beforeResponse.join(";")}
+
+          return response
+        `;
       }
-
-      return `
-      ${afterResponse.join(";")}
-        const response = await repo.api.get<${this.request.responseType}, unknown>({
-          endpoint: this.endpoint, ${query}
-        })
-        ${beforeResponse.join(";")}
-
-        return response
-      `;
     } else if (this.request.apiType === "post" || this.request.apiType === "put") {
       let data = "";
       if (this.request.bodyType) {

@@ -1,4 +1,4 @@
-import { ReflectorInput } from "./input.js";
+import { ReflectorInput } from "./helpers/input.js";
 import { SchemaObject } from "./types/open-api-spec.interface.js";
 import { Example, ReflectorParamType } from "./types/types.js";
 

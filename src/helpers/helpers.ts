@@ -1,19 +1,19 @@
 export function stripState(attr: string): string {
   // Ex.: "form = $state(newForm(DefaultCreateUserDtoSchema))"
-  const [lhs, rhsRaw = ''] = attr.split('=');
+  const [lhs, rhsRaw = ""] = attr.split("=");
   const rhs = rhsRaw.trim();
 
   // remove apenas UM wrapper $state( ... ) do início ao fim
-  const cleaned = rhs.startsWith('$state(') && rhs.endsWith(')') ? rhs.slice('$state('.length, -1).trim() : rhs;
+  const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
 
   return `${lhs.trim()} = ${cleaned}`;
 }
 
 export function toCamelCase(str: string) {
   return str
-    .split('-')
+    .split("-")
     .map((chunk, i) => (i === 0 ? chunk : chunk[0].toUpperCase() + chunk.slice(1)))
-    .join('');
+    .join("");
 }
 
 export function sanitizeKey(name: string) {
@@ -30,7 +30,7 @@ export function sanitizeKey(name: string) {
 }
 
 export function capitalizeFirstLetter(text: string) {
-  if (!text) return '';
+  if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -39,5 +39,14 @@ export function splitByUppercase(text: string) {
 }
 
 export function createDangerMessage(text: string) {
-  console.log('\x1b[31m%s\x1b[0m', `[!] ${text}`);
+  console.log("\x1b[31m%s\x1b[0m", `[!] ${text}`);
+}
+
+export function getEndpointAndModuleName(rawEndpoint: string) {
+  const splittedEntitys = rawEndpoint.split("/");
+  const filteredEntitys = splittedEntitys.filter((item) => item !== "" && !item.includes("{"));
+  const moduleName = filteredEntitys.map((x) => sanitizeKey(capitalizeFirstLetter(x))).join("");
+  const endpoint = filteredEntitys.join("/");
+
+  return { endpoint, moduleName };
 }

@@ -42,8 +42,6 @@ function getParams() {
 export async function reflector(manual: boolean = false) {
   const { BACKEND_URL, ENVIRONMENT } = getParams();
 
-  console.warn("opa");
-
   if (ENVIRONMENT === "DEV" && !manual) {
     console.warn("[reflector] Ambiente DEV: para regerar os schemas manualmente, use: npx reflect");
     return breakReflector();
@@ -64,14 +62,14 @@ export async function reflector(manual: boolean = false) {
   const { components, paths } = data;
   if (!components) {
     console.warn("[reflector] OpenAPI sem components; abortando.");
-    return { name: "vite-plugin-generate-doc" };
+    return breakReflector();
   }
 
   const r = new Reflector({ components, paths });
   r.build();
   r.localSave(data);
 
-  breakReflector();
+  return breakReflector();
 }
 
 function breakReflector() {

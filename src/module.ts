@@ -1,37 +1,26 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Source } from "./file.js";
-import { capitalizeFirstLetter, createDangerMessage, stripState } from "./helpers.js";
+import { capitalizeFirstLetter, createDangerMessage, stripState } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import { ReflectorOperation } from "./types/types.js";
 
 export class Module {
   readonly name: string;
-  readonly src: Source;
   readonly endpoint: string;
   readonly moduleName: string;
+
+  readonly src: Source;
 
   imports: string[];
   parameters: string[];
   methods: Method[];
-
-  types: {
-    raw: string[];
-    constructor: string[];
-  }[];
 
   constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; endpoint: string; dir: string }) {
     const { name, operations, endpoint, dir, moduleName } = params;
     this.moduleName = moduleName;
 
     this.imports = ["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"'];
-
-    this.types = [
-      {
-        raw: [],
-        constructor: [],
-      },
-    ];
 
     this.name = capitalizeFirstLetter(name);
     this.endpoint = endpoint;
@@ -81,7 +70,7 @@ export class Module {
       type: string;
     }[] = [];
 
-    this.methods.forEach((method) => {
+    for (const method of this.methods) {
       const { bodyType, responseType, attributeType } = method.request;
 
       if (attributeType === "form" && bodyType) {
@@ -91,17 +80,20 @@ export class Module {
         });
       }
 
-      if (attributeType === "entity") {
-        moduleAtributes.add(`list = $state<${responseType}[]>([])`);
-        moduleAtributes.add(`entity = $state<${responseType} | undefined>()`);
-      }
-    });
+      // console.warn(method);
+      console.warn(attributeType);
 
+      if (attributeType === "entity") {
+        moduleAtributes.add(`entity = $state<${responseType} | undefined>()`);
+      } else if (attributeType === "list") {
+        moduleAtributes.add(`list = $state<${responseType}[]>([])`);
+      }
+    }
     const formSet = new Set();
 
-    form.forEach((f) => {
+    for (const f of form) {
       formSet.add(`${f.name}: repo.newForm(${f.type}Schema)`);
-    });
+    }
 
     moduleAtributes.add(`
       forms = $state({
@@ -134,9 +126,11 @@ export class Module {
   private getParameters() {
     const set = new Set<string>();
 
-    this.methods.forEach((method) => {
-      method.zodProperties.forEach((param) => set.add(param.buildedProp));
-    });
+    for (const method of this.methods) {
+      for (const param of method.zodProperties) {
+        set.add(param.buildedProp);
+      }
+    }
 
     return Array.from(set);
   }
@@ -144,7 +138,7 @@ export class Module {
   private buildImports() {
     const entries = new Set();
 
-    this.methods.forEach((method) => {
+    for (const method of this.methods) {
       const { bodyType, responseType, apiType } = method.request;
 
       if (bodyType) entries.add(`${bodyType}Schema`);
@@ -153,7 +147,7 @@ export class Module {
         if (apiType === "delete") entries.add(`${responseType}Schema`);
         entries.add(`type ${responseType}`);
       }
-    });
+    }
 
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
     if (cleanEntries.length === 0) return "";
@@ -163,6 +157,7 @@ export class Module {
 
   private buildClass(modulesAttributes: string[]) {
     const initAssignments = modulesAttributes.map((attr) => `this.${stripState(attr)}`).join(";");
+
     return `
       export class ${this.moduleName}Module {
         ${modulesAttributes.join(";")}
@@ -182,13 +177,13 @@ export class Module {
 
   buildFile(modulesAttributes: string[], moduleTypes: string[]) {
     return `
-    ${this.imports.join(";")}
-    import z from "zod";
-    ${this.buildImports()}
+      ${this.imports.join(";")}
+      import z from "zod";
+      ${this.buildImports()}
 
-    ${moduleTypes.join(";")}
+      ${moduleTypes.join(";")}
 
-    ${this.buildClass(modulesAttributes)}
+      ${this.buildClass(modulesAttributes)}
     `;
   }
 }
