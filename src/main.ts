@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Source } from "./file.js";
-import { getEndpointAndModuleName } from "./helpers/helpers.js";
+import { getEndpointAndModuleName, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import { ComponentsObject, PathsObject, OpenAPIObject } from "./types/open-api-spec.interface.js";
 import { Info, ReflectorOperation } from "./types/types.js";
@@ -16,7 +16,7 @@ export class Reflector {
   readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${this.dir}/backup.json`) });
 
   readonly src = new Source({ path: path.resolve(process.cwd(), this.generatedDir) });
-  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.dir}/schemas.ts`) });
+  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.ts`) });
 
   files: Source[];
   schemas: Schema[];
@@ -71,12 +71,16 @@ export class Reflector {
         if (!object[method]) continue;
 
         operations.push({ ...object[method], apiMethod: method });
-        const tags = object[method].tags;
 
-        if (!entity && tags) {
-          entity = tags.join("").split("/").join("");
+        if (!entity) {
+          const teste = object[method].operationId!.split("_")[0];
+          const x = splitByUppercase(teste);
+          const aaa = x.filter((y) => y !== "Controller");
+          entity = aaa.join("");
         }
       }
+
+      // console.warn(entity)
 
       if (!entity) continue;
       const existingOps = methodsMap.get(entity);

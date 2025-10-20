@@ -1,3 +1,4 @@
+import { sanitizeNumber } from "./helpers/helpers.js";
 import { ReflectorInput } from "./helpers/input.js";
 import { SchemaObject } from "./types/open-api-spec.interface.js";
 import { Example, ReflectorParamType } from "./types/types.js";
@@ -73,6 +74,7 @@ export class ZodProperty {
 
   private build(value: SchemaObject): string {
     const x = `${this.name}: z.${this.type}()${this.isNullable()}`;
+
     switch (this.type) {
       case "string": {
         const deepValidation = this.deepValidator();
@@ -82,12 +84,15 @@ export class ZodProperty {
         return `${x}.default(${this.example})`;
       case "number": {
         const number = JSON.stringify(this.example) ?? 1;
-        return `${x}.default(${number})`;
+        return `${x}.default(${sanitizeNumber(number)})`;
       }
       case "array": {
-        if (!value.items || !("$ref" in value.items)) return `${x}.default([])`;
+        if (!value.items || !("$ref" in value.items)) {
+          return `${this.name}: z.${this.type}(z.${value.items?.type || "string"}())${this.isNullable()}.default([])`;
+        }
+
         const dto = this.getDtoName(value.items.$ref);
-        return `${this.name}: z.array(${dto}Schema).default(Array(10).fill(${dto}Schema.parse({})))`;
+        return `${this.name}: z.array(${dto}Schema).default(new Array(10).fill(${dto}Schema.parse({})))`;
       }
       case "object":
         return `${this.name}: z.any()`;

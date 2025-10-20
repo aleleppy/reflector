@@ -29,6 +29,10 @@ export function sanitizeKey(name: string) {
   return toCamelCase(name);
 }
 
+export function sanitizeNumber(texto: string) {
+  return texto.replace(/["']/g, "");
+}
+
 export function capitalizeFirstLetter(text: string) {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);

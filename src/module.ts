@@ -34,9 +34,9 @@ export class Module {
 
     // não vão entrar metodos que não tiverem uma resposta tipada
     this.methods = methods.filter((op) => {
-      if (!op.request.responseType) {
-        createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
-      }
+      // if (!op.request.responseType) {
+      //   createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
+      // }
 
       return op.request.responseType;
     });
@@ -80,7 +80,6 @@ export class Module {
         });
       }
 
-      // console.warn(method);
       console.warn(attributeType);
 
       if (attributeType === "entity") {
@@ -152,7 +151,7 @@ export class Module {
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
     if (cleanEntries.length === 0) return "";
 
-    return `import { ${cleanEntries} } from '$api/schemas';`;
+    return `import { ${cleanEntries} } from '$reflector/schemas';`;
   }
 
   private buildClass(modulesAttributes: string[]) {
