@@ -108,6 +108,7 @@ export class Reflector {
     this.schemaFile.save();
 
     for (const module of this.modules) {
+      if (module.methods.length === 0) continue;
       module.src.save();
     }
 

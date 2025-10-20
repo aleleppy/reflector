@@ -12,7 +12,7 @@ export class Module {
 
   readonly src: Source;
 
-  imports: string[];
+  imports: Set<string>;
   parameters: string[];
   methods: Method[];
 
@@ -20,7 +20,7 @@ export class Module {
     const { name, operations, endpoint, dir, moduleName } = params;
     this.moduleName = moduleName;
 
-    this.imports = ["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"'];
+    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"']);
 
     this.name = capitalizeFirstLetter(name);
     this.endpoint = endpoint;
@@ -88,8 +88,11 @@ export class Module {
       if (attributeType === "entity") {
         moduleAtributes.add(`entity = $state<${responseType} | undefined>()`);
       } else if (attributeType === "list") {
-        this.imports.push(`import z from "zod";`);
         moduleAtributes.add(`list = $state<${responseType}[]>([])`);
+      }
+
+      if (attributeType === "list" || this.parameters.length > 0) {
+        this.imports.add(`import z from "zod";`);
       }
     }
     const formSet = new Set();
@@ -182,7 +185,7 @@ export class Module {
 
   buildFile(modulesAttributes: string[], moduleTypes: string[]) {
     return `
-      ${this.imports.join(";")}
+      ${Array.from(this.imports).join(";")}
       ${this.buildImports()}
 
       ${moduleTypes.join(";")}
