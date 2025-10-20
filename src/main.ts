@@ -80,8 +80,6 @@ export class Reflector {
         }
       }
 
-      // console.warn(entity)
-
       if (!entity) continue;
       const existingOps = methodsMap.get(entity);
 

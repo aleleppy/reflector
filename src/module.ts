@@ -34,11 +34,16 @@ export class Module {
 
     // não vão entrar metodos que não tiverem uma resposta tipada
     this.methods = methods.filter((op) => {
-      // if (!op.request.responseType) {
-      //   createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
-      // }
+      const responseTypeOk = op.request.responseType;
+      const propertiesOk = op.zodProperties.length > 0;
 
-      return op.request.responseType;
+      if (!responseTypeOk) {
+        createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
+      } else if (!propertiesOk) {
+        createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] com tipagem incorreta.`);
+      }
+
+      return responseTypeOk && propertiesOk;
     });
 
     this.parameters = this.getParameters();
@@ -80,11 +85,10 @@ export class Module {
         });
       }
 
-      console.warn(attributeType);
-
       if (attributeType === "entity") {
         moduleAtributes.add(`entity = $state<${responseType} | undefined>()`);
       } else if (attributeType === "list") {
+        this.imports.push(`import z from "zod";`);
         moduleAtributes.add(`list = $state<${responseType}[]>([])`);
       }
     }
@@ -94,11 +98,13 @@ export class Module {
       formSet.add(`${f.name}: repo.newForm(${f.type}Schema)`);
     }
 
-    moduleAtributes.add(`
+    if (formSet.size > 0) {
+      moduleAtributes.add(`
       forms = $state({
         ${Array.from(formSet)}
       })
     `);
+    }
 
     return {
       moduleAtributes: Array.from(moduleAtributes),
@@ -177,7 +183,6 @@ export class Module {
   buildFile(modulesAttributes: string[], moduleTypes: string[]) {
     return `
       ${this.imports.join(";")}
-      import z from "zod";
       ${this.buildImports()}
 
       ${moduleTypes.join(";")}
