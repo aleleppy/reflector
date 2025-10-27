@@ -39,11 +39,13 @@ export class Module {
 
       if (!responseTypeOk) {
         createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
-      } else if (!propertiesOk) {
-        createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] com tipagem incorreta.`);
       }
 
-      return responseTypeOk && propertiesOk;
+      // else if (!propertiesOk) {
+      //   createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] com tipagem incorreta.`);
+      // }
+
+      return responseTypeOk;
     });
 
     this.parameters = this.getParameters();
