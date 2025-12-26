@@ -30,7 +30,7 @@ export function sanitizeKey(name: string) {
 }
 
 export function sanitizeNumber(texto: string) {
-  return texto.replace(/["']/g, "");
+  return texto.replaceAll(/["']/g, "");
 }
 
 export function capitalizeFirstLetter(text: string) {

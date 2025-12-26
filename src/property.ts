@@ -23,10 +23,12 @@ export class ZodProperty {
   }) {
     const { name, schemaObject, type, example, required } = params;
 
+    const realExample = example ?? schemaObject.example;
+
     this.required = required;
     this.name = name;
     this.type = type;
-    this.example = this.getExample(example);
+    this.example = this.getExample(realExample);
     this.buildedProp = this.build(schemaObject);
   }
 
@@ -51,12 +53,6 @@ export class ZodProperty {
         return "lorem ipsum";
     }
   }
-
-  // fiscalNumber = cpf | cnpj | fiscalNumber
-  // cep
-  // telefone
-  // CUID
-  // url
 
   private deepValidator(): string | false {
     if (this.name === "email") {

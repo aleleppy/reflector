@@ -16,6 +16,7 @@ export class Reflector {
   readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${this.dir}/backup.json`) });
 
   readonly src = new Source({ path: path.resolve(process.cwd(), this.generatedDir) });
+  readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/reflector.types.ts`) });
   readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.ts`) });
 
   files: Source[];
@@ -106,6 +107,9 @@ export class Reflector {
   build() {
     this.schemaFile.changeData([`import z from 'zod';`, ...this.schemas.map((s) => `${s.schema} ${s.type}`)].join("\n\n"));
     this.schemaFile.save();
+
+    this.typesSrc.changeData("export class Behavior { onError?: () => void; onSuccess?: () => void }");
+    this.typesSrc.save();
 
     for (const module of this.modules) {
       if (module.methods.length === 0) continue;

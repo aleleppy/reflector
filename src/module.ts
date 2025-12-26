@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { Source } from "./file.js";
-import { capitalizeFirstLetter, createDangerMessage, stripState } from "./helpers/helpers.js";
+import { capitalizeFirstLetter, createDangerMessage } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import { ReflectorOperation } from "./types/types.js";
 
@@ -20,7 +20,11 @@ export class Module {
     const { name, operations, endpoint, dir, moduleName } = params;
     this.moduleName = moduleName;
 
-    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"']);
+    this.imports = new Set([
+      "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
+      'import repo from "$repository/main"',
+      'import { Behavior } from "$reflector/reflector.types";',
+    ]);
 
     this.name = capitalizeFirstLetter(name);
     this.endpoint = endpoint;
@@ -37,39 +41,43 @@ export class Module {
       const responseTypeOk = op.request.responseType;
       const propertiesOk = op.zodProperties.length > 0;
 
+      if (op.request.apiType === "delete") return true;
+
       if (!responseTypeOk) {
         createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
       }
-
-      // else if (!propertiesOk) {
-      //   createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] com tipagem incorreta.`);
-      // }
 
       return responseTypeOk;
     });
 
     this.parameters = this.getParameters();
 
-    const { moduleAtributes, moduleTypes } = this.creator();
+    const { moduleAttributes, moduleTypes, moduleInit, moduleClear } = this.creator();
 
     //sempre por último
     this.src = new Source({
       path: this.getPath(dir),
-      data: this.buildFile(moduleAtributes, moduleTypes),
+      data: this.buildFile({ moduleAttributes, moduleTypes, moduleInit, moduleClear }),
     });
   }
 
   private creator(): {
-    moduleAtributes: string[];
+    moduleAttributes: string[];
     moduleTypes: string[];
+    moduleInit: string[];
+    moduleClear: string[];
   } {
     const buildedModuleTypes: string[] = [];
 
-    const moduleAtributes = new Set([`endpoint = '${this.endpoint}'`]);
+    const moduleAttributes = new Set([`endpoint = '${this.endpoint}'`]);
+    const moduleInit = new Set<string>([]);
+    const moduleClear = new Set<string>([]);
 
     if (this.parameters.length > 0) {
       buildedModuleTypes.push(`const ParametersSchema = z.object({${this.parameters}})`);
-      moduleAtributes.add(`parameters = $state(repo.newForm(ParametersSchema))`);
+      moduleAttributes.add(`parameters = $state(repo.newForm(ParametersSchema))`);
+      moduleInit.add(`this.clearParameters()`);
+      moduleClear.add(`clearParameters() { this.parameters = repo.newForm(ParametersSchema) }`);
     }
 
     const form: {
@@ -88,9 +96,13 @@ export class Module {
       }
 
       if (attributeType === "entity") {
-        moduleAtributes.add(`entity = $state<${responseType} | undefined>()`);
+        moduleAttributes.add(`entity = $state<${responseType} | undefined>()`);
+        moduleInit.add("this.clearEntity()");
+        moduleClear.add(`clearEntity() { this.entity = undefined }`);
       } else if (attributeType === "list") {
-        moduleAtributes.add(`list = $state<${responseType}[]>([])`);
+        moduleAttributes.add(`list = $state<${responseType}['data']>([])`);
+        moduleInit.add("this.clearList()");
+        moduleClear.add(`clearList() { this.list = [] }`);
       }
 
       if (attributeType === "list" || this.parameters.length > 0) {
@@ -104,16 +116,26 @@ export class Module {
     }
 
     if (formSet.size > 0) {
-      moduleAtributes.add(`
-      forms = $state({
-        ${Array.from(formSet)}
-      })
-    `);
+      moduleAttributes.add(`
+        forms = $state({
+          ${Array.from(formSet)}
+        })
+      `);
+
+      moduleInit.add(`
+        this.clearForms()
+      `);
+
+      moduleClear.add(`
+        clearForms() { this.forms = { ${Array.from(formSet)} } }
+      `);
     }
 
     return {
-      moduleAtributes: Array.from(moduleAtributes),
+      moduleAttributes: Array.from(moduleAttributes),
       moduleTypes: buildedModuleTypes,
+      moduleInit: Array.from(moduleInit),
+      moduleClear: Array.from(moduleClear),
     };
   }
 
@@ -165,34 +187,33 @@ export class Module {
     return `import { ${cleanEntries} } from '$reflector/schemas';`;
   }
 
-  private buildClass(modulesAttributes: string[]) {
-    const initAssignments = modulesAttributes.map((attr) => `this.${stripState(attr)}`).join(";");
+  private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {
+    const { moduleInit, moduleAttributes, moduleClear } = params;
 
     return `
       export class ${this.moduleName}Module {
-        ${modulesAttributes.join(";")}
+        ${moduleAttributes.join(";")}
 
         ${this.buildMethods().join("\n")}
 
-        private init() {
-          ${initAssignments}
-        }
-
-        clear() {
-          this.init()
+        ${moduleClear.join("\n\n")}
+        
+        clearAll() {
+          ${moduleInit.join(";")}
         }
       }
     `;
   }
 
-  buildFile(modulesAttributes: string[], moduleTypes: string[]) {
+  buildFile(params: { moduleAttributes: string[]; moduleTypes: string[]; moduleInit: string[]; moduleClear: string[] }) {
+    const { moduleInit, moduleTypes, moduleAttributes, moduleClear } = params;
     return `
       ${Array.from(this.imports).join(";")}
       ${this.buildImports()}
 
       ${moduleTypes.join(";")}
 
-      ${this.buildClass(modulesAttributes)}
+      ${this.buildClass({ moduleAttributes, moduleInit, moduleClear })}
     `;
   }
 }

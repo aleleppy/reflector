@@ -6,7 +6,7 @@ import { createDangerMessage } from "./helpers/helpers.js";
 export class Method {
   name: string;
   zodProperties: ZodProperty[];
-  description: string | undefined;
+  description?: string;
 
   request: Request;
 
@@ -14,7 +14,7 @@ export class Method {
     const { operation } = params;
 
     this.request = new Request(operation);
-    this.description = operation.description;
+    this.description = operation.description ?? operation.summary;
 
     this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
 
@@ -76,7 +76,7 @@ export class Method {
 
       if (this.request.attributeType === "list") {
         beforeResponse.push(
-          `const {data, ...params} = response`,
+          `const {data: { data }, ...params} = response`,
           "\n\n",
           `this.list = data`,
           `repo.intercept.rebuild(this.parameters, params)`
@@ -84,12 +84,10 @@ export class Method {
 
         return `
           ${afterResponse.join(";")}
-          const response = await repo.api.get<{data: ${this.request.responseType}[]}, unknown>({
+          const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({
             endpoint: this.endpoint, ${query}
           })
           ${beforeResponse.join(";")}
-
-          return response
         `;
       } else if (this.request.attributeType === "entity") {
         beforeResponse.push(`this.entity = response`);
@@ -100,15 +98,15 @@ export class Method {
             endpoint: this.endpoint, ${query}
           })
           ${beforeResponse.join(";")}
-
-          return response
         `;
       }
-    } else if (this.request.apiType === "post" || this.request.apiType === "put") {
+    } else if (this.request.apiType === "post" || this.request.apiType === "put" || this.request.apiType === "patch") {
       let data = "";
+
       if (this.request.bodyType) {
         data = `const data = repo.intercept.bundle(this.forms.${this.name})`;
       }
+
       return `
         ${data}
 
@@ -116,21 +114,19 @@ export class Method {
           endpoint: this.endpoint,
           ${data ? "data" : ""}
         })
-
-        return response
       `;
     } else if (this.request.apiType === "delete") {
       const props = this.zodProperties.map((x) => x.name).join(",");
+      const propsString = props.length > 0 ? `const {${props}} = this.parameters` : "";
 
       return `
-        const {${props}} = this.parameters
+        ${propsString}
 
-        const response = await repo.api.delete<${this.request.responseType}, unknown>({
+        const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
           endpoint: this.endpoint, ${query}
         })
 
-        this.clear()
-        return response
+        this.clearEntity()
       `;
     }
 
@@ -151,11 +147,42 @@ export class Method {
       createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
     }
 
+    let additionalMethod = "";
+
+    const description = this.buildDescription();
+
+    if (this.request.apiType === "post") {
+      additionalMethod = `
+        /** Limpa a entity depois de ser criada com sucesso */
+        async ${this.name}AndClear(behavior: Behavior = new Behavior()) {
+          const data = await this.${this.name}(behavior)
+
+          if(data) {
+            this.clearEntity()
+          }
+
+          return data
+        }
+      `;
+    }
+
     return `
-      ${this.buildDescription()}
-      async ${this.name}() {
-        ${content}
+      ${description}
+      async ${this.name}(behavior: Behavior = new Behavior()) {
+        const {onError, onSuccess} = behavior
+
+        try{
+          ${content}
+          onSuccess?.()
+
+          return response
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch(e) {
+          onError?.()
+        }
       }
+
+      ${additionalMethod}
     `;
   }
 }
