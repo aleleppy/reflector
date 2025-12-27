@@ -1,13 +1,13 @@
-import path from "node:path";
-import fs from "node:fs";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { getEndpointAndModuleName, splitByUppercase } from "./helpers/helpers.js";
+import { getEndpoint, getEndpointAndModuleName, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
-import { ComponentsObject, PathsObject, OpenAPIObject } from "./types/open-api-spec.interface.js";
-import { Info, ReflectorOperation } from "./types/types.js";
+import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
+import type { Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
-const methods = ["get", "patch", "post", "put", "delete"] as const;
+// const defaultMethods = ["get", "patch", "post", "put", "delete"] as const;
 export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
@@ -61,45 +61,44 @@ export class Reflector {
 
   private getModules(): Module[] {
     const methodsMap = new Map<string, Info>();
-    const modules: Module[] = [];
 
-    for (const [rawEndpoint, object] of Object.entries(this.paths)) {
-      let entity;
-      const operations: ReflectorOperation[] = [];
-      const { endpoint, moduleName } = getEndpointAndModuleName(rawEndpoint);
+    for (const [path, methods] of Object.entries(this.paths)) {
+      const rawName = Object.values(methods)[0] as OperationObject;
 
-      for (const method of methods) {
-        if (!object[method]) continue;
+      const a = rawName.operationId?.split("_")[0] ?? "";
 
-        operations.push({ ...object[method], apiMethod: method });
+      const teste = splitByUppercase(a).filter((x) => x !== "Controller");
 
-        if (!entity) {
-          const teste = object[method].operationId!.split("_")[0];
-          const x = splitByUppercase(teste);
-          const aaa = x.filter((y) => y !== "Controller");
-          entity = aaa.join("");
-        }
-      }
+      const moduleName = teste.join("");
+      const baseEndpoint = getEndpoint(path);
 
-      if (!entity) continue;
-      const existingOps = methodsMap.get(entity);
+      const operations: ReflectorOperation[] = Object.entries(methods).map(([apiMethod, attributes]) => {
+        return {
+          apiMethod,
+          endpoint: path,
+          ...attributes,
+        };
+      });
 
-      if (existingOps) {
-        existingOps.operations.push(...operations);
+      const existentModule = methodsMap.get(moduleName);
+
+      if (existentModule) {
+        methodsMap.set(moduleName, {
+          ...existentModule,
+          operations: [...existentModule.operations, ...operations],
+        });
       } else {
-        methodsMap.set(entity, { endpoint, operations, moduleName });
+        methodsMap.set(moduleName, { operations, path: baseEndpoint, moduleName });
       }
     }
 
-    for (const [name, info] of methodsMap) {
-      modules.push(
-        new Module({
-          name,
-          ...info,
-          dir: this.generatedDir,
-        })
-      );
-    }
+    const modules: Module[] = Array.from(methodsMap).map(([name, info]) => {
+      return new Module({
+        name,
+        ...info,
+        dir: this.generatedDir,
+      });
+    });
 
     return modules;
   }

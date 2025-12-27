@@ -1,12 +1,13 @@
-import { OperationObject } from "./open-api-spec.interface.js";
+import type { OperationObject } from "./open-api-spec.interface.js";
 
 export type ReflectorParamType = "string" | "boolean" | "number" | "array" | "object";
 export type ApiType = "get" | "post" | "delete" | "patch" | "put";
 export type ReflectorOperation = OperationObject & {
   apiMethod: ApiType;
+  endpoint: string;
 };
 export type Info = {
-  endpoint: string;
+  path: string;
   operations: ReflectorOperation[];
   moduleName: string;
 };

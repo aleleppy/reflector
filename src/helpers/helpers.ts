@@ -1,18 +1,20 @@
-export function stripState(attr: string): string {
-  // Ex.: "form = $state(newForm(DefaultCreateUserDtoSchema))"
-  const [lhs, rhsRaw = ""] = attr.split("=");
-  const rhs = rhsRaw.trim();
+// export function stripState(attr: string): string {
+//   // Ex.: "form = $state(newForm(DefaultCreateUserDtoSchema))"
+//   const [lhs, rhsRaw = ""] = attr.split("=");
+//   const rhs = rhsRaw.trim();
 
-  // remove apenas UM wrapper $state( ... ) do início ao fim
-  const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
+//   // remove apenas UM wrapper $state( ... ) do início ao fim
+//   const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
 
-  return `${lhs.trim()} = ${cleaned}`;
-}
+//   if (!lhs) return "";
+
+//   return `${lhs.trim()} = ${cleaned}`;
+// }
 
 export function toCamelCase(str: string) {
   return str
     .split("-")
-    .map((chunk, i) => (i === 0 ? chunk : chunk[0].toUpperCase() + chunk.slice(1)))
+    .map((chunk, i) => (i === 0 ? chunk : chunk.charAt(0).toUpperCase() + chunk.slice(1)))
     .join("");
 }
 
@@ -20,7 +22,7 @@ export function sanitizeKey(name: string) {
   const match = /^\[id(.+)\]$|^\{(.+)\}$/.exec(name);
 
   if (match) {
-    const raw = match[1] || match[2]; // pega o conteúdo entre [] ou {}
+    const raw: string = (match[1] || match[2]) ?? ""; // pega o conteúdo entre [] ou {}
     const camel = toCamelCase(raw);
     // Garante que a primeira letra fique minúscula
     return camel.charAt(0).toLowerCase() + camel.slice(1);
@@ -46,11 +48,24 @@ export function createDangerMessage(text: string) {
   console.log("\x1b[31m%s\x1b[0m", `[!] ${text}`);
 }
 
-export function getEndpointAndModuleName(rawEndpoint: string) {
+function getFilteredEntities(rawEndpoint: string) {
   const splittedEntitys = rawEndpoint.split("/");
-  const filteredEntitys = splittedEntitys.filter((item) => item !== "" && !item.includes("{"));
-  const moduleName = filteredEntitys.map((x) => sanitizeKey(capitalizeFirstLetter(x))).join("");
-  const endpoint = filteredEntitys.join("/");
+  return splittedEntitys.filter((item) => item !== "" && !item.includes("{"));
+}
 
-  return { endpoint, moduleName };
+export function getEndpointAndModuleName(rawEndpoint: string) {
+  const filteredEntitys = getFilteredEntities(rawEndpoint);
+
+  // console.log(filteredEntitys);
+
+  const moduleName = filteredEntitys.map((x) => sanitizeKey(capitalizeFirstLetter(x))).join("");
+  const baseEndpoint = filteredEntitys.join("/");
+
+  return { baseEndpoint: getEndpoint(baseEndpoint), moduleName };
+}
+
+export function getEndpoint(rawEndpoint: string) {
+  const filteredEntitys = getFilteredEntities(rawEndpoint);
+
+  return filteredEntitys.join("/");
 }

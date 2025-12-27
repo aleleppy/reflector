@@ -1,13 +1,13 @@
-import path from "node:path";
-import fs from "node:fs";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { Source } from "./file.js";
 import { capitalizeFirstLetter, createDangerMessage } from "./helpers/helpers.js";
 import { Method } from "./method.js";
-import { ReflectorOperation } from "./types/types.js";
+import type { ReflectorOperation } from "./types/types.js";
 
 export class Module {
   readonly name: string;
-  readonly endpoint: string;
+  readonly path: string;
   readonly moduleName: string;
 
   readonly src: Source;
@@ -16,8 +16,8 @@ export class Module {
   parameters: string[];
   methods: Method[];
 
-  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; endpoint: string; dir: string }) {
-    const { name, operations, endpoint, dir, moduleName } = params;
+  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; dir: string }) {
+    const { name, operations, path, dir, moduleName } = params;
     this.moduleName = moduleName;
 
     this.imports = new Set([
@@ -27,7 +27,7 @@ export class Module {
     ]);
 
     this.name = capitalizeFirstLetter(name);
-    this.endpoint = endpoint;
+    this.path = path;
 
     const methods = operations.map((operation) => {
       return new Method({
@@ -69,7 +69,7 @@ export class Module {
   } {
     const buildedModuleTypes: string[] = [];
 
-    const moduleAttributes = new Set([`endpoint = '${this.endpoint}'`]);
+    const moduleAttributes = new Set<string>();
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
@@ -140,8 +140,8 @@ export class Module {
   }
 
   private getPath(dir: string) {
-    const fileName = this.endpoint.split("/").slice(-2).join("-");
-    const inPath = path.join(dir, this.endpoint);
+    const fileName = this.path.split("/").slice(-2).join("-");
+    const inPath = path.join(dir, this.path);
 
     const outPath = path.join(inPath, `${fileName.toLowerCase()}.module.svelte.ts`);
     fs.mkdirSync(inPath, { recursive: true });
@@ -149,9 +149,37 @@ export class Module {
     return outPath;
   }
 
+  private getAdditionalMethod(params: { method: Method; canAddClearMethod: boolean }) {
+    const { method, canAddClearMethod } = params;
+    let additionalMethod = "";
+
+    if (canAddClearMethod && method.request.attributeType === "form") {
+      additionalMethod = `
+        /** Limpa o form depois do back retornar uma resposta de sucesso */
+        async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
+          const data = await this.${method.name}(behavior)
+
+          if (data) {
+            this.clearForms()
+          }
+
+          return data
+        }
+      `;
+    }
+    return additionalMethod;
+  }
+
   private buildMethods() {
+    const hasForm = this.methods.some((m) => m.request.attributeType === "form");
+    const hasEntity = this.methods.some((m) => m.request.attributeType === "entity");
+
+    const canAddClearMethod = hasForm && hasEntity;
+
     return this.methods.map((method) => {
-      return method.build();
+      let additionalMethod = this.getAdditionalMethod({ canAddClearMethod, method });
+
+      return [method.build(), additionalMethod].join("\n");
     });
   }
 

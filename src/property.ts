@@ -1,16 +1,16 @@
 import { sanitizeNumber } from "./helpers/helpers.js";
 import { ReflectorInput } from "./helpers/input.js";
-import { SchemaObject } from "./types/open-api-spec.interface.js";
-import { Example, ReflectorParamType } from "./types/types.js";
+import { type SchemaObject } from "./types/open-api-spec.interface.js";
+import { type Example, type ReflectorParamType } from "./types/types.js";
 
 const inputs = new ReflectorInput();
 
 export class ZodProperty {
   name: string;
-  example: Example;
+  example: Example | undefined;
   type: ReflectorParamType;
   buildedProp: string;
-  description: string = "";
+  description?: string;
   required: boolean;
 
   constructor(params: {
@@ -21,7 +21,7 @@ export class ZodProperty {
     required: boolean;
     description?: string;
   }) {
-    const { name, schemaObject, type, example, required } = params;
+    const { name, schemaObject, type, example, required, description } = params;
 
     const realExample = example ?? schemaObject.example;
 
@@ -30,6 +30,7 @@ export class ZodProperty {
     this.type = type;
     this.example = this.getExample(realExample);
     this.buildedProp = this.build(schemaObject);
+    if (description) this.description = description;
   }
 
   private getDtoName(ref: string) {

@@ -1,10 +1,10 @@
 // src/generate-doc.ts
 import "dotenv/config"; // carrega .env a partir de process.cwd()
 import axios from "axios";
-import fs from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { Reflector } from "./main.js";
-import { OpenAPIObject } from "./types/open-api-spec.interface.js";
+import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
 
 /** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
 function pickEnv(...keys: string[]) {

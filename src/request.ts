@@ -1,4 +1,4 @@
-import {
+import type {
   RequestBodyObject,
   ReferenceObject,
   ParameterObject,
@@ -7,7 +7,7 @@ import {
   SchemaObject,
   ResponsesObject,
 } from "./types/open-api-spec.interface.js";
-import { ApiType, ReflectorOperation } from "./types/types.js";
+import type { ApiType, ReflectorOperation } from "./types/types.js";
 
 type ReflectorRequestType = "entity" | "list" | "pagination" | "form" | "other";
 type RefLike = { $ref: string };
@@ -28,8 +28,11 @@ export class Request {
   constructor(operation: ReflectorOperation) {
     this.apiType = operation.apiMethod;
 
-    this.bodyType = this.getTypeFromRequestBody(operation.requestBody);
-    this.responseType = this.getTypeFromResponses(operation.responses);
+    const body = this.getTypeFromRequestBody(operation.requestBody);
+    if (body) this.bodyType = body;
+
+    const response = this.getTypeFromResponses(operation.responses);
+    if (response) this.responseType = response;
 
     this.attributeType = this.inferAttributeType(operation) ?? ("other" as ReflectorRequestType);
   }
@@ -129,9 +132,9 @@ export class Request {
    * Se `data` não existir ou não tiver tipo, retorna undefined.
    */
   private typeFromProperties(properties: Record<string, ReferenceObject | SchemaObject> | undefined): string | undefined {
-    if (!properties) return undefined;
+    if (!properties?.["data"]) return undefined;
 
-    const data = properties.data;
+    const data = properties["data"];
 
     if (isRef(data)) return this.componentName(data);
     if (data.type === "any") return;

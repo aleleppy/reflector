@@ -1,6 +1,6 @@
 import { ZodProperty } from "./property.js";
-import { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
-import { ReflectorParamType } from "./types/types.js";
+import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
+import type { ReflectorParamType } from "./types/types.js";
 
 export class Schema {
   name: string;

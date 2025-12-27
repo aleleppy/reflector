@@ -1,12 +1,13 @@
 import { Request } from "./request.js";
 import { ZodProperty } from "./property.js";
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage } from "./helpers/helpers.js";
+import { createDangerMessage, getEndpoint } from "./helpers/helpers.js";
 
 export class Method {
   name: string;
   zodProperties: ZodProperty[];
-  description?: string;
+  description: string | undefined;
+  endpoint: string;
 
   request: Request;
 
@@ -15,6 +16,7 @@ export class Method {
 
     this.request = new Request(operation);
     this.description = operation.description ?? operation.summary;
+    this.endpoint = operation.endpoint;
 
     this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
 
@@ -45,7 +47,7 @@ export class Method {
           example: schema.default,
           schemaObject: schema,
           type: schema.type as ReflectorParamType,
-          description,
+          description: description ?? "",
           required: required || true,
         })
       );
@@ -85,7 +87,8 @@ export class Method {
         return `
           ${afterResponse.join(";")}
           const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({
-            endpoint: this.endpoint, ${query}
+            endpoint, 
+            ${query}
           })
           ${beforeResponse.join(";")}
         `;
@@ -95,7 +98,8 @@ export class Method {
         return `
         ${afterResponse.join(";")}
           const response = await repo.api.get<${this.request.responseType}, unknown>({
-            endpoint: this.endpoint, ${query}
+            endpoint, 
+            ${query}
           })
           ${beforeResponse.join(";")}
         `;
@@ -111,7 +115,7 @@ export class Method {
         ${data}
 
         const response = await repo.api.post<${this.request.responseType}>({
-          endpoint: this.endpoint,
+          endpoint,
           ${data ? "data" : ""}
         })
       `;
@@ -123,7 +127,8 @@ export class Method {
         ${propsString}
 
         const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
-          endpoint: this.endpoint, ${query}
+          endpoint, 
+          ${query}
         })
 
         this.clearEntity()
@@ -139,37 +144,27 @@ export class Method {
 
   build() {
     const content = this.buildCallMethod();
-    if (!content) return;
+
+    if (!content) {
+      createDangerMessage(`Método ${this.name} (${this.request.apiType}) não foi gerado: buildCallMethod vazio`);
+      return;
+    }
+
     if (this.name === "list") this.name = "listAll";
+
     const hasProprierties = this.zodProperties.length > 0;
 
     if (!hasProprierties && this.request.apiType === "delete") {
       createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
     }
 
-    let additionalMethod = "";
-
     const description = this.buildDescription();
-
-    if (this.request.apiType === "post") {
-      additionalMethod = `
-        /** Limpa a entity depois de ser criada com sucesso */
-        async ${this.name}AndClear(behavior: Behavior = new Behavior()) {
-          const data = await this.${this.name}(behavior)
-
-          if(data) {
-            this.clearEntity()
-          }
-
-          return data
-        }
-      `;
-    }
 
     return `
       ${description}
       async ${this.name}(behavior: Behavior = new Behavior()) {
         const {onError, onSuccess} = behavior
+        const endpoint = "${getEndpoint(this.endpoint)}"
 
         try{
           ${content}
@@ -181,8 +176,6 @@ export class Method {
           onError?.()
         }
       }
-
-      ${additionalMethod}
     `;
   }
 }
