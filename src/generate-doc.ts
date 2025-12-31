@@ -5,6 +5,7 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import { Reflector } from "./main.js";
 import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
+import { Source } from "./file.js";
 
 /** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
 function pickEnv(...keys: string[]) {
@@ -53,6 +54,9 @@ export async function reflector(manual: boolean = false) {
   try {
     const documentation = await axios.get(DOC_URL, { timeout: 15000 });
     data = documentation.data;
+
+    const backup = new Source({ path: "src/reflector/backup.json", data: JSON.stringify(data) });
+    backup.save();
   } catch (e) {
     console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);
     const backupPath = path.resolve(process.cwd(), "src/reflector/backup.json");

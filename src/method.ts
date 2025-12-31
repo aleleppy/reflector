@@ -49,6 +49,7 @@ export class Method {
           type: schema.type as ReflectorParamType,
           description: description ?? "",
           required: required || true,
+          isEmpty: false,
         })
       );
     }
@@ -178,12 +179,11 @@ export class Method {
           onSuccess?.()
 
           return response
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch(e) {
-          onError?.()
+          onError?.(e)
+        } finally {
+          this.loading = false
         }
-        
-        this.loading = false
       }
     `;
   }

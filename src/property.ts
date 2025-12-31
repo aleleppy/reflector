@@ -20,15 +20,14 @@ export class ZodProperty {
     example: Example | undefined;
     required: boolean;
     description?: string;
+    isEmpty: boolean;
   }) {
-    const { name, schemaObject, type, example, required, description } = params;
-
-    const realExample = example ?? schemaObject.example;
+    const { name, schemaObject, type, example, required, description, isEmpty } = params;
 
     this.required = required;
     this.name = name;
     this.type = type;
-    this.example = this.getExample(realExample);
+    this.example = isEmpty ? this.getEmptyExample() : this.getExample(example);
     this.buildedProp = this.build(schemaObject);
     if (description) this.description = description;
   }
@@ -40,19 +39,23 @@ export class ZodProperty {
     return dto;
   }
 
+  private getEmptyExample() {
+    switch (this.type) {
+      case "number":
+        return 0;
+      case "boolean":
+        return false;
+      case "string":
+        return "";
+      default:
+        return "";
+    }
+  }
+
   private getExample(example: Example | undefined) {
     if (example) return example;
 
-    switch (this.type) {
-      case "number":
-        return 1;
-      case "boolean":
-        return true;
-      case "string":
-        return "lorem ipsum";
-      default:
-        return "lorem ipsum";
-    }
+    return this.getEmptyExample();
   }
 
   private deepValidator(): string | false {
@@ -80,7 +83,7 @@ export class ZodProperty {
       case "boolean":
         return `${x}.default(${this.example})`;
       case "number": {
-        const number = JSON.stringify(this.example) ?? 1;
+        const number = JSON.stringify(this.example) ?? 0;
         return `${x}.default(${sanitizeNumber(number)})`;
       }
       case "array": {

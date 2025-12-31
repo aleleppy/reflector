@@ -8,9 +8,15 @@ export class Schema {
   type: string;
   schema: string;
 
-  constructor(params: { properties: Record<string, SchemaObject | ReferenceObject>; name: string; requireds: string[] }) {
-    const { name, properties, requireds } = params;
-    this.name = name;
+  constructor(params: {
+    properties: Record<string, SchemaObject | ReferenceObject>;
+    name: string;
+    requireds: string[];
+    isEmpty: boolean;
+  }) {
+    const { name, properties, requireds, isEmpty } = params;
+
+    this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
     for (const [key, value] of Object.entries(properties)) {
       if ("$ref" in value || !value?.type) continue;
@@ -24,12 +30,13 @@ export class Schema {
           type: value.type as ReflectorParamType,
           example: value.example,
           required,
+          isEmpty,
         })
       );
     }
 
-    this.type = `export type ${name} = z.infer<typeof ${name}Schema>;`;
-    this.schema = `export const ${name}Schema = z.object({
+    this.type = `export type ${this.name} = z.infer<typeof ${this.name}Schema>;`;
+    this.schema = `export const ${this.name}Schema = z.object({
       ${this.properties.map((p) => p.buildedProp)}
     });`;
   }

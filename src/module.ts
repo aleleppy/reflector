@@ -5,6 +5,11 @@ import { capitalizeFirstLetter, createDangerMessage } from "./helpers/helpers.js
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 
+interface Form {
+  name: string;
+  type: string;
+}
+
 export class Module {
   readonly name: string;
   readonly path: string;
@@ -16,6 +21,8 @@ export class Module {
   parameters: string[];
   methods: Method[];
 
+  moduleConstructor: string;
+
   constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; dir: string }) {
     const { name, operations, path, dir, moduleName } = params;
     this.moduleName = moduleName;
@@ -24,6 +31,7 @@ export class Module {
       "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
       'import repo from "$repository/main"',
       'import { Behavior } from "$reflector/reflector.types";',
+      'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
     ]);
 
     this.name = capitalizeFirstLetter(name);
@@ -52,7 +60,9 @@ export class Module {
 
     this.parameters = this.getParameters();
 
-    const { moduleAttributes, moduleTypes, moduleInit, moduleClear } = this.creator();
+    const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator();
+
+    this.moduleConstructor = this.buildConstructor(form);
 
     //sempre por último
     this.src = new Source({
@@ -66,6 +76,7 @@ export class Module {
     moduleTypes: string[];
     moduleInit: string[];
     moduleClear: string[];
+    form: Form[];
   } {
     const buildedModuleTypes: string[] = [];
 
@@ -80,10 +91,7 @@ export class Module {
       moduleClear.add(`clearParameters() { this.parameters = repo.newForm(ParametersSchema) }`);
     }
 
-    const form: {
-      name: string;
-      type: string;
-    }[] = [];
+    const form: Form[] = [];
 
     for (const method of this.methods) {
       const { bodyType, responseType, attributeType } = method.request;
@@ -109,10 +117,11 @@ export class Module {
         this.imports.add(`import z from "zod";`);
       }
     }
+
     const formSet = new Set();
 
     for (const f of form) {
-      formSet.add(`${f.name}: repo.newForm(${f.type}Schema)`);
+      formSet.add(`${f.name}: repo.newForm(Empty${f.type}Schema)`);
     }
 
     if (formSet.size > 0) {
@@ -127,7 +136,7 @@ export class Module {
       `);
 
       moduleClear.add(`
-        clearForms() { this.forms = { ${Array.from(formSet)} } }
+        clearForms() { this.forms = this.buildForms(true) };
       `);
     }
 
@@ -136,6 +145,7 @@ export class Module {
       moduleTypes: buildedModuleTypes,
       moduleInit: Array.from(moduleInit),
       moduleClear: Array.from(moduleClear),
+      form,
     };
   }
 
@@ -201,10 +211,15 @@ export class Module {
     for (const method of this.methods) {
       const { bodyType, responseType, apiType } = method.request;
 
-      if (bodyType) entries.add(`${bodyType}Schema`);
+      if (bodyType) {
+        entries.add(`${bodyType}Schema`);
+        entries.add(`Empty${bodyType}Schema`);
+      }
 
       if (responseType) {
-        if (apiType === "delete") entries.add(`${responseType}Schema`);
+        if (apiType === "delete") {
+          entries.add(`${responseType}Schema`);
+        }
         entries.add(`type ${responseType}`);
       }
     }
@@ -222,6 +237,8 @@ export class Module {
       export class ${this.moduleName}Module {
         ${moduleAttributes.join(";")}
 
+        ${this.moduleConstructor}
+
         ${this.buildMethods().join("\n")}
 
         ${moduleClear.join("\n\n")}
@@ -231,6 +248,26 @@ export class Module {
         }
       }
     `;
+  }
+
+  private buildConstructor(form: Form[]) {
+    const teste = `        
+      constructor(params?: { empty: boolean }) {
+        const isEmpty = params?.empty || PUBLIC_ENVIRONMENT != 'DEV'
+
+        this.forms = this.buildForms(isEmpty);
+      }
+
+      private buildForms(isEmpty: boolean) {
+        if(isEmpty) return this.forms
+
+        return {
+          ${form.map((f) => `${f.name}: repo.newForm(${f.type}Schema)`)}
+        }
+      }
+    `;
+
+    return teste;
   }
 
   buildFile(params: { moduleAttributes: string[]; moduleTypes: string[]; moduleInit: string[]; moduleClear: string[] }) {
