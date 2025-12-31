@@ -69,7 +69,7 @@ export class Module {
   } {
     const buildedModuleTypes: string[] = [];
 
-    const moduleAttributes = new Set<string>();
+    const moduleAttributes = new Set<string>().add("loading = $state<boolean>(false)");
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
@@ -226,7 +226,7 @@ export class Module {
 
         ${moduleClear.join("\n\n")}
         
-        clearAll() {
+        reset() {
           ${moduleInit.join(";")}
         }
       }

@@ -56,7 +56,7 @@ export class Method {
     return { parameters };
   }
 
-  private buildCallMethod() {
+  private buildCallMethod(): { inside: string; outside: string } {
     const afterResponse: string[] = [];
     const beforeResponse: string[] = [];
 
@@ -84,25 +84,29 @@ export class Method {
           `repo.intercept.rebuild(this.parameters, params)`
         );
 
-        return `
+        const inside = `
           ${afterResponse.join(";")}
           const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({
-            endpoint, 
+            endpoint,
             ${query}
           })
           ${beforeResponse.join(";")}
         `;
+
+        return { inside, outside: "" };
       } else if (this.request.attributeType === "entity") {
         beforeResponse.push(`this.entity = response`);
 
-        return `
+        const inside = `
         ${afterResponse.join(";")}
           const response = await repo.api.get<${this.request.responseType}, unknown>({
-            endpoint, 
+            endpoint,
             ${query}
           })
           ${beforeResponse.join(";")}
         `;
+
+        return { inside, outside: "" };
       }
     } else if (this.request.apiType === "post" || this.request.apiType === "put" || this.request.apiType === "patch") {
       let data = "";
@@ -111,31 +115,37 @@ export class Method {
         data = `const data = repo.intercept.bundle(this.forms.${this.name})`;
       }
 
-      return `
-        ${data}
+      const outside = ["this.loading = true", data].join("\n");
 
+      const inside = `
         const response = await repo.api.post<${this.request.responseType}>({
           endpoint,
-          ${data ? "data" : ""}
+          data
         })
       `;
+
+      return { outside, inside };
     } else if (this.request.apiType === "delete") {
       const props = this.zodProperties.map((x) => x.name).join(",");
       const propsString = props.length > 0 ? `const {${props}} = this.parameters` : "";
 
-      return `
+      const inside = `
         ${propsString}
 
         const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
-          endpoint, 
+          endpoint,
           ${query}
         })
 
         this.clearEntity()
       `;
+
+      const outside = "";
+
+      return { inside, outside };
     }
 
-    return "";
+    return { inside: "", outside: "" };
   }
 
   private buildDescription() {
@@ -143,12 +153,7 @@ export class Method {
   }
 
   build() {
-    const content = this.buildCallMethod();
-
-    if (!content) {
-      createDangerMessage(`Método ${this.name} (${this.request.apiType}) não foi gerado: buildCallMethod vazio`);
-      return;
-    }
+    const { inside, outside } = this.buildCallMethod();
 
     if (this.name === "list") this.name = "listAll";
 
@@ -166,8 +171,10 @@ export class Method {
         const {onError, onSuccess} = behavior
         const endpoint = "${getEndpoint(this.endpoint)}"
 
+        ${outside}
+
         try{
-          ${content}
+          ${inside}
           onSuccess?.()
 
           return response
@@ -175,6 +182,8 @@ export class Method {
         } catch(e) {
           onError?.()
         }
+        
+        this.loading = false
       }
     `;
   }
