@@ -24,9 +24,18 @@ export class Request {
 
   bodyType?: string;
   responseType?: string;
+  parameters: ParameterObject[] = [];
+  // inType:
 
   constructor(operation: ReflectorOperation) {
     this.apiType = operation.apiMethod;
+    const parameters = operation.parameters;
+
+    if (parameters) {
+      parameters.forEach((p) => {
+        this.parameters.push(p as ParameterObject);
+      });
+    }
 
     const body = this.getTypeFromRequestBody(operation.requestBody);
     if (body) this.bodyType = body;

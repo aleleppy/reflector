@@ -31,13 +31,16 @@ export class Schema {
           example: value.example,
           required,
           isEmpty,
+          inParam: "path",
         })
       );
     }
 
     this.type = `export type ${this.name} = z.infer<typeof ${this.name}Schema>;`;
     this.schema = `export const ${this.name}Schema = z.object({
-      ${this.properties.map((p) => p.buildedProp)}
+      ${this.properties.map((p) => {
+        return p.buildedProp;
+      })}
     });`;
   }
 }

@@ -1,9 +1,10 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { capitalizeFirstLetter, createDangerMessage } from "./helpers/helpers.js";
+import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
+import { ZodProperty } from "./property.js";
 
 interface Form {
   name: string;
@@ -18,8 +19,12 @@ export class Module {
   readonly src: Source;
 
   imports: Set<string>;
-  parameters: string[];
   methods: Method[];
+
+  querys: ZodProperty[] = [];
+  paths: ZodProperty[] = [];
+  headers: ZodProperty[] = [];
+  cookies: ZodProperty[] = [];
 
   moduleConstructor: string;
 
@@ -32,6 +37,7 @@ export class Module {
       'import repo from "$repository/main"',
       'import { Behavior } from "$reflector/reflector.types";',
       'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
+      'import z from "zod";',
     ]);
 
     this.name = capitalizeFirstLetter(name);
@@ -47,7 +53,6 @@ export class Module {
     // não vão entrar metodos que não tiverem uma resposta tipada
     this.methods = methods.filter((op) => {
       const responseTypeOk = op.request.responseType;
-      const propertiesOk = op.zodProperties.length > 0;
 
       if (op.request.apiType === "delete") return true;
 
@@ -58,7 +63,12 @@ export class Module {
       return responseTypeOk;
     });
 
-    this.parameters = this.getParameters();
+    const { cookies, headers, paths, querys } = this.getParameters();
+
+    this.querys.push(...querys);
+    this.headers.push(...headers);
+    this.paths.push(...paths);
+    this.cookies.push(...cookies);
 
     const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator();
 
@@ -69,6 +79,12 @@ export class Module {
       path: this.getPath(dir),
       data: this.buildFile({ moduleAttributes, moduleTypes, moduleInit, moduleClear }),
     });
+  }
+
+  private buildZObject(props: ZodProperty[]) {
+    const teste = `z.object({${props.map((p) => p.buildedProp)}})`;
+
+    return teste;
   }
 
   private creator(): {
@@ -84,11 +100,30 @@ export class Module {
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
-    if (this.parameters.length > 0) {
-      buildedModuleTypes.push(`const ParametersSchema = z.object({${this.parameters}})`);
-      moduleAttributes.add(`parameters = $state(repo.newForm(ParametersSchema))`);
-      moduleInit.add(`this.clearParameters()`);
-      moduleClear.add(`clearParameters() { this.parameters = repo.newForm(ParametersSchema) }`);
+    const getXablau = (params: { name: string; objets: ZodProperty[] }) => {
+      const { name, objets } = params;
+      const capitalizedName = capitalizeFirstLetter(name);
+
+      buildedModuleTypes.push(`const ${capitalizedName}Schema = ${this.buildZObject(objets)}`);
+      moduleAttributes.add(`${name} = $state(repo.newForm(${capitalizedName}Schema))`);
+      moduleInit.add(`this.clear${capitalizedName}()`);
+      moduleClear.add(`clear${capitalizedName}() { this.${name} = repo.newForm(${capitalizedName}Schema) }`);
+    };
+
+    if (this.querys.length > 0) {
+      getXablau({ name: "querys", objets: this.querys });
+    }
+
+    if (this.headers.length > 0) {
+      getXablau({ name: "headers", objets: this.headers });
+    }
+
+    if (this.paths.length > 0) {
+      getXablau({ name: "paths", objets: this.paths });
+    }
+
+    if (this.cookies.length > 0) {
+      getXablau({ name: "cookies", objets: this.cookies });
     }
 
     const form: Form[] = [];
@@ -104,16 +139,17 @@ export class Module {
       }
 
       if (attributeType === "entity") {
-        moduleAttributes.add(`entity = $state<${responseType} | undefined>()`);
-        moduleInit.add("this.clearEntity()");
-        moduleClear.add(`clearEntity() { this.entity = undefined }`);
+        const entityName = treatByUppercase(method.request.responseType);
+        moduleAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
+        moduleInit.add(`this.clear${entityName}()`);
+        moduleClear.add(`clear${entityName}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
         moduleAttributes.add(`list = $state<${responseType}['data']>([])`);
         moduleInit.add("this.clearList()");
         moduleClear.add(`clearList() { this.list = [] }`);
       }
 
-      if (attributeType === "list" || this.parameters.length > 0) {
+      if (attributeType === "list" || this.querys.length > 0 || this.headers.length > 0) {
         this.imports.add(`import z from "zod";`);
       }
     }
@@ -194,15 +230,26 @@ export class Module {
   }
 
   private getParameters() {
-    const set = new Set<string>();
+    const queryMap = new Map<string, ZodProperty>();
+    const headerMap = new Map<string, ZodProperty>();
+    const pathMap = new Map<string, ZodProperty>();
+    const cookieMap = new Map<string, ZodProperty>();
 
     for (const method of this.methods) {
-      for (const param of method.zodProperties) {
-        set.add(param.buildedProp);
-      }
+      const { headers, cookies, paths, querys } = method;
+
+      headers.forEach((h) => headerMap.set(h.name, h));
+      cookies.forEach((c) => cookieMap.set(c.name, c));
+      paths.forEach((p) => pathMap.set(p.name, p));
+      querys.forEach((q) => queryMap.set(q.name, q));
     }
 
-    return Array.from(set);
+    return {
+      headers: Array.from(headerMap.values()),
+      cookies: Array.from(cookieMap.values()),
+      paths: Array.from(pathMap.values()),
+      querys: Array.from(queryMap.values()),
+    };
   }
 
   private buildImports() {
@@ -251,6 +298,8 @@ export class Module {
   }
 
   private buildConstructor(form: Form[]) {
+    if (form.length === 0) return "";
+
     const teste = `        
       constructor(params?: { empty: boolean }) {
         const isEmpty = params?.empty || PUBLIC_ENVIRONMENT != 'DEV'
@@ -272,6 +321,7 @@ export class Module {
 
   buildFile(params: { moduleAttributes: string[]; moduleTypes: string[]; moduleInit: string[]; moduleClear: string[] }) {
     const { moduleInit, moduleTypes, moduleAttributes, moduleClear } = params;
+
     return `
       ${Array.from(this.imports).join(";")}
       ${this.buildImports()}

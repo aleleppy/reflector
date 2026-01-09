@@ -11,6 +11,8 @@
 //   return `${lhs.trim()} = ${cleaned}`;
 // }
 
+const trashWords = new Set(["Kyc", "Get", "Customer", "Response", "Res", "Self", "Admin"]);
+
 export function toCamelCase(str: string) {
   return str
     .split("-")
@@ -44,19 +46,45 @@ export function splitByUppercase(text: string) {
   return text.split(/(?=[A-Z])/);
 }
 
+export function treatByUppercase(text?: string): string {
+  const base = (text ?? "").trim();
+  const raw = base.length > 0 ? base : "entity";
+
+  // Se splitByUppercase tiver tipagem "string[] | undefined", isso resolve.
+  const parts: string[] = (splitByUppercase(raw) ?? [])
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .filter((p) => !trashWords.has(p));
+
+  if (parts.length === 0) return "entity";
+
+  const words = parts.length === 1 ? [parts[0], "Entity"] : parts;
+
+  const first = words[0];
+  if (!first) return "entity"; // deixa o TS 100% feliz
+
+  let out = first.charAt(0).toLowerCase() + first.slice(1);
+
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (!w) continue;
+    out += w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
+  return out.length > 0 ? out : "entity";
+}
+
 export function createDangerMessage(text: string) {
   console.log("\x1b[31m%s\x1b[0m", `[!] ${text}`);
 }
 
-function getFilteredEntities(rawEndpoint: string) {
+export function getFilteredEntities(rawEndpoint: string) {
   const splittedEntitys = rawEndpoint.split("/");
   return splittedEntitys.filter((item) => item !== "" && !item.includes("{"));
 }
 
 export function getEndpointAndModuleName(rawEndpoint: string) {
   const filteredEntitys = getFilteredEntities(rawEndpoint);
-
-  // console.log(filteredEntitys);
 
   const moduleName = filteredEntitys.map((x) => sanitizeKey(capitalizeFirstLetter(x))).join("");
   const baseEndpoint = filteredEntitys.join("/");
@@ -68,4 +96,16 @@ export function getEndpoint(rawEndpoint: string) {
   const filteredEntitys = getFilteredEntities(rawEndpoint);
 
   return filteredEntitys.join("/");
+}
+
+export function testeEndpoint(rawEndpoint: string) {
+  const teste = rawEndpoint.split("/");
+
+  const a = teste
+    .filter((t) => t !== "")
+    .map((str) => {
+      return str.includes("}") ? `$${str}` : str;
+    });
+
+  return a.join("/");
 }

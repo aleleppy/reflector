@@ -1,108 +1,118 @@
 import { Request } from "./request.js";
 import { ZodProperty } from "./property.js";
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage, getEndpoint } from "./helpers/helpers.js";
+import { createDangerMessage, getEndpoint, testeEndpoint, treatByUppercase } from "./helpers/helpers.js";
 
 export class Method {
   name: string;
-  zodProperties: ZodProperty[];
+  // zodProperties: ZodProperty[];
   description: string | undefined;
   endpoint: string;
 
   request: Request;
 
+  paths: ZodProperty[] = [];
+  headers: ZodProperty[] = [];
+  querys: ZodProperty[] = [];
+  cookies: ZodProperty[] = [];
+
   constructor(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
 
     this.request = new Request(operation);
+
     this.description = operation.description ?? operation.summary;
     this.endpoint = operation.endpoint;
 
     this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
 
-    const { parameters } = this.getParams(params);
-    this.zodProperties = parameters;
+    this.buildZodProperties(params);
   }
 
-  private getParams(params: { operation: ReflectorOperation; moduleName: string }) {
+  private buildZodProperties(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
 
-    if (!operation.parameters || operation.parameters?.length === 0) {
-      return { parameters: [] };
-    }
-
-    const parameters: ZodProperty[] = [];
+    if (!operation.parameters || operation.parameters?.length === 0) return;
 
     for (const object of operation.parameters) {
       if ("$ref" in object) continue;
       if (!object.schema) continue;
 
-      const { required, name, description, schema } = object;
+      const { required, name, description, schema, in: inParam } = object;
 
       if ("$ref" in schema) continue;
 
-      parameters.push(
-        new ZodProperty({
-          name,
-          example: schema.default,
-          schemaObject: schema,
-          type: schema.type as ReflectorParamType,
-          description: description ?? "",
-          required: required || true,
-          isEmpty: false,
-        })
-      );
-    }
+      const zodPropertie = {
+        name,
+        example: schema.default,
+        schemaObject: schema,
+        type: schema.type as ReflectorParamType,
+        description: description ?? "",
+        required: required || true,
+        isEmpty: false,
+        inParam,
+      };
 
-    return { parameters };
+      if (inParam === "query") {
+        this.querys.push(new ZodProperty(zodPropertie));
+      } else if (inParam === "header") {
+        this.headers.push(new ZodProperty(zodPropertie));
+      } else if (inParam === "path") {
+        this.paths.push(new ZodProperty(zodPropertie));
+      } else if (inParam === "cookie") {
+        this.paths.push(new ZodProperty(zodPropertie));
+      }
+    }
+  }
+
+  private readonly gee = (props: ZodProperty[]) => {
+    return props.map((x) => x.name).join(",");
+  };
+
+  private getProps() {
+    const headers = this.gee(this.headers);
+    const querys = this.gee(this.querys);
+    const paths = this.gee(this.paths);
+    const cookies = this.gee(this.cookies);
+
+    return `
+      ${querys.length > 0 ? `const {${querys}} = repo.intercept.bundle(this.querys)` : ""};
+      ${paths.length > 0 ? `const {${paths}} = repo.intercept.bundle(this.paths)` : ""};
+      ${cookies.length > 0 ? `const {${cookies}} = repo.intercept.bundle(this.cookies)` : ""};
+    `;
   }
 
   private buildCallMethod(): { inside: string; outside: string } {
-    const afterResponse: string[] = [];
     const beforeResponse: string[] = [];
 
-    const props = this.zodProperties.map((x) => x.name).join(",");
-
-    const parameters = `
-      const bundle = repo.intercept.bundle(this.parameters)
-      const {${props}} = bundle
-    `;
-    const query = `
-      queryData: {${props}}
-    `;
+    // const props = this.getProps();
 
     if (this.request.apiType === "get") {
-      if (this.zodProperties.length > 0) {
-        afterResponse.push(parameters);
-        beforeResponse.push(`\n`);
-      }
-
       if (this.request.attributeType === "list") {
         beforeResponse.push(
-          `const {data: { data }, ...params} = response`,
+          `const {data: { data, ...params }} = response`,
           "\n\n",
           `this.list = data`,
-          `repo.intercept.rebuild(this.parameters, params)`
+          "repo.intercept.rebuild(this.querys, params)"
         );
 
         const inside = `
-          ${afterResponse.join(";")}
           const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({
             endpoint,
-            ${query}
+            queryData: { ${this.gee(this.querys)} }
           })
           ${beforeResponse.join(";")}
         `;
 
         return { inside, outside: "" };
       } else if (this.request.attributeType === "entity") {
-        beforeResponse.push(`this.entity = response`);
+        const entityName = treatByUppercase(this.request.responseType);
+
+        beforeResponse.push(`this.${entityName} = response`);
 
         const inside = `
-        ${afterResponse.join(";")}
           const response = await repo.api.get<${this.request.responseType}, unknown>({
             endpoint,
-            ${query}
           })
           ${beforeResponse.join(";")}
         `;
@@ -110,35 +120,39 @@ export class Method {
         return { inside, outside: "" };
       }
     } else if (this.request.apiType === "post" || this.request.apiType === "put" || this.request.apiType === "patch") {
-      let data = "";
+      let data;
+      let headers;
 
       if (this.request.bodyType) {
         data = `const data = repo.intercept.bundle(this.forms.${this.name})`;
       }
 
-      const outside = ["this.loading = true", data].join("\n");
+      const hasHeaders = this.request.parameters.some((p) => p.in === "header");
+      const hasData = this.request.bodyType;
+
+      if (hasHeaders) {
+        headers = `const headers = repo.intercept.bundle(this.headers)`;
+      }
+
+      const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        const response = await repo.api.post<${this.request.responseType}>({
+        const response = await repo.api.${this.request.apiType}<${this.request.responseType}>({
           endpoint,
-          data
+          ${hasData ? "data," : ""}
+          ${hasHeaders ? "headers," : ""}
         })
       `;
 
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
-      const props = this.zodProperties.map((x) => x.name).join(",");
-      const propsString = props.length > 0 ? `const {${props}} = this.parameters` : "";
+      // const props = this.zodProperties.map((x) => x.name).join(",");
+      // const propsString = props.length > 0 ? `const {${props}} = this.parameters` : "";
 
       const inside = `
-        ${propsString}
-
         const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
           endpoint,
-          ${query}
         })
-
-        this.clearEntity()
       `;
 
       const outside = "";
@@ -149,16 +163,12 @@ export class Method {
     return { inside: "", outside: "" };
   }
 
-  private buildDescription() {
-    return `/** ${this.description ?? ""} */`;
-  }
-
   build() {
     const { inside, outside } = this.buildCallMethod();
 
     if (this.name === "list") this.name = "listAll";
 
-    const hasProprierties = this.zodProperties.length > 0;
+    const hasProprierties = this.querys.length > 0;
 
     if (!hasProprierties && this.request.apiType === "delete") {
       createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
@@ -166,11 +176,14 @@ export class Method {
 
     const description = this.buildDescription();
 
+    const a = "`";
+
     return `
       ${description}
       async ${this.name}(behavior: Behavior = new Behavior()) {
         const {onError, onSuccess} = behavior
-        const endpoint = "${getEndpoint(this.endpoint)}"
+        ${this.getProps()}
+        const endpoint = ${a}${testeEndpoint(this.endpoint)}${a}
 
         ${outside}
 
@@ -186,5 +199,9 @@ export class Method {
         }
       }
     `;
+  }
+
+  private buildDescription() {
+    return `/** ${this.description ?? ""} */`;
   }
 }

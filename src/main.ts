@@ -1,13 +1,12 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { getEndpoint, splitByUppercase } from "./helpers/helpers.js";
+import { getEndpoint, splitByUppercase, testeEndpoint } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
 import type { Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
-// const defaultMethods = ["get", "patch", "post", "put", "delete"] as const;
 export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
