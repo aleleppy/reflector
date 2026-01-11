@@ -109,3 +109,9 @@ export function testeEndpoint(rawEndpoint: string) {
 
   return a.join("/");
 }
+
+export function treatenEnum(enums: string[]) {
+  const a = enums.map((e) => `"${e}"`);
+
+  return ` z.literal([${a}])`;
+}

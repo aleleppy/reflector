@@ -4,7 +4,7 @@ import { Source } from "./file.js";
 import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
-import { ZodProperty } from "./property.js";
+import { ZodProperty } from "./zodProperty.js";
 
 interface Form {
   name: string;
@@ -106,7 +106,7 @@ export class Module {
 
       buildedModuleTypes.push(`const ${capitalizedName}Schema = ${this.buildZObject(objets)}`);
       moduleAttributes.add(`${name} = $state(repo.newForm(${capitalizedName}Schema))`);
-      moduleInit.add(`this.clear${capitalizedName}()`);
+      moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
       moduleClear.add(`clear${capitalizedName}() { this.${name} = repo.newForm(${capitalizedName}Schema) }`);
     };
 
@@ -141,8 +141,8 @@ export class Module {
       if (attributeType === "entity") {
         const entityName = treatByUppercase(method.request.responseType);
         moduleAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
-        moduleInit.add(`this.clear${entityName}()`);
-        moduleClear.add(`clear${entityName}() { this.${entityName} = undefined }`);
+        moduleInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
+        moduleClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
         moduleAttributes.add(`list = $state<${responseType}['data']>([])`);
         moduleInit.add("this.clearList()");

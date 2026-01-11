@@ -51,16 +51,7 @@ export class Reflector {
         requireds: object.required || [],
       };
 
-      schemas.push(
-        new Schema({
-          ...schema,
-          isEmpty: false,
-        }),
-        new Schema({
-          ...schema,
-          isEmpty: true,
-        })
-      );
+      schemas.push(new Schema({ ...schema, isEmpty: false }), new Schema({ ...schema, isEmpty: true }));
     }
 
     console.log(`${schemas.length} schemas gerados com sucesso.`);
@@ -112,7 +103,11 @@ export class Reflector {
   }
 
   build() {
-    this.schemaFile.changeData([`import z from 'zod';`, ...this.schemas.map((s) => `${s.schema} ${s.type}`)].join("\n\n"));
+    const treatedSchemas = this.schemas.map((s) => {
+      return `${s.schema} ${s.type}`;
+    });
+
+    this.schemaFile.changeData([`import z from 'zod';`, ...treatedSchemas].join("\n\n"));
     this.schemaFile.save();
 
     this.typesSrc.changeData("export class Behavior { onError?: (e) => void; onSuccess?: () => void }");

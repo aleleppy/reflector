@@ -1,5 +1,5 @@
 import { Request } from "./request.js";
-import { ZodProperty } from "./property.js";
+import { ZodProperty } from "./zodProperty.js";
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
 import { createDangerMessage, getEndpoint, testeEndpoint, treatByUppercase } from "./helpers/helpers.js";
 
@@ -146,9 +146,6 @@ export class Method {
 
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
-      // const props = this.zodProperties.map((x) => x.name).join(",");
-      // const propsString = props.length > 0 ? `const {${props}} = this.parameters` : "";
-
       const inside = `
         const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
           endpoint,

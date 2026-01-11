@@ -1,4 +1,4 @@
-import { ZodProperty } from "./property.js";
+import { ZodProperty } from "./zodProperty.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "./types/types.js";
 
@@ -7,6 +7,7 @@ export class Schema {
   properties: ZodProperty[] = [];
   type: string;
   schema: string;
+  enums = new Set<string>();
 
   constructor(params: {
     properties: Record<string, SchemaObject | ReferenceObject>;
@@ -23,8 +24,17 @@ export class Schema {
 
       const required = requireds.includes(key);
 
+      const teste = value.items;
+
+      if (teste && !("$ref" in teste) && teste.enum) {
+        this.enums.add(this.getEnumConst({ enums: teste.enum, schemaName: key }));
+      } else if (value.enum) {
+        this.enums.add(this.getEnumConst({ enums: value.enum, schemaName: key }));
+      }
+
       this.properties.push(
         new ZodProperty({
+          schemaName: this.name,
           name: key,
           schemaObject: value,
           type: value.type as ReflectorParamType,
@@ -42,5 +52,12 @@ export class Schema {
         return p.buildedProp;
       })}
     });`;
+  }
+
+  private getEnumConst(params: { enums: string[]; schemaName: string }) {
+    const { enums, schemaName } = params;
+    const enumList = enums.map((en) => `'${en}'`);
+
+    return `export const ${schemaName}EnumSchema = z.enum([${enumList}])`;
   }
 }

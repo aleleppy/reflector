@@ -1,4 +1,4 @@
-import { sanitizeNumber } from "./helpers/helpers.js";
+import { sanitizeNumber, treatenEnum } from "./helpers/helpers.js";
 import { ReflectorInput } from "./helpers/input.js";
 import { type ParameterLocation, type SchemaObject } from "./types/open-api-spec.interface.js";
 import { type Example, type ReflectorParamType } from "./types/types.js";
@@ -6,6 +6,7 @@ import { type Example, type ReflectorParamType } from "./types/types.js";
 const inputs = new ReflectorInput();
 
 export class ZodProperty {
+  schemaName?: string;
   name: string;
   example: Example | undefined;
   type: ReflectorParamType;
@@ -13,8 +14,11 @@ export class ZodProperty {
   description?: string;
   required: boolean;
   inParam: ParameterLocation;
+  isEnum: boolean = false;
+  enums: string[] = [];
 
   constructor(params: {
+    schemaName?: string;
     name: string;
     schemaObject: SchemaObject;
     type: ReflectorParamType;
@@ -24,9 +28,24 @@ export class ZodProperty {
     isEmpty: boolean;
     inParam: ParameterLocation;
   }) {
-    const { name, schemaObject, type, example, required, description, isEmpty, inParam } = params;
+    const { schemaName, name, schemaObject, type, example, required, description, isEmpty, inParam } = params;
 
     this.inParam = inParam;
+    this.isEnum = false;
+
+    const items = schemaObject.items;
+
+    if (items && !("$ref" in items) && items.enum) {
+      this.isEnum = true;
+      this.enums = items.enum;
+    } else if (schemaObject.enum) {
+      this.isEnum = true;
+      this.enums = schemaObject.enum;
+    }
+
+    if (schemaName) {
+      this.schemaName = schemaName;
+    }
 
     if (name.split("-").length > 1) {
       this.name = `['${name}']`;
@@ -73,6 +92,8 @@ export class ZodProperty {
       return `z.email().default('${this.example}')`;
     } else if (this.name === "password") {
       return inputs.password;
+    } else if (this.isEnum) {
+      return `${treatenEnum(this.enums)}.default('${this.enums[0]}')`;
     } else {
       return false;
     }
@@ -86,13 +107,15 @@ export class ZodProperty {
     return name;
   }
 
-  private build(value: SchemaObject): string {
+  private build(schemaObject: SchemaObject): string {
     const name = this.treatName(this.name);
 
     const x = `${name}: z.${this.type}()${this.isNullable()}`;
 
     switch (this.type) {
       case "string": {
+        // console.log(schemaObject.enum);
+
         const deepValidation = this.deepValidator();
         return deepValidation ? `${name}: ${deepValidation}` : `${x}.default('${this.example}')`;
       }
@@ -103,11 +126,19 @@ export class ZodProperty {
         return `${x}.default(${sanitizeNumber(number)})`;
       }
       case "array": {
-        if (!value.items || !("$ref" in value.items)) {
-          return `${name}: z.${this.type}(z.${value.items?.type || "string"}())${this.isNullable()}.default([])`;
+        if (!schemaObject.items || !("$ref" in schemaObject.items)) {
+          let zodType = "z.string()";
+
+          if (schemaObject.items?.enum) {
+            zodType = treatenEnum(schemaObject.items.enum);
+          } else if (schemaObject.items?.type) {
+            zodType = `z.${schemaObject.items.type}()`;
+          }
+
+          return `${name}: z.${this.type}(${zodType})${this.isNullable()}.default([])`;
         }
 
-        const dto = this.getDtoName(value.items.$ref);
+        const dto = this.getDtoName(schemaObject.items.$ref);
         return `${name}: z.array(${dto}Schema).default(new Array(10).fill(${dto}Schema.parse({})))`;
       }
       case "object":
