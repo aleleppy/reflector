@@ -8,6 +8,7 @@ export class Schema {
   type: string;
   schema: string;
   enums = new Set<string>();
+  objects = new Map<string, string>();
 
   constructor(params: {
     properties: Record<string, SchemaObject | ReferenceObject>;
@@ -20,7 +21,15 @@ export class Schema {
     this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
     for (const [key, value] of Object.entries(properties)) {
-      if ("$ref" in value || !value?.type) continue;
+      if ("$ref" in value || !value?.type) {
+        if ("$ref" in value) {
+          const teste = value.$ref;
+          const object = teste.split("/").at(-1);
+          this.objects.set(key, `${object}Schema`);
+        }
+
+        continue;
+      }
 
       const required = requireds.includes(key);
 
@@ -42,7 +51,7 @@ export class Schema {
           required,
           isEmpty,
           inParam: "path",
-        })
+        }),
       );
     }
 
@@ -50,6 +59,10 @@ export class Schema {
     this.schema = `export const ${this.name}Schema = z.object({
       ${this.properties.map((p) => {
         return p.buildedProp;
+      })}
+      ${this.properties.length > 0 ? "," : ""}
+      ${Array.from(this.objects).map(([k, v]) => {
+        return `${k}: z.object(${v})`;
       })}
     });`;
   }
