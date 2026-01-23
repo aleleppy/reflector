@@ -1,11 +1,11 @@
-import { ZodProperty } from "./zodProperty.js";
+import { SchemaProp } from "./property.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "./types/types.js";
 
 export class Schema {
   name: string;
-  properties: ZodProperty[] = [];
-  type: string;
+  properties: SchemaProp[] = [];
+  // type: string;
   schema: string;
   enums = new Set<string>();
   objects = new Map<string, string>();
@@ -25,7 +25,7 @@ export class Schema {
         if ("$ref" in value) {
           const teste = value.$ref;
           const object = teste.split("/").at(-1);
-          this.objects.set(key, `${object}Schema`);
+          this.objects.set(key, `${object}`);
         }
 
         continue;
@@ -42,7 +42,7 @@ export class Schema {
       }
 
       this.properties.push(
-        new ZodProperty({
+        new SchemaProp({
           schemaName: this.name,
           name: key,
           schemaObject: value,
@@ -55,16 +55,40 @@ export class Schema {
       );
     }
 
-    this.type = `export type ${this.name} = z.infer<typeof ${this.name}Schema>;`;
-    this.schema = `export const ${this.name}Schema = z.object({
-      ${this.properties.map((p) => {
-        return p.buildedProp;
-      })}
-      ${this.properties.length > 0 ? "," : ""}
-      ${Array.from(this.objects).map(([k, v]) => {
-        return `${k}: z.object(${v})`;
-      })}
-    });`;
+    const keys = this.properties
+      .map((p) => {
+        const keyName = `${p.name}${p.isRequired ? "" : "?"}`;
+        let state;
+
+        if (p.paramType === "object") {
+          state = `$state<${p.bType}>()`;
+        } else if (p.paramType === "array") {
+          state = `$state<${p.bType}>([])`;
+        } else {
+          state = `$state(${p.buildedValue})`;
+        }
+
+        return `${keyName} = ${state}`;
+      })
+      .join(";\n");
+
+    const buildedObjects = Array.from(this.objects)
+      .map(([k, v]) => {
+        return `${k} = $state(new ${v}())`;
+      })
+      .join(";\n");
+
+    // const builded = this.properties.map((p) => ).join(";\n\n\n");
+
+    if (this.name === "OwnerFinishSignUpDataDto") {
+      console.log(properties);
+    }
+
+    this.schema = `export class ${this.name} {
+      ${keys}
+      ${this.properties.length > 0 ? ";" : ""}
+      ${buildedObjects}
+    };`;
   }
 
   private getEnumConst(params: { enums: string[]; schemaName: string }) {

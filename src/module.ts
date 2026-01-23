@@ -4,7 +4,7 @@ import { Source } from "./file.js";
 import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
-import { ZodProperty } from "./zodProperty.js";
+import type { SchemaProp } from "./property.js";
 
 interface Form {
   name: string;
@@ -21,10 +21,10 @@ export class Module {
   imports: Set<string>;
   methods: Method[];
 
-  querys: ZodProperty[] = [];
-  paths: ZodProperty[] = [];
-  headers: ZodProperty[] = [];
-  cookies: ZodProperty[] = [];
+  querys: SchemaProp[] = [];
+  paths: SchemaProp[] = [];
+  headers: SchemaProp[] = [];
+  cookies: SchemaProp[] = [];
 
   moduleConstructor: string;
 
@@ -37,7 +37,6 @@ export class Module {
       'import repo from "$repository/main"',
       'import { Behavior } from "$reflector/reflector.types";',
       'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
-      'import z from "zod";',
     ]);
 
     this.name = capitalizeFirstLetter(name);
@@ -81,11 +80,11 @@ export class Module {
     });
   }
 
-  private buildZObject(props: ZodProperty[]) {
-    const teste = `z.object({${props.map((p) => p.buildedProp)}})`;
+  // private buildZObject(props: SchemaProp[]) {
+  //   const teste = `z.object({${props.map((p) => p.buildedProp)}})`;
 
-    return teste;
-  }
+  //   return teste;
+  // }
 
   private creator(): {
     moduleAttributes: string[];
@@ -100,14 +99,14 @@ export class Module {
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
-    const getXablau = (params: { name: string; objets: ZodProperty[] }) => {
+    const getXablau = (params: { name: string; objets: SchemaProp[] }) => {
       const { name, objets } = params;
       const capitalizedName = capitalizeFirstLetter(name);
 
-      buildedModuleTypes.push(`const ${capitalizedName}Schema = ${this.buildZObject(objets)}`);
+      // buildedModuleTypes.push(`const ${capitalizedName}Schema = ${this.buildZObject(objets)}`);
       moduleAttributes.add(`${name} = $state(repo.newForm(${capitalizedName}Schema))`);
       moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
-      moduleClear.add(`clear${capitalizedName}() { this.${name} = repo.newForm(${capitalizedName}Schema) }`);
+      moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}Schema() }`);
     };
 
     if (this.querys.length > 0) {
@@ -148,16 +147,12 @@ export class Module {
         moduleInit.add("this.clearList()");
         moduleClear.add(`clearList() { this.list = [] }`);
       }
-
-      if (attributeType === "list" || this.querys.length > 0 || this.headers.length > 0) {
-        this.imports.add(`import z from "zod";`);
-      }
     }
 
     const formSet = new Set();
 
     for (const f of form) {
-      formSet.add(`${f.name}: repo.newForm(Empty${f.type}Schema)`);
+      formSet.add(`${f.name}: new ${f.type}()`);
     }
 
     if (formSet.size > 0) {
@@ -230,10 +225,10 @@ export class Module {
   }
 
   private getParameters() {
-    const queryMap = new Map<string, ZodProperty>();
-    const headerMap = new Map<string, ZodProperty>();
-    const pathMap = new Map<string, ZodProperty>();
-    const cookieMap = new Map<string, ZodProperty>();
+    const queryMap = new Map<string, SchemaProp>();
+    const headerMap = new Map<string, SchemaProp>();
+    const pathMap = new Map<string, SchemaProp>();
+    const cookieMap = new Map<string, SchemaProp>();
 
     for (const method of this.methods) {
       const { headers, cookies, paths, querys } = method;
@@ -259,13 +254,12 @@ export class Module {
       const { bodyType, responseType, apiType } = method.request;
 
       if (bodyType) {
-        entries.add(`${bodyType}Schema`);
-        entries.add(`Empty${bodyType}Schema`);
+        entries.add(`${bodyType}`);
       }
 
       if (responseType) {
         if (apiType === "delete") {
-          entries.add(`${responseType}Schema`);
+          entries.add(`${responseType}`);
         }
         entries.add(`type ${responseType}`);
       }
@@ -274,7 +268,7 @@ export class Module {
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
     if (cleanEntries.length === 0) return "";
 
-    return `import { ${cleanEntries} } from '$reflector/schemas';`;
+    return `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
   }
 
   private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {
@@ -289,7 +283,7 @@ export class Module {
         ${this.buildMethods().join("\n")}
 
         ${moduleClear.join("\n\n")}
-        
+
         reset() {
           ${moduleInit.join(";")}
         }
@@ -300,7 +294,7 @@ export class Module {
   private buildConstructor(form: Form[]) {
     if (form.length === 0) return "";
 
-    const teste = `        
+    const teste = `
       constructor(params?: { empty: boolean }) {
         const isEmpty = params?.empty || PUBLIC_ENVIRONMENT != 'DEV'
 
@@ -311,7 +305,7 @@ export class Module {
         if(isEmpty) return this.forms
 
         return {
-          ${form.map((f) => `${f.name}: repo.newForm(${f.type}Schema)`)}
+          ${form.map((f) => `${f.name}: new ${f.type}()`)}
         }
       }
     `;

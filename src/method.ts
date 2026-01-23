@@ -1,20 +1,21 @@
 import { Request } from "./request.js";
-import { ZodProperty } from "./zodProperty.js";
+
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage, getEndpoint, testeEndpoint, treatByUppercase } from "./helpers/helpers.js";
+import { createDangerMessage, testeEndpoint, treatByUppercase } from "./helpers/helpers.js";
+import { SchemaProp } from "./property.js";
 
 export class Method {
   name: string;
-  // zodProperties: ZodProperty[];
+  // zodProperties: Property[];
   description: string | undefined;
   endpoint: string;
 
   request: Request;
 
-  paths: ZodProperty[] = [];
-  headers: ZodProperty[] = [];
-  querys: ZodProperty[] = [];
-  cookies: ZodProperty[] = [];
+  paths: SchemaProp[] = [];
+  headers: SchemaProp[] = [];
+  querys: SchemaProp[] = [];
+  cookies: SchemaProp[] = [];
 
   constructor(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
@@ -54,18 +55,18 @@ export class Method {
       };
 
       if (inParam === "query") {
-        this.querys.push(new ZodProperty(zodPropertie));
+        this.querys.push(new SchemaProp(zodPropertie));
       } else if (inParam === "header") {
-        this.headers.push(new ZodProperty(zodPropertie));
+        this.headers.push(new SchemaProp(zodPropertie));
       } else if (inParam === "path") {
-        this.paths.push(new ZodProperty(zodPropertie));
+        this.paths.push(new SchemaProp(zodPropertie));
       } else if (inParam === "cookie") {
-        this.paths.push(new ZodProperty(zodPropertie));
+        this.paths.push(new SchemaProp(zodPropertie));
       }
     }
   }
 
-  private readonly gee = (props: ZodProperty[]) => {
+  private readonly gee = (props: SchemaProp[]) => {
     return props.map((x) => x.name).join(",");
   };
 
@@ -93,7 +94,7 @@ export class Method {
           `const {data: { data, ...params }} = response`,
           "\n\n",
           `this.list = data`,
-          "repo.intercept.rebuild(this.querys, params)"
+          "repo.intercept.rebuild(this.querys, params)",
         );
 
         const inside = `

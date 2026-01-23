@@ -1,11 +1,12 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { getEndpoint, splitByUppercase, testeEndpoint } from "./helpers/helpers.js";
+import { getEndpoint, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
 import type { Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
+// import { Module } from "./module.js";
 
 export class Reflector {
   readonly components: ComponentsObject;
@@ -16,7 +17,7 @@ export class Reflector {
 
   readonly src = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/controllers`) });
   readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/reflector.types.ts`) });
-  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.ts`) });
+  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.svelte.ts`) });
 
   files: Source[];
   schemas: Schema[];
@@ -51,7 +52,10 @@ export class Reflector {
         requireds: object.required || [],
       };
 
-      schemas.push(new Schema({ ...schema, isEmpty: false }), new Schema({ ...schema, isEmpty: true }));
+      schemas.push(
+        new Schema({ ...schema, isEmpty: false }),
+        // new Schema({ ...schema, isEmpty: true })
+      );
     }
 
     console.log(`${schemas.length} schemas gerados com sucesso.`);
@@ -104,10 +108,23 @@ export class Reflector {
 
   build() {
     const treatedSchemas = this.schemas.map((s) => {
-      return `${s.schema} ${s.type}`;
+      return s.schema;
     });
 
-    this.schemaFile.changeData([`import z from 'zod';`, ...treatedSchemas].join("\n\n"));
+    const teste = `
+      function build<T>(params: { key?: T; example: T; required: boolean }) {
+        const { example, required, key } = params;
+
+        return {
+          value: key ?? example,
+          display: key ?? example,
+          required,
+          placeholder: example,
+        } as FieldSetup<T>
+      }
+    `;
+
+    this.schemaFile.changeData(["import type { FieldSetup } from '$repository/types';", teste, ...treatedSchemas].join("\n\n"));
     this.schemaFile.save();
 
     this.typesSrc.changeData("export class Behavior { onError?: (e) => void; onSuccess?: () => void }");
