@@ -1,4 +1,3 @@
-import { sanitizeNumber, treatenEnum } from "./helpers/helpers.js";
 import { ReflectorInput } from "./helpers/input.js";
 import { type ParameterLocation, type SchemaObject } from "./types/open-api-spec.interface.js";
 import { type Example, type ReflectorParamType } from "./types/types.js";
@@ -13,7 +12,7 @@ export class SchemaProp {
   // buildedProp: string;
   // description?: string;
   // required: boolean;
-  // inParam: ParameterLocation;
+  inParam: ParameterLocation;
   // isEnum: boolean = false;
   // enums: string[] = [];
 
@@ -42,6 +41,7 @@ export class SchemaProp {
     // this.inParam = inParam;
     // this.isEnum = false;
 
+    this.inParam = inParam;
     this.paramType = type;
     this.isRequired = required;
     this.name = this.treatName(name);
@@ -52,43 +52,26 @@ export class SchemaProp {
     this.buildedValue = this.getBuildedValue({
       example: this.example,
       isRequired: this.isRequired,
-      name: this.name,
       type,
       bType: this.bType,
     });
   }
 
-  private getBuildedValue(params: {
-    name: string;
-    type: ReflectorParamType;
-    isRequired: boolean;
-    example: string;
-    bType: string;
-  }) {
-    const { example, isRequired, name, type, bType } = params;
+  private getBuildedValue(params: { type: ReflectorParamType; isRequired: boolean; example: string; bType: string }) {
+    const { example, isRequired, type, bType } = params;
 
     let content: string = "";
-    // let emptyContent: string = "";
 
     if (type === "number" || type === "string" || type === "boolean") {
       content = `build({key: ${this.getEmptyExample(type)}, example: ${example}, required: ${isRequired}})`;
     } else if (type === "object") {
       content = `new ${bType}()`;
-      // emptyContent = `new ${bType}()`;
     } else if (type === "array") {
       content = "[]";
-      // emptyContent = "[]";
     }
 
     return content;
   }
-
-  // private getDtoName(ref: string) {
-  //   const splittedRef = ref.split("/");
-  //   const dto = splittedRef[splittedRef.length - 1];
-
-  //   return dto;
-  // }
 
   getEmptyExample(type: ReflectorParamType) {
     if (type === "number") {
@@ -124,10 +107,6 @@ export class SchemaProp {
     }
   }
 
-  private isNullable(isRequired: boolean) {
-    return isRequired ? "" : " | null";
-  }
-
   private treatName(name: string) {
     return name;
   }
@@ -143,51 +122,4 @@ export class SchemaProp {
       return type as string;
     }
   }
-
-  // private build(params: { schemaObject: SchemaObject; name: string; type: ReflectorParamType; isRequired: boolean }) {
-  //   const { name, schemaObject, type, isRequired } = params;
-
-  //   // if (this.type === "number") {
-  //   //   const number = JSON.stringify(this.example) ?? 0;
-  //   //   this.buildedType = sanitizeNumber(number);
-  //   // } else if (this.type === "string") {
-  //   //   this.buildedType = this.deepValidator() ?? this.type;
-  //   // } else if (this.type === "boolean") {
-  //   //   this.buildedExample = `'${this.example}'`;
-  //   // } else {
-  //   //   this.buildedType = this.type;
-  //   // }
-
-  //   // switch (this.type) {
-  //   //   case "string": {
-  //   //     // console.log(schemaObject.enum);
-  //   //   }
-  //   //   case "boolean":
-  //   //     return `${x} = ${}`;
-  //   //   case "number": {
-  //   //     const number = JSON.stringify(this.example) ?? 0;
-  //   //     return `${x} = ${sanitizeNumber(number)}`;
-  //   //   }
-  //   //   // case "array": {
-  //   //   //   if (!schemaObject.items || !("$ref" in schemaObject.items)) {
-  //   //   //     let zodType = "z.string()";
-
-  //   //   //     if (schemaObject.items?.enum) {
-  //   //   //       zodType = treatenEnum(schemaObject.items.enum);
-  //   //   //     } else if (schemaObject.items?.type) {
-  //   //   //       zodType = `z.${schemaObject.items.type}()`;
-  //   //   //     }
-
-  //   //   //     return `${name}: z.${this.type}(${zodType})${this.isNullable()}.default([])`;
-  //   //   //   }
-
-  //   //   //   const dto = this.getDtoName(schemaObject.items.$ref);
-  //   //   //   return `${name}: ${dto}Schema[]`;
-  //   //   // }
-  //   //   // case "object":
-  //   //   //   return `${name}: any`;
-  //   //   default:
-  //   //     return `${name}: any`;
-  //   // }
-  // }
 }

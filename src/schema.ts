@@ -78,12 +78,6 @@ export class Schema {
       })
       .join(";\n");
 
-    // const builded = this.properties.map((p) => ).join(";\n\n\n");
-
-    if (this.name === "OwnerFinishSignUpDataDto") {
-      console.log(properties);
-    }
-
     this.schema = `export class ${this.name} {
       ${keys}
       ${this.properties.length > 0 ? ";" : ""}

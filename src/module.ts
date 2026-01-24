@@ -80,11 +80,13 @@ export class Module {
     });
   }
 
-  // private buildZObject(props: SchemaProp[]) {
-  //   const teste = `z.object({${props.map((p) => p.buildedProp)}})`;
+  private buildZObject(props: SchemaProp[]) {
+    const teste = props.map((prop) => {
+      return `${prop.name} = $state(${prop.buildedValue})`;
+    });
 
-  //   return teste;
-  // }
+    return teste;
+  }
 
   private creator(): {
     moduleAttributes: string[];
@@ -99,30 +101,30 @@ export class Module {
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
-    const getXablau = (params: { name: string; objets: SchemaProp[] }) => {
+    const getParams = (params: { name: string; objets: SchemaProp[] }) => {
       const { name, objets } = params;
       const capitalizedName = capitalizeFirstLetter(name);
 
-      // buildedModuleTypes.push(`const ${capitalizedName}Schema = ${this.buildZObject(objets)}`);
+      // buildedModuleTypes.push(`class ${capitalizedName}Schema { ${this.buildZObject(objets)} }`);
       moduleAttributes.add(`${name} = $state(repo.newForm(${capitalizedName}Schema))`);
       moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
       moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}Schema() }`);
     };
 
     if (this.querys.length > 0) {
-      getXablau({ name: "querys", objets: this.querys });
+      getParams({ name: "querys", objets: this.querys });
     }
 
     if (this.headers.length > 0) {
-      getXablau({ name: "headers", objets: this.headers });
+      getParams({ name: "headers", objets: this.headers });
     }
 
     if (this.paths.length > 0) {
-      getXablau({ name: "paths", objets: this.paths });
+      getParams({ name: "paths", objets: this.paths });
     }
 
     if (this.cookies.length > 0) {
-      getXablau({ name: "cookies", objets: this.cookies });
+      getParams({ name: "cookies", objets: this.cookies });
     }
 
     const form: Form[] = [];
@@ -258,17 +260,14 @@ export class Module {
       }
 
       if (responseType) {
-        if (apiType === "delete") {
-          entries.add(`${responseType}`);
-        }
-        entries.add(`type ${responseType}`);
+        entries.add(`${responseType}`);
       }
     }
 
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
     if (cleanEntries.length === 0) return "";
 
-    return `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
+    return `import { build, ${cleanEntries} } from '$reflector/schemas.svelte';`;
   }
 
   private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {
