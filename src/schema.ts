@@ -1,3 +1,4 @@
+import { capitalizeFirstLetter, splitByUppercase, treatAndUpper, treatByUppercase } from "./helpers/helpers.js";
 import { SchemaProp } from "./property.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "./types/types.js";
@@ -35,6 +36,8 @@ export class Schema {
 
       const teste = value.items;
 
+      // const enumName = `Enum${treatAndUpper(name)}${capitalizeFirstLetter(key)}`;
+
       if (teste && !("$ref" in teste) && teste.enum) {
         this.enums.add(this.getEnumConst({ enums: teste.enum, schemaName: key }));
       } else if (value.enum) {
@@ -60,9 +63,9 @@ export class Schema {
         const keyName = `${p.name}${p.isRequired ? "" : "?"}`;
         let state;
 
-        if (p.paramType === "object") {
+        if (p.reflectorType === "object") {
           state = `$state<${p.bType}>()`;
-        } else if (p.paramType === "array") {
+        } else if (p.reflectorType === "array") {
           state = `$state<${p.bType}>([])`;
         } else {
           state = `$state(${p.buildedValue})`;
@@ -87,8 +90,9 @@ export class Schema {
 
   private getEnumConst(params: { enums: string[]; schemaName: string }) {
     const { enums, schemaName } = params;
-    const enumList = enums.map((en) => `'${en}'`);
 
-    return `export const ${schemaName}EnumSchema = z.enum([${enumList}])`;
+    const enumList = enums.map((en) => `'${en}'`).join("|");
+
+    return `export type Enum${capitalizeFirstLetter(schemaName)} = ${enumList}`;
   }
 }

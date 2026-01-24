@@ -11,7 +11,19 @@
 //   return `${lhs.trim()} = ${cleaned}`;
 // }
 
-const trashWords = new Set(["Kyc", "Get", "Customer", "Response", "Res", "Self", "Admin"]);
+const trashWords = new Set([
+  "Kyc",
+  "Get",
+  "Customer",
+  "Response",
+  "Res",
+  "Self",
+  "Admin",
+  "Default",
+  "Owner",
+  "Member",
+  "Public",
+]);
 
 export function toCamelCase(str: string) {
   return str
@@ -72,6 +84,10 @@ export function treatByUppercase(text?: string): string {
   }
 
   return out.length > 0 ? out : "entity";
+}
+
+export function treatAndUpper(text: string): string {
+  return capitalizeFirstLetter(treatByUppercase(text));
 }
 
 export function createDangerMessage(text: string) {

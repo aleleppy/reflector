@@ -27,10 +27,10 @@ export class Method {
 
     this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
 
-    this.buildZodProperties(params);
+    this.buildProps(params);
   }
 
-  private buildZodProperties(params: { operation: ReflectorOperation; moduleName: string }) {
+  private buildProps(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
 
     if (!operation.parameters || operation.parameters?.length === 0) return;
@@ -90,12 +90,7 @@ export class Method {
 
     if (this.request.apiType === "get") {
       if (this.request.attributeType === "list") {
-        beforeResponse.push(
-          `const {data: { data, ...params }} = response`,
-          "\n\n",
-          `this.list = data`,
-          "repo.intercept.rebuild(this.querys, params)",
-        );
+        beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = data`);
 
         const inside = `
           const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({

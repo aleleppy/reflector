@@ -81,9 +81,11 @@ export class Module {
   }
 
   private buildZObject(props: SchemaProp[]) {
-    const teste = props.map((prop) => {
-      return `${prop.name} = $state(${prop.buildedValue})`;
-    });
+    const teste = props
+      .map((prop) => {
+        return `${prop.name} = $state(${prop.emptyExample})`;
+      })
+      .join(";");
 
     return teste;
   }
@@ -105,8 +107,8 @@ export class Module {
       const { name, objets } = params;
       const capitalizedName = capitalizeFirstLetter(name);
 
-      // buildedModuleTypes.push(`class ${capitalizedName}Schema { ${this.buildZObject(objets)} }`);
-      moduleAttributes.add(`${name} = $state(repo.newForm(${capitalizedName}Schema))`);
+      buildedModuleTypes.push(`class ${capitalizedName}Schema { ${this.buildZObject(objets)} }`);
+      moduleAttributes.add(`${name} = $state(new ${capitalizedName}Schema())`);
       moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
       moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}Schema() }`);
     };
@@ -267,7 +269,7 @@ export class Module {
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
     if (cleanEntries.length === 0) return "";
 
-    return `import { build, ${cleanEntries} } from '$reflector/schemas.svelte';`;
+    return `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
   }
 
   private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {

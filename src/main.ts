@@ -107,11 +107,15 @@ export class Reflector {
   }
 
   build() {
+    const enums = new Set();
+
     const treatedSchemas = this.schemas.map((s) => {
+      s.enums.forEach((en) => enums.add(en));
+
       return s.schema;
     });
 
-    const teste = `
+    const buildFunction = `
       function build<T>(params: { key?: T; example: T; required: boolean }) {
         const { example, required, key } = params;
 
@@ -124,7 +128,14 @@ export class Reflector {
       }
     `;
 
-    this.schemaFile.changeData(["import type { FieldSetup } from '$repository/types';", teste, ...treatedSchemas].join("\n\n"));
+    this.schemaFile.changeData(
+      [
+        "import type { FieldSetup } from '$repository/types';",
+        buildFunction,
+        // ...Array.from(enums),
+        ...treatedSchemas,
+      ].join("\n\n"),
+    );
     this.schemaFile.save();
 
     this.typesSrc.changeData("export class Behavior { onError?: (e) => void; onSuccess?: () => void }");
