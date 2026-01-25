@@ -1,7 +1,8 @@
 import { capitalizeFirstLetter, splitByUppercase, treatAndUpper, treatByUppercase } from "./helpers/helpers.js";
+
 import { SchemaProp } from "./property.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
-import type { ReflectorParamType } from "./types/types.js";
+import type { FieldValidators, ReflectorParamType } from "./types/types.js";
 
 export class Schema {
   name: string;
@@ -16,8 +17,9 @@ export class Schema {
     name: string;
     requireds: string[];
     isEmpty: boolean;
+    validators: FieldValidators;
   }) {
-    const { name, properties, requireds, isEmpty } = params;
+    const { name, properties, requireds, isEmpty, validators } = params;
 
     this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
@@ -44,6 +46,8 @@ export class Schema {
         this.enums.add(this.getEnumConst({ enums: value.enum, schemaName: key }));
       }
 
+      const validator = validators.get(key);
+
       this.properties.push(
         new SchemaProp({
           schemaName: this.name,
@@ -54,6 +58,7 @@ export class Schema {
           required,
           isEmpty,
           inParam: "path",
+          validator,
         }),
       );
     }

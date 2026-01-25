@@ -6,6 +6,7 @@ import * as fs from "node:fs";
 import { Reflector } from "./main.js";
 import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
 import { Source } from "./file.js";
+import { parseValidatorFieldsFromConfig } from "./helpers/generate-doc.helper.js";
 
 /** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
 function pickEnv(...keys: string[]) {
@@ -50,17 +51,35 @@ export async function reflector(manual: boolean = false) {
 
   const DOC_URL = `${BACKEND_URL}openapi.json`;
   let data: OpenAPIObject;
+  let validators = new Map<string, string>();
 
   try {
     const documentation = await axios.get(DOC_URL, { timeout: 15000 });
     data = documentation.data;
 
-    const backup = new Source({ path: "src/reflector/backup.json", data: JSON.stringify(data) });
+    const backup = new Source({ path: "src/backup.json", data: JSON.stringify(data) });
     backup.save();
   } catch (e) {
     console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);
     const backupPath = path.resolve(process.cwd(), "src/reflector/backup.json");
     data = JSON.parse(fs.readFileSync(backupPath, "utf8")) as OpenAPIObject;
+  }
+
+  try {
+    const fieldsConfig = path.resolve(process.cwd(), "src/reflector.config.ts");
+    const configText = fs.readFileSync(fieldsConfig, "utf8");
+
+    const parsedRelations = parseValidatorFieldsFromConfig(configText);
+
+    parsedRelations.forEach((rel) => {
+      rel.fields.forEach((field) => {
+        validators.set(field, rel.validator);
+      });
+    });
+
+    console.log(validators);
+  } catch (e) {
+    console.warn("[reflector] Não consegui ler/parsear reflector.config.ts", e);
   }
 
   const { components, paths } = data;
@@ -69,7 +88,7 @@ export async function reflector(manual: boolean = false) {
     return breakReflector();
   }
 
-  const r = new Reflector({ components, paths });
+  const r = new Reflector({ components, paths, validators });
   r.build();
   r.localSave(data);
 

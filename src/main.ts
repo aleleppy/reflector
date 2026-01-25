@@ -4,7 +4,7 @@ import { Source } from "./file.js";
 import { getEndpoint, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
-import type { Info, ReflectorOperation } from "./types/types.js";
+import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 // import { Module } from "./module.js";
 
@@ -14,17 +14,19 @@ export class Reflector {
   readonly dir: string = "src";
   readonly generatedDir: string = `${this.dir}/reflector`;
   readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${this.dir}/backup.json`) });
+  readonly propertiesNames = new Set<string>();
 
   readonly src = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/controllers`) });
   readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/reflector.types.ts`) });
   readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.svelte.ts`) });
+  readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/fields.ts`) });
 
   files: Source[];
   schemas: Schema[];
   modules: Module[];
 
-  constructor(params: { components: ComponentsObject; paths: PathsObject }) {
-    const { components, paths } = params;
+  constructor(params: { components: ComponentsObject; paths: PathsObject; validators: FieldValidators }) {
+    const { components, paths, validators } = params;
     this.clearSrc();
 
     this.components = components;
@@ -32,14 +34,20 @@ export class Reflector {
 
     this.files = [];
     this.modules = this.getModules();
-    this.schemas = this.getSchemas();
+    const { propertiesNames, schemas } = this.getSchemas({ validators });
+    this.propertiesNames = propertiesNames;
+    this.schemas = schemas;
   }
 
-  private getSchemas() {
+  private getSchemas(params: { validators: FieldValidators }) {
+    const { validators } = params;
+
     const componentSchemas = this.components.schemas;
-    if (!componentSchemas) return [];
 
     const schemas: Schema[] = [];
+    const propertiesNames = new Set<string>();
+
+    if (!componentSchemas) return { schemas, propertiesNames };
 
     for (const [key, object] of Object.entries(componentSchemas)) {
       if ("$ref" in object || !object.properties) continue;
@@ -52,14 +60,18 @@ export class Reflector {
         requireds: object.required || [],
       };
 
+      Object.keys(properties).forEach((prop) => {
+        propertiesNames.add(prop);
+      });
+
       schemas.push(
-        new Schema({ ...schema, isEmpty: false }),
+        new Schema({ ...schema, isEmpty: false, validators }),
         // new Schema({ ...schema, isEmpty: true })
       );
     }
 
     console.log(`${schemas.length} schemas gerados com sucesso.`);
-    return schemas;
+    return { schemas, propertiesNames };
   }
 
   private getModules(): Module[] {
@@ -115,31 +127,71 @@ export class Reflector {
       return s.schema;
     });
 
-    const buildFunction = `
-      function build<T>(params: { key?: T; example: T; required: boolean }) {
-        const { example, required, key } = params;
-
-        return {
-          value: key ?? example,
-          display: key ?? example,
-          required,
-          placeholder: example,
-        } as FieldSetup<T>
-      }
-    `;
-
     this.schemaFile.changeData(
       [
-        "import type { FieldSetup } from '$repository/types';",
-        buildFunction,
+        'import { build  } from "$reflector/reflector.types";',
+        'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         // ...Array.from(enums),
         ...treatedSchemas,
       ].join("\n\n"),
     );
     this.schemaFile.save();
 
-    this.typesSrc.changeData("export class Behavior { onError?: (e) => void; onSuccess?: () => void }");
+    const buildFunctions = `
+      type ValidatorResult = string | null;
+      type ValidatorFn<T> = (v: T) => ValidatorResult;
+
+      export class Behavior { onError?: (e) => void; onSuccess?: () => void }
+
+      export class BuildedInput<T> {
+        value: T;
+        display: T;
+        required: boolean;
+        placeholder: T;
+        validator?: ValidatorFn<T>;
+
+        constructor(params: { key?: T; example: T; required: boolean; validator?: ValidatorFn<T> }) {
+          const { example, required, key, validator } = params;
+
+          const value = key ?? example;
+
+          this.value = value;
+          this.display = value;
+          this.required = required;
+          this.placeholder = example;
+
+          if (validator) {
+            this.validator = validator;
+          }
+        }
+
+        validate(): ValidatorResult {
+          if (!this.validator) return null;
+          return this.validator(this.value);
+        }
+      }
+
+      export function build<T>(params: {
+        key?: T;
+        example: T;
+        required: boolean;
+        validator?: ValidatorFn<T>;
+      }): BuildedInput<T> {
+        return new BuildedInput(params);
+      }
+    `;
+
+    this.typesSrc.changeData(buildFunctions);
     this.typesSrc.save();
+
+    this.fieldsFile.changeData(`
+      export const FIELD_NAMES = [
+        ${Array.from(this.propertiesNames).map((p) => `'${p}'`)}
+      ] as const;
+      export type FieldName = (typeof FIELD_NAMES)[number]
+    `);
+
+    this.fieldsFile.save();
 
     for (const module of this.modules) {
       if (module.methods.length === 0) continue;

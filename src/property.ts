@@ -37,8 +37,11 @@ export class SchemaProp {
     description?: string;
     isEmpty: boolean;
     inParam: ParameterLocation;
+    validator?: string | undefined;
   }) {
-    const { schemaName, name, schemaObject, type, example, required, description, isEmpty, inParam } = params;
+    const { schemaName, name, schemaObject, type, example, required, description, isEmpty, inParam, validator } = params;
+
+    console.log(validator);
 
     if (schemaObject.enum) {
       this.enums = schemaObject.enum.map((e) => `'${e}'`).join("|");
@@ -61,6 +64,7 @@ export class SchemaProp {
       bType: this.bType,
       enums: this.enums,
       schemaObject,
+      validator,
     });
   }
 
@@ -71,15 +75,17 @@ export class SchemaProp {
     bType: string;
     enums: string | undefined;
     schemaObject: SchemaObject;
+    validator: string | undefined;
   }) {
-    const { example, isRequired, type, bType, enums, schemaObject } = params;
+    const { example, isRequired, type, bType, enums, schemaObject, validator } = params;
 
     let content: string = "";
 
     const diamondType = enums ? `<${enums}>` : "";
+    const buildedValidator = validator ? `validator: ${validator}` : "";
 
     if (type === "number" || type === "string" || type === "boolean") {
-      content = `build${diamondType}({key: ${this.getEmptyExample({ type, schemaObject })}, example: ${example}, required: ${isRequired}})`;
+      content = `build${diamondType}({key: ${this.getEmptyExample({ type, schemaObject })}, example: ${example}, required: ${isRequired}, ${buildedValidator}})`;
     } else if (type === "object") {
       content = `new ${bType}()`;
     } else if (type === "array") {

@@ -13,3 +13,10 @@ export type Info = {
 };
 
 export type Example = string | boolean | number;
+
+export interface ValidatorField {
+  fields: string[];
+  validator: string;
+}
+
+export type FieldValidators = Map<string, string>;
