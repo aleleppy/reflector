@@ -5,6 +5,7 @@ import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 import type { SchemaProp } from "./property.js";
+import { baseDir } from "./vars.global.js";
 
 interface Form {
   name: string;
@@ -28,8 +29,8 @@ export class Module {
 
   moduleConstructor: string;
 
-  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; dir: string }) {
-    const { name, operations, path, dir, moduleName } = params;
+  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string }) {
+    const { name, operations, moduleName, path } = params;
     this.moduleName = moduleName;
 
     this.imports = new Set([
@@ -184,9 +185,9 @@ export class Module {
     };
   }
 
-  private getPath(dir: string) {
+  private getPath() {
     const fileName = this.path.split("/").slice(-2).join("-");
-    const inPath = path.join(dir, this.path);
+    const inPath = path.join(baseDir, this.path);
 
     const outPath = path.join(inPath, `${fileName.toLowerCase()}.module.svelte.ts`);
     fs.mkdirSync(inPath, { recursive: true });

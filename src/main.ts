@@ -6,20 +6,21 @@ import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
+
+import { baseDir, generatedDir } from "./vars.global.js";
 // import { Module } from "./module.js";
 
 export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
-  readonly dir: string = "src";
-  readonly generatedDir: string = `${this.dir}/reflector`;
-  readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${this.dir}/backup.json`) });
+
+  readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${baseDir}/backup.json`) });
   readonly propertiesNames = new Set<string>();
 
-  readonly src = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/controllers`) });
-  readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/reflector.types.ts`) });
-  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/schemas.svelte.ts`) });
-  readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${this.generatedDir}/fields.ts`) });
+  readonly src = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/controllers`) });
+  readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/reflector.types.ts`) });
+  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/schemas.svelte.ts`) });
+  readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`) });
 
   files: Source[];
   schemas: Schema[];
@@ -78,11 +79,11 @@ export class Reflector {
     const methodsMap = new Map<string, Info>();
 
     for (const [path, methods] of Object.entries(this.paths)) {
-      const rawName = Object.values(methods)[0] as OperationObject;
+      const rawMethod = Object.values(methods)[0] as OperationObject;
 
-      const a = rawName.operationId?.split("_")[0] ?? "";
+      const rawName = rawMethod.operationId?.split("_")[0] ?? "";
 
-      const teste = splitByUppercase(a).filter((x) => x !== "Controller");
+      const teste = splitByUppercase(rawName).filter((x) => x !== "Controller");
 
       const moduleName = teste.join("");
       const baseEndpoint = getEndpoint(path);
@@ -98,8 +99,11 @@ export class Reflector {
       const existentModule = methodsMap.get(moduleName);
 
       if (existentModule) {
+        const newPath = existentModule.path.length > path.length ? path : existentModule.path;
+
         methodsMap.set(moduleName, {
           ...existentModule,
+          path: newPath,
           operations: [...existentModule.operations, ...operations],
         });
       } else {
@@ -111,7 +115,6 @@ export class Reflector {
       return new Module({
         name,
         ...info,
-        dir: `${this.generatedDir}/controllers`,
       });
     });
 
