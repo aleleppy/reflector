@@ -41,8 +41,6 @@ export class SchemaProp {
   }) {
     const { schemaName, name, schemaObject, type, example, required, description, isEmpty, inParam, validator } = params;
 
-    console.log(validator);
-
     if (schemaObject.enum) {
       this.enums = schemaObject.enum.map((e) => `'${e}'`).join("|");
     }

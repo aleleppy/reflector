@@ -76,8 +76,6 @@ export async function reflector(manual: boolean = false) {
         validators.set(field, rel.validator);
       });
     });
-
-    console.log(validators);
   } catch (e) {
     console.warn("[reflector] Não consegui ler/parsear reflector.config.ts", e);
   }
