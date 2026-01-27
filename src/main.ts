@@ -147,19 +147,19 @@ export class Reflector {
       export class Behavior { onError?: (e) => void; onSuccess?: () => void }
 
       export class BuildedInput<T> {
-        value = $state<T>();
-        display = $state<T>();
+        value = $state<T>(null as any);
+        display = $state<T>(null as any);
         required: boolean;
         placeholder: T;
-        validator?: ValidatorFn<T>;
+        private readonly validator?: ValidatorFn<T>;
 
         constructor(params: { key?: T; example: T; required: boolean; validator?: ValidatorFn<T> }) {
           const { example, required, key, validator } = params;
 
-          const value = key ?? example;
+          const initial = key ?? example;
 
-          this.value = value;
-          this.display = value;
+          this.value = initial;
+          this.display = initial;
           this.required = required;
           this.placeholder = example;
 
