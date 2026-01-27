@@ -5,7 +5,7 @@ import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 import type { SchemaProp } from "./property.js";
-import { baseDir } from "./vars.global.js";
+import { baseDir, generatedDir } from "./vars.global.js";
 
 interface Form {
   name: string;
@@ -22,10 +22,10 @@ export class Module {
   imports: Set<string>;
   methods: Method[];
 
-  querys: SchemaProp[] = [];
-  paths: SchemaProp[] = [];
-  headers: SchemaProp[] = [];
-  cookies: SchemaProp[] = [];
+  // querys: SchemaProp[] = [];
+  // paths: SchemaProp[] = [];
+  // headers: SchemaProp[] = [];
+  // cookies: SchemaProp[] = [];
 
   moduleConstructor: string;
 
@@ -36,7 +36,7 @@ export class Module {
     this.imports = new Set([
       "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
       'import repo from "$repository/main"',
-      'import { Behavior } from "$reflector/reflector.types";',
+      'import { Behavior, build } from "$reflector/reflector.types";',
       'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
     ]);
 
@@ -65,39 +65,44 @@ export class Module {
 
     const { cookies, headers, paths, querys } = this.getParameters();
 
-    this.querys.push(...querys);
-    this.headers.push(...headers);
-    this.paths.push(...paths);
-    this.cookies.push(...cookies);
-
-    const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator();
+    const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator({ cookies, headers, paths, querys });
 
     this.moduleConstructor = this.buildConstructor(form);
 
     //sempre por último
     this.src = new Source({
-      path: this.getPath(dir),
+      path: this.getPath(),
       data: this.buildFile({ moduleAttributes, moduleTypes, moduleInit, moduleClear }),
     });
   }
 
   private buildZObject(props: SchemaProp[]) {
+    const bundle = new Set<string>();
+
     const teste = props
       .map((prop) => {
-        return `${prop.name} = $state(${prop.emptyExample})`;
+        bundle.add(`${prop.name}: this${prop.isSpecial ? "" : "."}${prop.name}.value`);
+
+        return `${prop.name} = $state(${prop.buildedValue})`;
       })
       .join(";");
 
-    return teste;
+    return `
+      ${teste};
+      
+      bundle() { return { ${Array.from(bundle)} } }
+    `;
   }
 
-  private creator(): {
+  private creator(params: { querys: SchemaProp[]; paths: SchemaProp[]; headers: SchemaProp[]; cookies: SchemaProp[] }): {
     moduleAttributes: string[];
     moduleTypes: string[];
     moduleInit: string[];
     moduleClear: string[];
     form: Form[];
   } {
+    const { cookies, headers, paths, querys } = params;
+
     const buildedModuleTypes: string[] = [];
 
     const moduleAttributes = new Set<string>().add("loading = $state<boolean>(false)");
@@ -114,20 +119,20 @@ export class Module {
       moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}Schema() }`);
     };
 
-    if (this.querys.length > 0) {
-      getParams({ name: "querys", objets: this.querys });
+    if (querys.length > 0) {
+      getParams({ name: "querys", objets: querys });
     }
 
-    if (this.headers.length > 0) {
-      getParams({ name: "headers", objets: this.headers });
+    if (headers.length > 0) {
+      getParams({ name: "headers", objets: headers });
     }
 
-    if (this.paths.length > 0) {
-      getParams({ name: "paths", objets: this.paths });
+    if (paths.length > 0) {
+      getParams({ name: "paths", objets: paths });
     }
 
-    if (this.cookies.length > 0) {
-      getParams({ name: "cookies", objets: this.cookies });
+    if (cookies.length > 0) {
+      getParams({ name: "cookies", objets: cookies });
     }
 
     const form: Form[] = [];
@@ -187,7 +192,7 @@ export class Module {
 
   private getPath() {
     const fileName = this.path.split("/").slice(-2).join("-");
-    const inPath = path.join(baseDir, this.path);
+    const inPath = path.join(generatedDir, this.path);
 
     const outPath = path.join(inPath, `${fileName.toLowerCase()}.module.svelte.ts`);
     fs.mkdirSync(inPath, { recursive: true });

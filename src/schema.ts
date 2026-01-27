@@ -23,12 +23,15 @@ export class Schema {
 
     this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
+    const bundleParams = new Set<string>();
+
     for (const [key, value] of Object.entries(properties)) {
       if ("$ref" in value || !value?.type) {
         if ("$ref" in value) {
           const teste = value.$ref;
           const object = teste.split("/").at(-1);
           this.objects.set(key, `${object}`);
+          bundleParams.add(`${key}: this.${key}?.bundle()`);
         }
 
         continue;
@@ -47,6 +50,7 @@ export class Schema {
       }
 
       const validator = validators.get(key);
+      bundleParams.add(`${key}: this.${key}?.value`);
 
       this.properties.push(
         new SchemaProp({
@@ -90,6 +94,9 @@ export class Schema {
       ${keys}
       ${this.properties.length > 0 ? ";" : ""}
       ${buildedObjects}
+      bundle(){
+        return { ${Array.from(bundleParams).join(",")} }
+      }
     };`;
   }
 

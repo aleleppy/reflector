@@ -77,9 +77,9 @@ export class Method {
     const cookies = this.gee(this.cookies);
 
     return `
-      ${querys.length > 0 ? `const {${querys}} = repo.intercept.bundle(this.querys)` : ""};
-      ${paths.length > 0 ? `const {${paths}} = repo.intercept.bundle(this.paths)` : ""};
-      ${cookies.length > 0 ? `const {${cookies}} = repo.intercept.bundle(this.cookies)` : ""};
+      ${querys.length > 0 ? `const {${querys}} = this.querys.bundle()` : ""};
+      ${paths.length > 0 ? `const {${paths}} = this.paths.bundle()` : ""};
+      ${cookies.length > 0 ? `const {${cookies}} = this.cookies.bundle()` : ""};
     `;
   }
 
@@ -120,14 +120,14 @@ export class Method {
       let headers;
 
       if (this.request.bodyType) {
-        data = `const data = repo.intercept.bundle(this.forms.${this.name})`;
+        data = `const data = this.forms.${this.name}.bundle()`;
       }
 
       const hasHeaders = this.request.parameters.some((p) => p.in === "header");
       const hasData = this.request.bodyType;
 
       if (hasHeaders) {
-        headers = `const headers = repo.intercept.bundle(this.headers)`;
+        headers = `const headers = this.headers.bundle()`;
       }
 
       const outside = ["this.loading = true", data, headers].join("\n");

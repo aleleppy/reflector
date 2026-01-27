@@ -5,16 +5,8 @@ import { type Example, type ReflectorParamType } from "./types/types.js";
 const inputs = new ReflectorInput();
 
 export class SchemaProp {
-  // schemaName?: string;
-  // name: string;
-  // example: Example | undefined;
-  // type: ReflectorParamType;
-  // buildedProp: string;
-  // description?: string;
-  // required: boolean;
   inParam: ParameterLocation;
-  // isEnum: boolean = false;
-  // enums: string[] = [];
+  isSpecial: boolean = false;
 
   example: string;
   emptyExample: string;
@@ -44,8 +36,6 @@ export class SchemaProp {
     if (schemaObject.enum) {
       this.enums = schemaObject.enum.map((e) => `'${e}'`).join("|");
     }
-    // this.inParam = inParam;
-    // this.isEnum = false;
 
     this.inParam = inParam;
     this.reflectorType = schemaObject.enum ? "enum" : type;
@@ -131,6 +121,7 @@ export class SchemaProp {
     let newName = name;
 
     if (name.split("-").length > 1) {
+      this.isSpecial = true;
       newName = `['${name}']`;
     }
 
