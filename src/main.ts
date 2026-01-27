@@ -18,7 +18,7 @@ export class Reflector {
   readonly propertiesNames = new Set<string>();
 
   readonly src = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/controllers`) });
-  readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/reflector.types.ts`) });
+  readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/reflector.svelte.ts`) });
   readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/schemas.svelte.ts`) });
   readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`) });
 
@@ -132,7 +132,7 @@ export class Reflector {
 
     this.schemaFile.changeData(
       [
-        'import { build  } from "$reflector/reflector.types";',
+        'import { build  } from "$reflector/reflector.svelte";',
         'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         // ...Array.from(enums),
         ...treatedSchemas,
@@ -147,8 +147,8 @@ export class Reflector {
       export class Behavior { onError?: (e) => void; onSuccess?: () => void }
 
       export class BuildedInput<T> {
-        value: T;
-        display: T;
+        value = $state<T>();
+        display = $state<T>();
         required: boolean;
         placeholder: T;
         validator?: ValidatorFn<T>;
@@ -170,7 +170,7 @@ export class Reflector {
 
         validate(): ValidatorResult {
           if (!this.validator) return null;
-          return this.validator(this.value);
+          return this.value ? this.validator(this.value) : '';
         }
       }
 

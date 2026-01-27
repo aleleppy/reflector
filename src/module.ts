@@ -36,7 +36,7 @@ export class Module {
     this.imports = new Set([
       "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
       'import repo from "$repository/main"',
-      'import { Behavior, build } from "$reflector/reflector.types";',
+      'import { Behavior, build } from "$reflector/reflector.svelte";',
       'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
     ]);
 
@@ -83,7 +83,7 @@ export class Module {
       .map((prop) => {
         bundle.add(`${prop.name}: this${prop.isSpecial ? "" : "."}${prop.name}.value`);
 
-        return `${prop.name} = $state(${prop.buildedValue})`;
+        return `${prop.name} = ${prop.buildedValue}`;
       })
       .join(";");
 
