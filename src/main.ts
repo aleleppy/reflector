@@ -127,12 +127,16 @@ export class Reflector {
     const treatedSchemas = this.schemas.map((s) => {
       s.enums.forEach((en) => enums.add(en));
 
-      return s.schema;
+      return `
+        ${s.interface};
+
+        ${s.schema};
+      `;
     });
 
     this.schemaFile.changeData(
       [
-        'import { build  } from "$reflector/reflector.svelte";',
+        'import { build, BuildedInput } from "$reflector/reflector.svelte";',
         'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         // ...Array.from(enums),
         ...treatedSchemas,

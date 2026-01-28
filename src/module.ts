@@ -4,8 +4,8 @@ import { Source } from "./file.js";
 import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
-import type { SchemaProp } from "./property.js";
-import { baseDir, generatedDir } from "./vars.global.js";
+import { generatedDir } from "./vars.global.js";
+import type { PrimitiveProp } from "./primitive-property.js";
 
 interface Form {
   name: string;
@@ -22,11 +22,6 @@ export class Module {
   imports: Set<string>;
   methods: Method[];
 
-  // querys: SchemaProp[] = [];
-  // paths: SchemaProp[] = [];
-  // headers: SchemaProp[] = [];
-  // cookies: SchemaProp[] = [];
-
   moduleConstructor: string;
 
   constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string }) {
@@ -36,7 +31,7 @@ export class Module {
     this.imports = new Set([
       "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
       'import repo from "$repository/main"',
-      'import { Behavior, build } from "$reflector/reflector.svelte";',
+      'import { Behavior, build, BuildedInput } from "$reflector/reflector.svelte";',
       'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
     ]);
 
@@ -76,25 +71,51 @@ export class Module {
     });
   }
 
-  private buildZObject(props: SchemaProp[]) {
-    const bundle = new Set<string>();
+  private buildClassProps(params: { props: PrimitiveProp[]; name: string }) {
+    const { name, props } = params;
 
-    const teste = props
-      .map((prop) => {
-        bundle.add(`${prop.name}: this${prop.isSpecial ? "" : "."}${prop.name}.value`);
+    const bundle: string[] = [];
+    const attributes: string[] = [];
+    const constructorThis: string[] = [];
+    const interfaceBuild: string[] = [];
 
-        return `${prop.name} = ${prop.buildedValue}`;
-      })
-      .join(";");
+    props.forEach((prop) => {
+      constructorThis.push(prop.constructorBuild());
+      bundle.push(prop.bundleBuild());
+      attributes.push(prop.classBuild());
+      interfaceBuild.push(prop.interfaceBuild());
+    });
 
-    return `
-      ${teste};
-      
-      bundle() { return { ${Array.from(bundle)} } }
+    const buildedInterface = `
+      interface ${name}Interface {
+        ${interfaceBuild.join(";")}
+      }
     `;
+
+    const buildedClass = `
+      class ${name} {
+        ${attributes.join(";")}
+
+        constructor(params?: ${name}Interface){
+          ${constructorThis.join(";")}
+        }
+
+        bundle(){
+          return { ${bundle.join(",")} }
+        }
+      }
+
+    `;
+
+    return [buildedInterface, buildedClass].join(";");
   }
 
-  private creator(params: { querys: SchemaProp[]; paths: SchemaProp[]; headers: SchemaProp[]; cookies: SchemaProp[] }): {
+  private creator(params: {
+    querys: PrimitiveProp[];
+    paths: PrimitiveProp[];
+    headers: PrimitiveProp[];
+    cookies: PrimitiveProp[];
+  }): {
     moduleAttributes: string[];
     moduleTypes: string[];
     moduleInit: string[];
@@ -109,30 +130,30 @@ export class Module {
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
-    const getParams = (params: { name: string; objets: SchemaProp[] }) => {
-      const { name, objets } = params;
+    const getParams = (params: { name: string; props: PrimitiveProp[] }) => {
+      const { name, props } = params;
       const capitalizedName = capitalizeFirstLetter(name);
 
-      buildedModuleTypes.push(`class ${capitalizedName}Schema { ${this.buildZObject(objets)} }`);
-      moduleAttributes.add(`${name} = $state(new ${capitalizedName}Schema())`);
+      buildedModuleTypes.push(this.buildClassProps({ props, name: capitalizedName }));
+      moduleAttributes.add(`${name} = $state(new ${capitalizedName}())`);
       moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
-      moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}Schema() }`);
+      moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
     };
 
     if (querys.length > 0) {
-      getParams({ name: "querys", objets: querys });
+      getParams({ name: "querys", props: querys });
     }
 
     if (headers.length > 0) {
-      getParams({ name: "headers", objets: headers });
+      getParams({ name: "headers", props: headers });
     }
 
     if (paths.length > 0) {
-      getParams({ name: "paths", objets: paths });
+      getParams({ name: "paths", props: paths });
     }
 
     if (cookies.length > 0) {
-      getParams({ name: "cookies", objets: cookies });
+      getParams({ name: "cookies", props: cookies });
     }
 
     const form: Form[] = [];
@@ -235,10 +256,10 @@ export class Module {
   }
 
   private getParameters() {
-    const queryMap = new Map<string, SchemaProp>();
-    const headerMap = new Map<string, SchemaProp>();
-    const pathMap = new Map<string, SchemaProp>();
-    const cookieMap = new Map<string, SchemaProp>();
+    const queryMap = new Map<string, PrimitiveProp>();
+    const headerMap = new Map<string, PrimitiveProp>();
+    const pathMap = new Map<string, PrimitiveProp>();
+    const cookieMap = new Map<string, PrimitiveProp>();
 
     for (const method of this.methods) {
       const { headers, cookies, paths, querys } = method;
@@ -268,6 +289,7 @@ export class Module {
       }
 
       if (responseType) {
+        entries.add(`type ${responseType}Interface`);
         entries.add(`${responseType}`);
       }
     }

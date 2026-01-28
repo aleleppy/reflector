@@ -1,8 +1,8 @@
 import { Request } from "./request.js";
 
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage, testeEndpoint, treatByUppercase } from "./helpers/helpers.js";
-import { SchemaProp } from "./property.js";
+import { createDangerMessage, getFullEndpoint, treatByUppercase } from "./helpers/helpers.js";
+import { PrimitiveProp } from "./primitive-property.js";
 
 export class Method {
   name: string;
@@ -12,10 +12,10 @@ export class Method {
 
   request: Request;
 
-  paths: SchemaProp[] = [];
-  headers: SchemaProp[] = [];
-  querys: SchemaProp[] = [];
-  cookies: SchemaProp[] = [];
+  paths: PrimitiveProp[] = [];
+  headers: PrimitiveProp[] = [];
+  querys: PrimitiveProp[] = [];
+  cookies: PrimitiveProp[] = [];
 
   constructor(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
@@ -43,30 +43,21 @@ export class Method {
 
       if ("$ref" in schema) continue;
 
-      const zodPropertie = {
-        name,
-        example: schema.default,
-        schemaObject: schema,
-        type: schema.type as ReflectorParamType,
-        description: description ?? "",
-        required: required || true,
-        isEmpty: false,
-        inParam,
-      };
+      const properties = { name, required: !!required, schemaObject: schema, validator: undefined };
 
       if (inParam === "query") {
-        this.querys.push(new SchemaProp(zodPropertie));
+        this.querys.push(new PrimitiveProp(properties));
       } else if (inParam === "header") {
-        this.headers.push(new SchemaProp(zodPropertie));
+        this.headers.push(new PrimitiveProp(properties));
       } else if (inParam === "path") {
-        this.paths.push(new SchemaProp(zodPropertie));
+        this.paths.push(new PrimitiveProp(properties));
       } else if (inParam === "cookie") {
-        this.paths.push(new SchemaProp(zodPropertie));
+        this.paths.push(new PrimitiveProp(properties));
       }
     }
   }
 
-  private readonly gee = (props: SchemaProp[]) => {
+  private readonly gee = (props: PrimitiveProp[]) => {
     return props.map((x) => x.name).join(",");
   };
 
@@ -93,7 +84,7 @@ export class Method {
         beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = data`);
 
         const inside = `
-          const response = await repo.api.get<{data: ${this.request.responseType}}, unknown>({
+          const response = await repo.api.get<{data: ${this.request.responseType}Interface}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
@@ -104,10 +95,10 @@ export class Method {
       } else if (this.request.attributeType === "entity") {
         const entityName = treatByUppercase(this.request.responseType);
 
-        beforeResponse.push(`this.${entityName} = response`);
+        beforeResponse.push(`this.${entityName} = new ${this.request.responseType}(response)`);
 
         const inside = `
-          const response = await repo.api.get<${this.request.responseType}, unknown>({
+          const response = await repo.api.get<${this.request.responseType}Interface, unknown>({
             endpoint,
           })
           ${beforeResponse.join(";")}
@@ -133,7 +124,7 @@ export class Method {
       const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        const response = await repo.api.${this.request.apiType}<${this.request.responseType}>({
+        const response = await repo.api.${this.request.apiType}<${this.request.responseType}Interface>({
           endpoint,
           ${hasData ? "data," : ""}
           ${hasHeaders ? "headers," : ""}
@@ -142,8 +133,10 @@ export class Method {
 
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
+      const diamond = this.request.responseType ? `${this.request.responseType}Interface` : "null";
+
       const inside = `
-        const response = await repo.api.delete<${this.request.responseType ?? "null"}, unknown>({
+        const response = await repo.api.delete<${diamond}, unknown>({
           endpoint,
         })
       `;
@@ -176,7 +169,7 @@ export class Method {
       async ${this.name}(behavior: Behavior = new Behavior()) {
         const {onError, onSuccess} = behavior
         ${this.getProps()}
-        const endpoint = ${a}${testeEndpoint(this.endpoint)}${a}
+        const endpoint = ${a}${getFullEndpoint(this.endpoint)}${a}
 
         ${outside}
 
@@ -184,7 +177,7 @@ export class Method {
           ${inside}
           onSuccess?.()
 
-          return response
+          return new ${this.request.responseType}(response)
         } catch(e) {
           onError?.(e)
         } finally {

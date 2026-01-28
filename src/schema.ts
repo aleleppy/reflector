@@ -1,16 +1,22 @@
-import { capitalizeFirstLetter, splitByUppercase, treatAndUpper, treatByUppercase } from "./helpers/helpers.js";
+import { capitalizeFirstLetter } from "./helpers/helpers.js";
+import { ReflectorInterface } from "./interface.js";
+import { PrimitiveProp } from "./primitive-property.js";
 
-import { SchemaProp } from "./property.js";
+import { ArrayProp, ObjectProp } from "./property.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators, ReflectorParamType } from "./types/types.js";
 
 export class Schema {
   name: string;
-  properties: SchemaProp[] = [];
-  // type: string;
+
+  primitiveProps: PrimitiveProp[] = [];
+  arrayProps: ArrayProp[] = [];
+  objectProps: ObjectProp[] = [];
+
   schema: string;
   enums = new Set<string>();
   objects = new Map<string, string>();
+  interface: string;
 
   constructor(params: {
     properties: Record<string, SchemaObject | ReferenceObject>;
@@ -23,17 +29,11 @@ export class Schema {
 
     this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
-    const bundleParams = new Set<string>();
-
     for (const [key, value] of Object.entries(properties)) {
       if ("$ref" in value || !value?.type) {
         if ("$ref" in value) {
-          const teste = value.$ref;
-          const object = teste.split("/").at(-1);
-          this.objects.set(key, `${object}`);
-          bundleParams.add(`${key}: this.${key}?.bundle()`);
+          this.objectProps.push(new ObjectProp({ name: key, referenceObject: value }));
         }
-
         continue;
       }
 
@@ -50,52 +50,58 @@ export class Schema {
       }
 
       const validator = validators.get(key);
-      bundleParams.add(`${key}: this.${key}?.value`);
+      const type = value.type as ReflectorParamType;
 
-      this.properties.push(
-        new SchemaProp({
-          schemaName: this.name,
-          name: key,
-          schemaObject: value,
-          type: value.type as ReflectorParamType,
-          example: value.example,
-          required,
-          isEmpty,
-          inParam: "path",
-          validator,
-        }),
-      );
+      if (type === "object") continue;
+
+      if (type === "array") {
+        this.arrayProps.push(new ArrayProp({ schemaObject: value, schemaName: this.name, name: key }));
+      } else {
+        this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required, validator }));
+      }
     }
 
-    const keys = this.properties
-      .map((p) => {
-        const keyName = `${p.name}${p.isRequired ? "" : "?"}`;
-        let state;
+    const reflectorInterface = new ReflectorInterface({
+      name: this.name,
+      arrayProps: this.arrayProps,
+      primitiveProps: this.primitiveProps,
+      objectProps: this.objectProps,
+    });
 
-        if (p.reflectorType === "object") {
-          state = `$state<${p.bType}>()`;
-        } else if (p.reflectorType === "array") {
-          state = `$state<${p.bType}>([])`;
-        } else {
-          state = `$state(${p.buildedValue})`;
-        }
+    this.interface = reflectorInterface.builded;
 
-        return `${keyName} = ${state}`;
-      })
-      .join(";\n");
+    const constructorThis: string[] = [];
+    const keys: string[] = [];
+    const bundleParams: string[] = [];
 
-    const buildedObjects = Array.from(this.objects)
-      .map(([k, v]) => {
-        return `${k} = $state(new ${v}())`;
-      })
-      .join(";\n");
+    this.primitiveProps.forEach((prop) => {
+      constructorThis.push(prop.constructorBuild());
+      bundleParams.push(prop.bundleBuild());
+      keys.push(prop.classBuild());
+    });
 
-    this.schema = `export class ${this.name} {
-      ${keys}
-      ${this.properties.length > 0 ? ";" : ""}
-      ${buildedObjects}
+    this.arrayProps.forEach((prop) => {
+      constructorThis.push(prop.constructorBuild());
+      keys.push(prop.classBuild());
+      bundleParams.push(prop.bundleBuild());
+    });
+
+    this.objectProps.forEach((prop) => {
+      constructorThis.push(prop.constructorBuild());
+      keys.push(prop.classBuild());
+      // bundleParams.push(prop.bundleBuild());
+    });
+
+    this.schema = `
+    export class ${this.name} {
+      ${keys.join(";")}
+
+      constructor(params?: ${this.name}Interface) { 
+        ${constructorThis.join(";\n")}
+      }
+
       bundle(){
-        return { ${Array.from(bundleParams).join(",")} }
+        return { ${bundleParams.join(",")} }
       }
     };`;
   }

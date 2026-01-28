@@ -114,7 +114,7 @@ export function getEndpoint(rawEndpoint: string) {
   return filteredEntitys.join("/");
 }
 
-export function testeEndpoint(rawEndpoint: string) {
+export function getFullEndpoint(rawEndpoint: string) {
   const teste = rawEndpoint.split("/");
 
   const a = teste
