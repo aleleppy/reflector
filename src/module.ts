@@ -38,25 +38,25 @@ export class Module {
     this.name = capitalizeFirstLetter(name);
     this.path = path;
 
-    const methods = operations.map((operation) => {
+    this.methods = operations.map((operation) => {
       return new Method({
         operation,
         moduleName: this.name,
       });
     });
 
-    // não vão entrar metodos que não tiverem uma resposta tipada
-    this.methods = methods.filter((op) => {
-      const responseTypeOk = op.request.responseType;
+    // // não vão entrar metodos que não tiverem uma resposta tipada
+    // this.methods = methods.filter((op) => {
+    //   const responseTypeOk = op.request.responseType;
 
-      if (op.request.apiType === "delete") return true;
+    //   if (op.request.apiType === "delete") return true;
 
-      if (!responseTypeOk) {
-        createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
-      }
+    //   if (!responseTypeOk) {
+    //     createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
+    //   }
 
-      return responseTypeOk;
-    });
+    //   return responseTypeOk;
+    // });
 
     const { cookies, headers, paths, querys } = this.getParameters();
 
@@ -169,7 +169,7 @@ export class Module {
       }
 
       if (attributeType === "entity") {
-        const entityName = treatByUppercase(method.request.responseType);
+        const entityName = treatByUppercase(method.request.responseType ?? "");
         moduleAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
         moduleInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
         moduleClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);

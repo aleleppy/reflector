@@ -1,4 +1,5 @@
 import type { SchemaObject } from "./types/open-api-spec.interface.js";
+import type { ReflectorParamType } from "./types/types.js";
 
 export class PrimitiveProp {
   name: string;
@@ -19,7 +20,7 @@ export class PrimitiveProp {
     this.type = `BuildedInput<${type}>`;
     this.required = required;
 
-    this.buildedConst = this.buildConst({ example, name, required, type });
+    this.buildedConst = this.buildConst({ example, name: this.name, required, type });
   }
 
   private treatName(name: string) {
@@ -43,8 +44,26 @@ export class PrimitiveProp {
     `;
   }
 
+  private getEmptyExample(params: { type: ReflectorParamType; schemaObject: SchemaObject }) {
+    const { schemaObject, type } = params;
+
+    if (type === "number") {
+      return 0;
+    } else if (type === "boolean") {
+      return false;
+    } else if (schemaObject.enum) {
+      return `'${schemaObject.enum[0]}'`;
+    } else {
+      return "''";
+    }
+  }
+
+  private thisDot() {
+    return `this${this.isSpecial ? "" : "."}`;
+  }
+
   constructorBuild() {
-    return `this.${this.name} = ${this.buildedConst}`;
+    return `${this.thisDot()}${this.name} = ${this.buildedConst}`;
   }
 
   classBuild() {
@@ -60,6 +79,18 @@ export class PrimitiveProp {
   }
 
   bundleBuild() {
-    return `${this.name}: this.${this.name}?.value`;
+    return `${this.name}: ${this.thisDot()}${this.name}?.value`;
   }
 }
+
+// class Teste {
+//   ["x-two-factor-code"]: string;
+
+//   constructor() {
+//     this["x-two-factor-code"] = "aaaaaaa";
+//   }
+
+//   bundle() {
+//     return { ["x-two-factor-code"]: this["x-two-factor-code"] };
+//   }
+// }

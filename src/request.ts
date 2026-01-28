@@ -13,7 +13,7 @@ type ReflectorRequestType = "entity" | "list" | "pagination" | "form" | "other";
 type RefLike = { $ref: string };
 
 function isRef<T extends object>(
-  v: RequestBodyObject | ReferenceObject | ParameterObject | ContentObject | ResponseObject | SchemaObject
+  v: RequestBodyObject | ReferenceObject | ParameterObject | ContentObject | ResponseObject | SchemaObject,
 ): v is T & RefLike {
   return !!v && typeof v === "object" && "$ref" in v;
 }
@@ -23,7 +23,7 @@ export class Request {
   readonly apiType: ApiType;
 
   bodyType?: string;
-  responseType?: string;
+  responseType: string | null;
   parameters: ParameterObject[] = [];
   // inType:
 
@@ -41,7 +41,7 @@ export class Request {
     if (body) this.bodyType = body;
 
     const response = this.getTypeFromResponses(operation.responses);
-    if (response) this.responseType = response;
+    this.responseType = response ?? null;
 
     this.attributeType = this.inferAttributeType(operation) ?? ("other" as ReflectorRequestType);
   }

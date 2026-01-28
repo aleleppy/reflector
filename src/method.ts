@@ -79,12 +79,14 @@ export class Method {
 
     // const props = this.getProps();
 
+    const diamond = this.request.responseType ? `${this.request.responseType}Interface` : "null";
+
     if (this.request.apiType === "get") {
       if (this.request.attributeType === "list") {
         beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = data`);
 
         const inside = `
-          const response = await repo.api.get<{data: ${this.request.responseType}Interface}, unknown>({
+          const response = await repo.api.get<{data: ${diamond}}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
@@ -93,12 +95,12 @@ export class Method {
 
         return { inside, outside: "" };
       } else if (this.request.attributeType === "entity") {
-        const entityName = treatByUppercase(this.request.responseType);
+        const entityName = treatByUppercase(this.request.responseType ?? "");
 
         beforeResponse.push(`this.${entityName} = new ${this.request.responseType}(response)`);
 
         const inside = `
-          const response = await repo.api.get<${this.request.responseType}Interface, unknown>({
+          const response = await repo.api.get<${diamond}, unknown>({
             endpoint,
           })
           ${beforeResponse.join(";")}
@@ -124,7 +126,7 @@ export class Method {
       const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        const response = await repo.api.${this.request.apiType}<${this.request.responseType}Interface>({
+        const response = await repo.api.${this.request.apiType}<${diamond}>({
           endpoint,
           ${hasData ? "data," : ""}
           ${hasHeaders ? "headers," : ""}
@@ -133,8 +135,6 @@ export class Method {
 
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
-      const diamond = this.request.responseType ? `${this.request.responseType}Interface` : "null";
-
       const inside = `
         const response = await repo.api.delete<${diamond}, unknown>({
           endpoint,
@@ -154,15 +154,17 @@ export class Method {
 
     if (this.name === "list") this.name = "listAll";
 
-    const hasProprierties = this.querys.length > 0;
+    // const hasProprierties = this.querys.length > 0;
 
-    if (!hasProprierties && this.request.apiType === "delete") {
-      createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
-    }
+    // if (!hasProprierties && this.request.apiType === "delete") {
+    //   createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
+    // }
 
     const description = this.buildDescription();
 
     const a = "`";
+
+    const methodReturn = this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
 
     return `
       ${description}
@@ -177,7 +179,7 @@ export class Method {
           ${inside}
           onSuccess?.()
 
-          return new ${this.request.responseType}(response)
+          return ${methodReturn}
         } catch(e) {
           onError?.(e)
         } finally {

@@ -1,8 +1,9 @@
+import { ArrayProp } from "./array.property.js";
 import { capitalizeFirstLetter } from "./helpers/helpers.js";
 import { ReflectorInterface } from "./interface.js";
+import { ObjectProp } from "./object.property.js";
 import { PrimitiveProp } from "./primitive-property.js";
 
-import { ArrayProp, ObjectProp } from "./property.js";
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators, ReflectorParamType } from "./types/types.js";
 

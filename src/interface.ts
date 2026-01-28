@@ -1,5 +1,6 @@
+import type { ArrayProp } from "./array.property.js";
+import type { ObjectProp } from "./object.property.js";
 import type { PrimitiveProp } from "./primitive-property.js";
-import type { ArrayProp, ObjectProp } from "./property.js";
 
 export class ReflectorInterface {
   builded: string;
