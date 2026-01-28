@@ -226,4 +226,8 @@ export class ObjectProp {
 
     return `${this.name}${req}: ${this.type}Interface`;
   }
+
+  bundleBuild() {
+    return `${this.name}: this.${this.name}.bundle()`;
+  }
 }

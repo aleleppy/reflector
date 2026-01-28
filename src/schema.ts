@@ -89,7 +89,7 @@ export class Schema {
     this.objectProps.forEach((prop) => {
       constructorThis.push(prop.constructorBuild());
       keys.push(prop.classBuild());
-      // bundleParams.push(prop.bundleBuild());
+      bundleParams.push(prop.bundleBuild());
     });
 
     this.schema = `
