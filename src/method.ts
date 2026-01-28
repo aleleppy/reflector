@@ -83,7 +83,7 @@ export class Method {
 
     if (this.request.apiType === "get") {
       if (this.request.attributeType === "list") {
-        beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = data`);
+        beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = ${this.request.responseType}.from(data)`);
 
         const inside = `
           const response = await repo.api.get<{data: ${diamond}}, unknown>({
@@ -164,7 +164,13 @@ export class Method {
 
     const a = "`";
 
-    const methodReturn = this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
+    const methodReturn = () => {
+      if (this.request.attributeType === "list") {
+        return "this.list";
+      }
+
+      return this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
+    };
 
     return `
       ${description}
@@ -179,7 +185,7 @@ export class Method {
           ${inside}
           onSuccess?.()
 
-          return ${methodReturn}
+          return ${methodReturn()}
         } catch(e) {
           onError?.(e)
         } finally {

@@ -13,7 +13,11 @@ export class PrimitiveProp {
   constructor(params: { name: string; schemaObject: SchemaObject; required: boolean; validator: string | undefined }) {
     const { name, schemaObject, required } = params;
 
-    const { example, type } = schemaObject;
+    const { example: rawExample, type: rawType } = schemaObject;
+
+    const type = (rawType as ReflectorParamType) ?? "string";
+
+    const example = rawExample ?? this.getEmptyExample({ type, schemaObject });
 
     this.name = this.treatName(name);
     this.rawType = type ?? "any";

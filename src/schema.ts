@@ -74,6 +74,7 @@ export class Schema {
     const constructorThis: string[] = [];
     const keys: string[] = [];
     const bundleParams: string[] = [];
+    let staticMethod: string = "";
 
     this.primitiveProps.forEach((prop) => {
       constructorThis.push(prop.constructorBuild());
@@ -85,6 +86,8 @@ export class Schema {
       constructorThis.push(prop.constructorBuild());
       keys.push(prop.classBuild());
       bundleParams.push(prop.bundleBuild());
+
+      staticMethod = prop.staticBuild();
     });
 
     this.objectProps.forEach((prop) => {
@@ -100,6 +103,8 @@ export class Schema {
       constructor(params?: ${this.name}Interface) { 
         ${constructorThis.join(";\n")}
       }
+
+      ${staticMethod}
 
       bundle(){
         return { ${bundleParams.join(",")} }

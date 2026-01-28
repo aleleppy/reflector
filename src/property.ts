@@ -1,5 +1,5 @@
-import { type ParameterLocation, type ReferenceObject, type SchemaObject } from "./types/open-api-spec.interface.js";
-import { type Example, type ReflectorParamType } from "./types/types.js";
+// import { type ParameterLocation, type ReferenceObject, type SchemaObject } from "./types/open-api-spec.interface.js";
+// import { type Example, type ReflectorParamType } from "./types/types.js";
 
 // export class SchemaProp {
 //   inParam?: ParameterLocation | undefined;
