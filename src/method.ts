@@ -68,9 +68,9 @@ export class Method {
     const cookies = this.gee(this.cookies);
 
     return `
-      ${querys.length > 0 ? `const {${querys}} = this.querys.bundle()` : ""};
-      ${paths.length > 0 ? `const {${paths}} = this.paths.bundle()` : ""};
-      ${cookies.length > 0 ? `const {${cookies}} = this.cookies.bundle()` : ""};
+      ${querys.length > 0 ? `const querys = this.querys.bundle()` : ""};
+      ${paths.length > 0 ? `const paths = this.paths.bundle()` : ""};
+      ${cookies.length > 0 ? `const cookies = this.cookies.bundle()` : ""};
     `;
   }
 

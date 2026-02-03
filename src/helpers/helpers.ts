@@ -115,15 +115,19 @@ export function getEndpoint(rawEndpoint: string) {
 }
 
 export function getFullEndpoint(rawEndpoint: string) {
-  const teste = rawEndpoint.split("/");
-
-  const a = teste
-    .filter((t) => t !== "")
+  return rawEndpoint
+    .split("/")
+    .filter(Boolean)
     .map((str) => {
-      return str.includes("}") ? `$${str}` : str;
-    });
-
-  return a.join("/");
+      // pega somente params no formato "{algumaCoisa}"
+      const match = new RegExp(/^\{(.+)\}$/).exec(str);
+      if (match) {
+        const key = match[1]; // sem { }
+        return `\${paths.${key}}`; // gera "${paths.key}" como texto
+      }
+      return str;
+    })
+    .join("/");
 }
 
 export function treatenEnum(enums: string[]) {
