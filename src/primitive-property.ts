@@ -19,7 +19,8 @@ export class PrimitiveProp {
 
     const example = rawExample ?? this.getEmptyExample({ type, schemaObject });
 
-    const buildedType = required ? type : `${type} | undefined`;
+    // const buildedType = required ? type : `${type} | undefined`;
+    const buildedType = type;
 
     this.name = this.treatName(name);
     this.rawType = type ?? "any";

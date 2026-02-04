@@ -32,7 +32,14 @@ export class Schema {
 
     for (const [key, value] of Object.entries(properties)) {
       if ("$ref" in value || !value?.type) {
-        if ("$ref" in value) {
+        if ("allOf" in value) {
+          const ref = value.allOf?.[0];
+          const isRequired = !!value.nullable;
+
+          if (ref && "$ref" in ref) {
+            this.objectProps.push(new ObjectProp({ name: key, referenceObject: ref, isRequired }));
+          }
+        } else if ("$ref" in value) {
           this.objectProps.push(new ObjectProp({ name: key, referenceObject: value }));
         }
         continue;

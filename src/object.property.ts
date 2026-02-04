@@ -7,13 +7,13 @@ export class ObjectProp {
 
   private readonly required: boolean;
 
-  constructor(params: { referenceObject: ReferenceObject; name: string }) {
-    const { referenceObject, name } = params;
+  constructor(params: { referenceObject: ReferenceObject; name: string; isRequired?: boolean }) {
+    const { referenceObject, name, isRequired } = params;
 
     this.name = name;
     this.type = referenceObject.$ref.split("/").at(-1) ?? "";
 
-    this.required = true; // tem que ver isso daí
+    this.required = isRequired ?? true; // tem que ver isso daí
   }
 
   constructorBuild() {
