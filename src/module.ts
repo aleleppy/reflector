@@ -45,19 +45,6 @@ export class Module {
       });
     });
 
-    // // não vão entrar metodos que não tiverem uma resposta tipada
-    // this.methods = methods.filter((op) => {
-    //   const responseTypeOk = op.request.responseType;
-
-    //   if (op.request.apiType === "delete") return true;
-
-    //   if (!responseTypeOk) {
-    //     createDangerMessage(`Método [ ${op.name} ] do módulo [ ${this.moduleName} ] sem tipagem na resposta.`);
-    //   }
-
-    //   return responseTypeOk;
-    // });
-
     const { cookies, headers, paths, querys } = this.getParameters();
 
     const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator({ cookies, headers, paths, querys });

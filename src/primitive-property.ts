@@ -19,9 +19,11 @@ export class PrimitiveProp {
 
     const example = rawExample ?? this.getEmptyExample({ type, schemaObject });
 
+    const buildedType = required ? type : `${type} | undefined`;
+
     this.name = this.treatName(name);
     this.rawType = type ?? "any";
-    this.type = `BuildedInput<${type}>`;
+    this.type = `BuildedInput<${buildedType}>`;
     this.required = required;
 
     this.buildedConst = this.buildConst({ example, name: this.name, required, type });
