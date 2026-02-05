@@ -137,7 +137,6 @@ export class Reflector {
     this.schemaFile.changeData(
       [
         'import { build, BuildedInput } from "$reflector/reflector.svelte";',
-        'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         // ...Array.from(enums),
         ...treatedSchemas,
       ].join("\n\n"),

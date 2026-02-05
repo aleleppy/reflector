@@ -9,6 +9,7 @@ export class Method {
   // zodProperties: Property[];
   description: string | undefined;
   endpoint: string;
+  isValid: boolean = true;
 
   request: Request;
 
@@ -77,37 +78,41 @@ export class Method {
   private buildCallMethod(): { inside: string; outside: string } {
     const beforeResponse: string[] = [];
 
-    // const props = this.getProps();
+    const preBuild = () => {
+      return this.request.responseType ? [`${this.request.responseType}Interface`, "const response ="] : ["null", ""];
+    };
 
-    const diamond = this.request.responseType ? `${this.request.responseType}Interface` : "null";
+    const [diamond, response] = preBuild();
 
-    if (this.request.apiType === "get") {
-      if (this.request.attributeType === "list") {
-        beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = ${this.request.responseType}.from(data)`);
+    if (this.request.attributeType === "list") {
+      beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = ${this.request.responseType}.from(data)`);
 
-        const inside = `
-          const response = await repo.api.get<{data: ${diamond}}, unknown>({
+      const inside = `
+          ${response} await repo.api.get<{data: ${diamond}}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
           ${beforeResponse.join(";")}
         `;
 
-        return { inside, outside: "" };
-      } else if (this.request.attributeType === "entity") {
-        const entityName = treatByUppercase(this.request.responseType ?? "");
-
+      return { inside, outside: "" };
+    } else if (this.request.attributeType === "entity") {
+      if (this.request.responseType) {
+        const entityName = treatByUppercase(this.request.responseType);
         beforeResponse.push(`this.${entityName} = new ${this.request.responseType}(response)`);
+      }
 
-        const inside = `
-          const response = await repo.api.get<${diamond}, unknown>({
+      let querys = this.querys.length > 0 ? `queryData: {${this.querys.map((q) => q.name).join(",")}}` : "";
+
+      const inside = `
+          ${response} await repo.api.get<${diamond}, unknown>({
             endpoint,
+            ${querys}
           })
           ${beforeResponse.join(";")}
         `;
 
-        return { inside, outside: "" };
-      }
+      return { inside, outside: "" };
     } else if (this.request.apiType === "post" || this.request.apiType === "put" || this.request.apiType === "patch") {
       let data;
       let headers;
@@ -126,7 +131,7 @@ export class Method {
       const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        const response = await repo.api.${this.request.apiType}<${diamond}>({
+        ${response} await repo.api.${this.request.apiType}<${diamond}>({
           endpoint,
           ${hasData ? "data," : ""}
           ${hasHeaders ? "headers," : ""}
@@ -136,7 +141,7 @@ export class Method {
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
       const inside = `
-        const response = await repo.api.delete<${diamond}, unknown>({
+        ${response} await repo.api.delete<${diamond}, unknown>({
           endpoint,
         })
       `;
@@ -149,35 +154,35 @@ export class Method {
     return { inside: "", outside: "" };
   }
 
+  private readonly methodReturn = () => {
+    if (this.request.attributeType === "list") {
+      return "this.list";
+    }
+
+    if (!this.request.responseType) {
+      // this.isValid = false;
+    }
+
+    return this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
+  };
+
   build() {
     const { inside, outside } = this.buildCallMethod();
 
     if (this.name === "list") this.name = "listAll";
 
-    // const hasProprierties = this.querys.length > 0;
-
-    // if (!hasProprierties && this.request.apiType === "delete") {
-    //   createDangerMessage(`${this.name} não vai funcionar, pois não aceita parâmetros na requisição.`);
-    // }
-
     const description = this.buildDescription();
 
     const a = "`";
 
-    const methodReturn = () => {
-      if (this.request.attributeType === "list") {
-        return "this.list";
-      }
-
-      return this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
-    };
+    const endpoint = `${a}${getFullEndpoint(this.endpoint)}${a}`;
 
     return `
       ${description}
       async ${this.name}(behavior: Behavior = new Behavior()) {
         const {onError, onSuccess} = behavior
         ${this.getProps()}
-        const endpoint = ${a}${getFullEndpoint(this.endpoint)}${a}
+        const endpoint = ${endpoint}
 
         ${outside}
 
@@ -185,7 +190,7 @@ export class Method {
           ${inside}
           onSuccess?.()
 
-          return ${methodReturn()}
+          return ${this.methodReturn()}
         } catch(e) {
           onError?.(e)
         } finally {

@@ -128,6 +128,11 @@ export class Module {
     };
 
     if (querys.length > 0) {
+      querys.forEach((q) => {
+        if (q.name === "permissions") {
+          // console.log(q);
+        }
+      });
       getParams({ name: "querys", props: querys });
     }
 
@@ -147,6 +152,11 @@ export class Module {
 
     for (const method of this.methods) {
       const { bodyType, responseType, attributeType } = method.request;
+
+      // if (!method.isValid) {
+      //   console.log(`Método ${method.name} não foi adicionado devido à falta de tipagem na resposta`)
+      //   continue;
+      // }
 
       if (attributeType === "form" && bodyType) {
         form.push({
@@ -290,6 +300,13 @@ export class Module {
   private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {
     const { moduleInit, moduleAttributes, moduleClear } = params;
 
+    const reset =
+      moduleAttributes.length > 1
+        ? `reset() {
+          ${moduleInit.join(";")}
+        }`
+        : "";
+
     return `
       export class ${this.moduleName}Module {
         ${moduleAttributes.join(";")}
@@ -300,9 +317,7 @@ export class Module {
 
         ${moduleClear.join("\n\n")}
 
-        reset() {
-          ${moduleInit.join(";")}
-        }
+        ${reset}
       }
     `;
   }
