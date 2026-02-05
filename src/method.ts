@@ -85,10 +85,10 @@ export class Method {
     const [diamond, response] = preBuild();
 
     if (this.request.attributeType === "list") {
-      beforeResponse.push(`const {data: { data }} = response`, "\n\n", `this.list = ${this.request.responseType}.from(data)`);
+      beforeResponse.push(`this.list = ${this.request.responseType}.from(response.data)`);
 
       const inside = `
-          ${response} await repo.api.get<{data: ${diamond}}, unknown>({
+          ${response} await repo.api.get<${diamond}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
@@ -188,11 +188,11 @@ export class Method {
 
         try{
           ${inside}
-          onSuccess?.()
+          onSuccess?.(response)
 
           return ${this.methodReturn()}
         } catch(e) {
-          onError?.(e)
+          return onError?.(e)
         } finally {
           this.loading = false
         }

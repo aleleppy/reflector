@@ -55,13 +55,13 @@ export class PrimitiveProp {
     const { schemaObject, type } = params;
 
     if (type === "number") {
-      return 0;
+      return 1;
     } else if (type === "boolean") {
       return false;
     } else if (schemaObject.enum) {
       return `'${schemaObject.enum[0]}'`;
     } else {
-      return "''";
+      return "";
     }
   }
 

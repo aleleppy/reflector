@@ -147,16 +147,16 @@ export class Reflector {
       type ValidatorResult = string | null;
       type ValidatorFn<T> = (v: T) => ValidatorResult;
 
-      export class Behavior { onError?: (e) => void; onSuccess?: () => void }
+      export class Behavior { onError?: (e) => void; onSuccess?: (v) => void }
 
       export class BuildedInput<T> {
         value = $state<T>(null as any);
         display = $state<T>(null as any);
         required: boolean;
         placeholder: T;
-        private readonly validator?: ValidatorFn<T>;
+        readonly validator?: ValidatorFn<T>;
 
-        constructor(params: { key?: T; example: T; required: boolean; validator?: ValidatorFn<T> }) {
+        constructor(params: { key?: T | undefined; example: T; required: boolean; validator?: ValidatorFn<T> }) {
           const { example, required, key, validator } = params;
 
           const initial = key ?? example;
@@ -178,7 +178,7 @@ export class Reflector {
       }
 
       export function build<T>(params: {
-        key?: T;
+        key?: T | undefined;
         example: T;
         required: boolean;
         validator?: ValidatorFn<T>;
