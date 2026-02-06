@@ -32,7 +32,6 @@ export class Module {
       "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
       'import repo from "$repository/main"',
       'import { Behavior, build, BuildedInput } from "$reflector/reflector.svelte";',
-      'import { PUBLIC_ENVIRONMENT } from "$env/static/public";',
     ]);
 
     this.name = capitalizeFirstLetter(name);
@@ -47,14 +46,19 @@ export class Module {
 
     const { cookies, headers, paths, querys } = this.getParameters();
 
-    const { moduleAttributes, moduleTypes, moduleInit, moduleClear, form } = this.creator({ cookies, headers, paths, querys });
+    const allBuilded = this.creator({
+      cookies,
+      headers,
+      paths,
+      querys,
+    });
 
-    this.moduleConstructor = this.buildConstructor(form);
+    this.moduleConstructor = this.buildConstructor(allBuilded.form);
 
     //sempre por último
     this.src = new Source({
       path: this.getPath(),
-      data: this.buildFile({ moduleAttributes, moduleTypes, moduleInit, moduleClear }),
+      data: this.buildFile(allBuilded),
     });
   }
 
@@ -97,6 +101,15 @@ export class Module {
     return [buildedInterface, buildedClass].join(";");
   }
 
+  private buildMethod(params: { hasForm: boolean; hasEntity: boolean; method: Method }): string {
+    const { hasEntity, hasForm, method } = params;
+
+    const canAddClearMethod = hasForm && hasEntity;
+    let additionalMethod = this.getAdditionalMethod({ canAddClearMethod, method });
+
+    return [method.build(), additionalMethod].join("\n");
+  }
+
   private creator(params: {
     querys: PrimitiveProp[];
     paths: PrimitiveProp[];
@@ -108,6 +121,8 @@ export class Module {
     moduleInit: string[];
     moduleClear: string[];
     form: Form[];
+    classImports: string;
+    buildedMethods: string[];
   } {
     const { cookies, headers, paths, querys } = params;
 
@@ -127,43 +142,43 @@ export class Module {
       moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
     };
 
-    if (querys.length > 0) {
-      querys.forEach((q) => {
-        if (q.name === "permissions") {
-          // console.log(q);
-        }
-      });
-      getParams({ name: "querys", props: querys });
+    const argEntries = [
+      { name: "querys", props: querys },
+      { name: "headers", props: headers },
+      { name: "paths", props: paths },
+      { name: "cookies", props: cookies },
+    ];
+
+    for (const { name, props } of argEntries) {
+      if (!props.length) continue;
+      getParams({ name, props });
     }
 
-    if (headers.length > 0) {
-      getParams({ name: "headers", props: headers });
-    }
-
-    if (paths.length > 0) {
-      getParams({ name: "paths", props: paths });
-    }
-
-    if (cookies.length > 0) {
-      getParams({ name: "cookies", props: cookies });
-    }
+    const hasForm = this.methods.some((m) => m.request.attributeType === "form");
+    const hasEntity = this.methods.some((m) => m.request.attributeType === "entity");
 
     const form: Form[] = [];
+    const formSet = new Set();
+    const entries = new Set();
+    const methods: string[] = [];
 
     for (const method of this.methods) {
       const { bodyType, responseType, attributeType } = method.request;
 
-      // if (!method.isValid) {
-      //   console.log(`Método ${method.name} não foi adicionado devido à falta de tipagem na resposta`)
-      //   continue;
-      // }
+      if (method.request.bodyType === "string") {
+        createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
+        continue;
+      }
 
       if (attributeType === "form" && bodyType) {
-        form.push({
-          name: method.name,
-          type: bodyType,
-        });
+        const name = method.name;
+        const type = bodyType;
+
+        form.push({ name, type });
+        formSet.add(`${name}: new ${type}()`);
       }
+
+      methods.push(this.buildMethod({ hasEntity, hasForm, method }));
 
       if (attributeType === "entity") {
         const entityName = treatByUppercase(method.request.responseType ?? "");
@@ -175,13 +190,19 @@ export class Module {
         moduleInit.add("this.clearList()");
         moduleClear.add(`clearList() { this.list = [] }`);
       }
+
+      if (bodyType) {
+        entries.add(`${bodyType}`);
+      }
+
+      if (responseType) {
+        entries.add(`type ${responseType}Interface`);
+        entries.add(`${responseType}`);
+      }
     }
 
-    const formSet = new Set();
-
-    for (const f of form) {
-      formSet.add(`${f.name}: new ${f.type}()`);
-    }
+    const cleanEntries = Array.from(entries).filter((x) => x != "type any");
+    const classImports = `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
 
     if (formSet.size > 0) {
       moduleAttributes.add(`
@@ -205,6 +226,8 @@ export class Module {
       moduleInit: Array.from(moduleInit),
       moduleClear: Array.from(moduleClear),
       form,
+      classImports,
+      buildedMethods: methods,
     };
   }
 
@@ -239,18 +262,9 @@ export class Module {
     return additionalMethod;
   }
 
-  private buildMethods() {
-    const hasForm = this.methods.some((m) => m.request.attributeType === "form");
-    const hasEntity = this.methods.some((m) => m.request.attributeType === "entity");
+  // private buildMethods() {
 
-    const canAddClearMethod = hasForm && hasEntity;
-
-    return this.methods.map((method) => {
-      let additionalMethod = this.getAdditionalMethod({ canAddClearMethod, method });
-
-      return [method.build(), additionalMethod].join("\n");
-    });
-  }
+  // }
 
   private getParameters() {
     const queryMap = new Map<string, PrimitiveProp>();
@@ -275,30 +289,19 @@ export class Module {
     };
   }
 
-  private buildImports() {
-    const entries = new Set();
+  // private buildImportsAndProps() {}
 
-    for (const method of this.methods) {
-      const { bodyType, responseType, apiType } = method.request;
+  // private buildImports() {
 
-      if (bodyType) {
-        entries.add(`${bodyType}`);
-      }
+  // }
 
-      if (responseType) {
-        entries.add(`type ${responseType}Interface`);
-        entries.add(`${responseType}`);
-      }
-    }
-
-    const cleanEntries = Array.from(entries).filter((x) => x != "type any");
-    if (cleanEntries.length === 0) return "";
-
-    return `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
-  }
-
-  private buildClass(params: { moduleAttributes: string[]; moduleInit: string[]; moduleClear: string[] }) {
-    const { moduleInit, moduleAttributes, moduleClear } = params;
+  private buildClass(params: {
+    moduleAttributes: string[];
+    moduleInit: string[];
+    moduleClear: string[];
+    buildedMethods: string[];
+  }) {
+    const { moduleInit, moduleAttributes, moduleClear, buildedMethods } = params;
 
     const reset =
       moduleAttributes.length > 1
@@ -313,7 +316,7 @@ export class Module {
 
         ${this.moduleConstructor}
 
-        ${this.buildMethods().join("\n")}
+        ${buildedMethods.join("\n")}
 
         ${moduleClear.join("\n\n")}
 
@@ -344,16 +347,25 @@ export class Module {
     return teste;
   }
 
-  buildFile(params: { moduleAttributes: string[]; moduleTypes: string[]; moduleInit: string[]; moduleClear: string[] }) {
-    const { moduleInit, moduleTypes, moduleAttributes, moduleClear } = params;
+  buildFile(params: {
+    moduleAttributes: string[];
+    moduleTypes: string[];
+    moduleInit: string[];
+    moduleClear: string[];
+    classImports: string;
+    buildedMethods: string[];
+  }) {
+    const { moduleInit, moduleTypes, moduleAttributes, moduleClear, classImports, buildedMethods } = params;
 
     return `
       ${Array.from(this.imports).join(";")}
-      ${this.buildImports()}
+      ${classImports}
+
+      const PUBLIC_ENVIRONMENT = import.meta.env.PUBLIC_ENVIRONMENT;
 
       ${moduleTypes.join(";")}
 
-      ${this.buildClass({ moduleAttributes, moduleInit, moduleClear })}
+      ${this.buildClass({ moduleAttributes, moduleInit, moduleClear, buildedMethods })}
     `;
   }
 }
