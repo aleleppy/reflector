@@ -11,7 +11,7 @@ export class PrimitiveProp {
   private readonly buildedConst: string;
 
   constructor(params: { name: string; schemaObject: SchemaObject; required: boolean; validator: string | undefined }) {
-    const { name, schemaObject, required } = params;
+    const { name, schemaObject, required, validator } = params;
 
     const { example: rawExample, type: rawType } = schemaObject;
 
@@ -27,7 +27,7 @@ export class PrimitiveProp {
     this.type = `BuildedInput<${buildedType}>`;
     this.required = required;
 
-    this.buildedConst = this.buildConst({ example, name: this.name, required, type });
+    this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator });
   }
 
   private treatName(name: string) {
@@ -41,13 +41,21 @@ export class PrimitiveProp {
     return newName;
   }
 
-  private buildConst(params: { name: string; example: string; required: boolean; type: string | undefined }) {
-    const { example, name, required, type } = params;
+  private buildConst(params: {
+    name: string;
+    example: string;
+    required: boolean;
+    type: string | undefined;
+    validator: string | undefined;
+  }) {
+    const { example, name, required, type, validator } = params;
+
+    const buildedValidator = validator ? `validator: ${validator}` : "";
 
     const sanitizedExample = type === "boolean" || type === "number" ? example : `"${example}"`;
 
     return `
-      build({ key: params?.${name}, example: ${sanitizedExample}, required: ${required}})
+      build({ key: params?.${name}, example: ${sanitizedExample}, required: ${required}, ${buildedValidator}})
     `;
   }
 

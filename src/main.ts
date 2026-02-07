@@ -137,6 +137,7 @@ export class Reflector {
     this.schemaFile.changeData(
       [
         'import { build, BuildedInput } from "$reflector/reflector.svelte";',
+        'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         // ...Array.from(enums),
         ...treatedSchemas,
       ].join("\n\n"),
@@ -147,7 +148,10 @@ export class Reflector {
       type ValidatorResult = string | null;
       type ValidatorFn<T> = (v: T) => ValidatorResult;
 
-      export class Behavior { onError?: (e) => void; onSuccess?: (v) => void }
+      export class Behavior<TSuccess = unknown, TError = unknown> {
+        onError?: (e: TError) => void;
+        onSuccess?: (v: TSuccess) => void;
+      }
 
       export class BuildedInput<T> {
         value = $state<T>(null as any);

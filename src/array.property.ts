@@ -9,7 +9,6 @@ export class ArrayProp {
     const { name, schemaObject, schemaName } = params;
 
     this.name = this.treatName(name);
-
     this.type = this.getType({ schemaObject, schemaName });
   }
 
@@ -26,18 +25,21 @@ export class ArrayProp {
   private getType(params: { schemaObject: SchemaObject; schemaName: string }): string {
     const { schemaObject, schemaName } = params;
 
-    let name = schemaName;
-
     const teste = schemaObject.items;
 
-    if (!teste) return name;
+    if (!teste) return schemaName;
+
+    this.isSpecial = true;
 
     if ("$ref" in teste) {
       return teste.$ref.split("/").at(-1) as string;
     }
 
-    this.isSpecial = true;
-    return teste.type || "string";
+    if (teste.enum && teste.type === "string") {
+      return "string";
+    }
+
+    return teste.type ?? "string";
   }
 
   constructorBuild() {
@@ -47,13 +49,15 @@ export class ArrayProp {
   }
 
   classBuild() {
-    return `${this.name}: ${this.type}[]`;
+    const sanitizedType = this.isSpecial ? this.type : `${this.type}[]`;
+
+    return `${this.name}: ${sanitizedType}[]`;
   }
 
   interfaceBuild() {
-    const aType = this.isSpecial ? this.type : `${this.type}Interface`;
+    const sanitizedType = this.isSpecial ? this.type : `${this.type}Interface`;
 
-    return `${this.name}: ${aType}[]`;
+    return `${this.name}: ${sanitizedType}[]`;
   }
 
   bundleBuild() {

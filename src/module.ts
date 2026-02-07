@@ -6,6 +6,7 @@ import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 import { generatedDir } from "./vars.global.js";
 import type { PrimitiveProp } from "./primitive-property.js";
+import type { ArrayProp } from "./array.property.js";
 
 interface Form {
   name: string;
@@ -22,17 +23,16 @@ export class Module {
   imports: Set<string>;
   methods: Method[];
 
+  reflectorImports: Set<string>;
   moduleConstructor: string;
 
   constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string }) {
     const { name, operations, moduleName, path } = params;
     this.moduleName = moduleName;
 
-    this.imports = new Set([
-      "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
-      'import repo from "$repository/main"',
-      'import { Behavior, build, BuildedInput } from "$reflector/reflector.svelte";',
-    ]);
+    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"']);
+
+    this.reflectorImports = new Set<string>(["Behavior"]);
 
     this.name = capitalizeFirstLetter(name);
     this.path = path;
@@ -44,13 +44,10 @@ export class Module {
       });
     });
 
-    const { cookies, headers, paths, querys } = this.getParameters();
+    // const { cookies, headers, paths, querys } = this.getParameters();
 
-    const allBuilded = this.creator({
-      cookies,
-      headers,
-      paths,
-      querys,
+    const allBuilded = this.masterBuilder({
+      methods: this.methods,
     });
 
     this.moduleConstructor = this.buildConstructor(allBuilded.form);
@@ -62,7 +59,7 @@ export class Module {
     });
   }
 
-  private buildClassProps(params: { props: PrimitiveProp[]; name: string }) {
+  private buildClassProps(params: { props: (ArrayProp | PrimitiveProp)[]; name: string }) {
     const { name, props } = params;
 
     const bundle: string[] = [];
@@ -101,21 +98,7 @@ export class Module {
     return [buildedInterface, buildedClass].join(";");
   }
 
-  private buildMethod(params: { hasForm: boolean; hasEntity: boolean; method: Method }): string {
-    const { hasEntity, hasForm, method } = params;
-
-    const canAddClearMethod = hasForm && hasEntity;
-    let additionalMethod = this.getAdditionalMethod({ canAddClearMethod, method });
-
-    return [method.build(), additionalMethod].join("\n");
-  }
-
-  private creator(params: {
-    querys: PrimitiveProp[];
-    paths: PrimitiveProp[];
-    headers: PrimitiveProp[];
-    cookies: PrimitiveProp[];
-  }): {
+  private masterBuilder(params: { methods: Method[] }): {
     moduleAttributes: string[];
     moduleTypes: string[];
     moduleInit: string[];
@@ -124,85 +107,28 @@ export class Module {
     classImports: string;
     buildedMethods: string[];
   } {
-    const { cookies, headers, paths, querys } = params;
-
-    const buildedModuleTypes: string[] = [];
+    const { methods } = params;
 
     const moduleAttributes = new Set<string>().add("loading = $state<boolean>(false)");
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
 
-    const getParams = (params: { name: string; props: PrimitiveProp[] }) => {
-      const { name, props } = params;
-      const capitalizedName = capitalizeFirstLetter(name);
+    const { buildedMethods, entries, form, formSet, methodsAttributes, methodsClear, methodsInit, ...rawParams } =
+      this.processMethods({
+        methods,
+      });
 
-      buildedModuleTypes.push(this.buildClassProps({ props, name: capitalizedName }));
-      moduleAttributes.add(`${name} = $state(new ${capitalizedName}())`);
-      moduleInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
-      moduleClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
-    };
+    const { buildedParamsTypes, paramAttributes, paramClear, paramInit } = this.processParams(rawParams);
 
-    const argEntries = [
-      { name: "querys", props: querys },
-      { name: "headers", props: headers },
-      { name: "paths", props: paths },
-      { name: "cookies", props: cookies },
-    ];
-
-    for (const { name, props } of argEntries) {
-      if (!props.length) continue;
-      getParams({ name, props });
-    }
-
-    const hasForm = this.methods.some((m) => m.request.attributeType === "form");
-    const hasEntity = this.methods.some((m) => m.request.attributeType === "entity");
-
-    const form: Form[] = [];
-    const formSet = new Set();
-    const entries = new Set();
-    const methods: string[] = [];
-
-    for (const method of this.methods) {
-      const { bodyType, responseType, attributeType } = method.request;
-
-      if (method.request.bodyType === "string") {
-        createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
-        continue;
-      }
-
-      if (attributeType === "form" && bodyType) {
-        const name = method.name;
-        const type = bodyType;
-
-        form.push({ name, type });
-        formSet.add(`${name}: new ${type}()`);
-      }
-
-      methods.push(this.buildMethod({ hasEntity, hasForm, method }));
-
-      if (attributeType === "entity") {
-        const entityName = treatByUppercase(method.request.responseType ?? "");
-        moduleAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
-        moduleInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
-        moduleClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
-      } else if (attributeType === "list") {
-        moduleAttributes.add(`list = $state<${responseType}['data']>([])`);
-        moduleInit.add("this.clearList()");
-        moduleClear.add(`clearList() { this.list = [] }`);
-      }
-
-      if (bodyType) {
-        entries.add(`${bodyType}`);
-      }
-
-      if (responseType) {
-        entries.add(`type ${responseType}Interface`);
-        entries.add(`${responseType}`);
-      }
-    }
+    methodsAttributes.forEach((attr) => moduleAttributes.add(attr));
+    methodsClear.forEach((clear) => moduleClear.add(clear));
+    methodsInit.forEach((init) => moduleInit.add(init));
+    paramAttributes.forEach((attr) => moduleAttributes.add(attr));
+    paramClear.forEach((clear) => moduleClear.add(clear));
+    paramInit.forEach((init) => moduleInit.add(init));
 
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
-    const classImports = `import { ${cleanEntries} } from '$reflector/schemas.svelte';`;
+    const classImports = cleanEntries.length > 0 ? `import { ${cleanEntries} } from '$reflector/schemas.svelte';` : "";
 
     if (formSet.size > 0) {
       moduleAttributes.add(`
@@ -222,13 +148,132 @@ export class Module {
 
     return {
       moduleAttributes: Array.from(moduleAttributes),
-      moduleTypes: buildedModuleTypes,
+      moduleTypes: buildedParamsTypes,
       moduleInit: Array.from(moduleInit),
       moduleClear: Array.from(moduleClear),
       form,
       classImports,
-      buildedMethods: methods,
+      buildedMethods,
     };
+  }
+
+  private processMethods(params: { methods: Method[] }) {
+    const { methods } = params;
+
+    const methodsAttributes = new Set<string>();
+    const methodsInit = new Set<string>([]);
+    const methodsClear = new Set<string>([]);
+
+    const form: Form[] = [];
+    const formSet = new Set();
+    const entries = new Set();
+    const buildedMethods: string[] = [];
+
+    const queryMap = new Map<string, PrimitiveProp | ArrayProp>();
+    const headerMap = new Map<string, PrimitiveProp>();
+    const pathMap = new Map<string, PrimitiveProp>();
+    const cookieMap = new Map<string, PrimitiveProp>();
+
+    for (const method of methods) {
+      const { request, headers, cookies, paths, querys } = method;
+      const { bodyType, responseType, attributeType } = request;
+
+      headers.forEach((h) => headerMap.set(h.name, h));
+      cookies.forEach((c) => cookieMap.set(c.name, c));
+      paths.forEach((p) => pathMap.set(p.name, p));
+      querys.forEach((q) => queryMap.set(q.name, q));
+
+      if (method.request.bodyType === "string") {
+        createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
+        continue;
+      }
+
+      if (attributeType === "form" && bodyType) {
+        const name = method.name;
+        const type = bodyType;
+
+        form.push({ name, type });
+        formSet.add(`${name}: new ${type}()`);
+      }
+
+      buildedMethods.push(method.build());
+
+      if (attributeType === "entity") {
+        const entityName = treatByUppercase(method.request.responseType ?? "");
+        methodsAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
+        methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
+        methodsClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
+      } else if (attributeType === "list") {
+        methodsAttributes.add(`list = $state<${responseType}['data']>([])`);
+        methodsInit.add("this.clearList()");
+        methodsClear.add(`clearList() { this.list = [] }`);
+      }
+
+      if (bodyType) {
+        entries.add(bodyType);
+      }
+
+      if (responseType) {
+        entries.add(`type ${responseType}Interface`);
+        entries.add(responseType);
+      }
+    }
+
+    return {
+      form,
+      formSet,
+      entries,
+      buildedMethods,
+      methodsAttributes,
+      methodsInit,
+      methodsClear,
+      headers: Array.from(headerMap.values()),
+      cookies: Array.from(cookieMap.values()),
+      paths: Array.from(pathMap.values()),
+      querys: Array.from(queryMap.values()),
+    };
+  }
+
+  private processParams(params: {
+    querys: (PrimitiveProp | ArrayProp)[];
+    paths: PrimitiveProp[];
+    headers: PrimitiveProp[];
+    cookies: PrimitiveProp[];
+  }) {
+    const { cookies, headers, paths, querys } = params;
+
+    const buildedParamsTypes: string[] = [];
+    const paramAttributes = new Set<string>();
+    const paramInit = new Set<string>([]);
+    const paramClear = new Set<string>([]);
+
+    const getParams = (params: { name: string; props: (ArrayProp | PrimitiveProp)[] }) => {
+      const { name, props } = params;
+      const capitalizedName = capitalizeFirstLetter(name);
+
+      buildedParamsTypes.push(this.buildClassProps({ props, name: capitalizedName }));
+      paramAttributes.add(`${name} = $state(new ${capitalizedName}())`);
+      paramInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
+      paramClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
+    };
+
+    const argEntries = [
+      { name: "querys", props: querys },
+      { name: "headers", props: headers },
+      { name: "paths", props: paths },
+      { name: "cookies", props: cookies },
+    ];
+
+    for (const { name, props } of argEntries) {
+      if (!props.length) continue;
+
+      this.reflectorImports.add("build");
+      this.reflectorImports.add("BuildedInput");
+
+      getParams({ name, props });
+    }
+
+    return { buildedParamsTypes, paramAttributes, paramInit, paramClear };
   }
 
   private getPath() {
@@ -241,57 +286,7 @@ export class Module {
     return outPath;
   }
 
-  private getAdditionalMethod(params: { method: Method; canAddClearMethod: boolean }) {
-    const { method, canAddClearMethod } = params;
-    let additionalMethod = "";
-
-    if (canAddClearMethod && method.request.attributeType === "form") {
-      additionalMethod = `
-        /** Limpa o form depois do back retornar uma resposta de sucesso */
-        async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
-          const data = await this.${method.name}(behavior)
-
-          if (data) {
-            this.clearForms()
-          }
-
-          return data
-        }
-      `;
-    }
-    return additionalMethod;
-  }
-
-  // private buildMethods() {
-
-  // }
-
-  private getParameters() {
-    const queryMap = new Map<string, PrimitiveProp>();
-    const headerMap = new Map<string, PrimitiveProp>();
-    const pathMap = new Map<string, PrimitiveProp>();
-    const cookieMap = new Map<string, PrimitiveProp>();
-
-    for (const method of this.methods) {
-      const { headers, cookies, paths, querys } = method;
-
-      headers.forEach((h) => headerMap.set(h.name, h));
-      cookies.forEach((c) => cookieMap.set(c.name, c));
-      paths.forEach((p) => pathMap.set(p.name, p));
-      querys.forEach((q) => queryMap.set(q.name, q));
-    }
-
-    return {
-      headers: Array.from(headerMap.values()),
-      cookies: Array.from(cookieMap.values()),
-      paths: Array.from(pathMap.values()),
-      querys: Array.from(queryMap.values()),
-    };
-  }
-
-  // private buildImportsAndProps() {}
-
-  // private buildImports() {
+  // private getParameters() {
 
   // }
 
@@ -330,7 +325,7 @@ export class Module {
 
     const teste = `
       constructor(params?: { empty: boolean }) {
-        const isEmpty = params?.empty || PUBLIC_ENVIRONMENT != 'DEV'
+        const isEmpty = params?.empty || import.meta.env.PUBLIC_ENVIRONMENT != 'DEV'
 
         this.forms = this.buildForms(isEmpty);
       }
@@ -357,11 +352,12 @@ export class Module {
   }) {
     const { moduleInit, moduleTypes, moduleAttributes, moduleClear, classImports, buildedMethods } = params;
 
+    const reflectorImports = `import { ${Array.from(this.reflectorImports)} } from "$reflector/reflector.svelte";`;
+
     return `
       ${Array.from(this.imports).join(";")}
+      ${reflectorImports}
       ${classImports}
-
-      const PUBLIC_ENVIRONMENT = import.meta.env.PUBLIC_ENVIRONMENT;
 
       ${moduleTypes.join(";")}
 

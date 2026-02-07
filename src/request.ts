@@ -9,7 +9,7 @@ import type {
 } from "./types/open-api-spec.interface.js";
 import type { ApiType, ReflectorOperation } from "./types/types.js";
 
-type ReflectorRequestType = "entity" | "list" | "pagination" | "form" | "other";
+export type ReflectorRequestType = "entity" | "list" | "pagination" | "form" | "other";
 type RefLike = { $ref: string };
 
 function isRef<T extends object>(

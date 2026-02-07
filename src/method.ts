@@ -1,8 +1,9 @@
-import { Request } from "./request.js";
+import { Request, type ReflectorRequestType } from "./request.js";
 
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
 import { createDangerMessage, getFullEndpoint, treatByUppercase } from "./helpers/helpers.js";
 import { PrimitiveProp } from "./primitive-property.js";
+import { ArrayProp } from "./array.property.js";
 
 export class Method {
   name: string;
@@ -15,8 +16,11 @@ export class Method {
 
   paths: PrimitiveProp[] = [];
   headers: PrimitiveProp[] = [];
-  querys: PrimitiveProp[] = [];
+  querys: (PrimitiveProp | ArrayProp)[] = [];
   cookies: PrimitiveProp[] = [];
+
+  private readonly additionalMethod: string;
+  responseTypeInterface!: string;
 
   constructor(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation } = params;
@@ -29,6 +33,11 @@ export class Method {
     this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
 
     this.buildProps(params);
+
+    this.additionalMethod = this.getAdditionalMethod({
+      name: this.name,
+      attributeType: this.request.attributeType,
+    });
   }
 
   private buildProps(params: { operation: ReflectorOperation; moduleName: string }) {
@@ -47,7 +56,11 @@ export class Method {
       const properties = { name, required: !!required, schemaObject: schema, validator: undefined };
 
       if (inParam === "query") {
-        this.querys.push(new PrimitiveProp(properties));
+        if (schema.type === "array") {
+          this.querys.push(new ArrayProp({ name, schemaObject: schema, schemaName: "" }));
+        } else {
+          this.querys.push(new PrimitiveProp(properties));
+        }
       } else if (inParam === "header") {
         this.headers.push(new PrimitiveProp(properties));
       } else if (inParam === "path") {
@@ -58,7 +71,7 @@ export class Method {
     }
   }
 
-  private readonly gee = (props: PrimitiveProp[]) => {
+  private readonly gee = (props: (PrimitiveProp | ArrayProp)[]) => {
     return props.map((x) => x.name).join(",");
   };
 
@@ -78,17 +91,14 @@ export class Method {
   private buildCallMethod(): { inside: string; outside: string } {
     const beforeResponse: string[] = [];
 
-    const preBuild = () => {
-      return this.request.responseType ? [`${this.request.responseType}Interface`, "const response ="] : ["null", ""];
-    };
-
-    const [diamond, response] = preBuild();
+    const responseType = this.request.responseType ? `${this.request.responseType}Interface` : "null";
+    this.responseTypeInterface = responseType;
 
     if (this.request.attributeType === "list") {
       beforeResponse.push(`this.list = ${this.request.responseType}.from(response.data)`);
 
       const inside = `
-          ${response} await repo.api.get<${diamond}, unknown>({
+          const response = await repo.api.get<${responseType}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
@@ -105,7 +115,7 @@ export class Method {
       let querys = this.querys.length > 0 ? `queryData: {${this.querys.map((q) => q.name).join(",")}}` : "";
 
       const inside = `
-          ${response} await repo.api.get<${diamond}, unknown>({
+          const response = await repo.api.get<${responseType}, unknown>({
             endpoint,
             ${querys}
           })
@@ -131,7 +141,7 @@ export class Method {
       const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        ${response} await repo.api.${this.request.apiType}<${diamond}>({
+        const response = await repo.api.${this.request.apiType}<${responseType}>({
           endpoint,
           ${hasData ? "data," : ""}
           ${hasHeaders ? "headers," : ""}
@@ -141,7 +151,7 @@ export class Method {
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
       const inside = `
-        ${response} await repo.api.delete<${diamond}, unknown>({
+        const response = await repo.api.delete<${responseType}, unknown>({
           endpoint,
         })
       `;
@@ -166,6 +176,34 @@ export class Method {
     return this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
   };
 
+  private getAdditionalMethod(params: { attributeType: ReflectorRequestType; name: string }) {
+    const { attributeType, name } = params;
+    let additionalMethod = "";
+    const canAddClearMethod = attributeType === "form" || attributeType === "entity";
+
+    if (canAddClearMethod && attributeType === "form") {
+      additionalMethod = `
+        /** Limpa o form depois do back retornar uma resposta de sucesso */
+        async ${name}AndClear(behavior: Behavior = new Behavior()) {
+          const data = await this.${name}(behavior)
+
+          if (data) {
+            this.clearForms()
+          }
+
+          return data
+        }
+      `;
+    }
+    // return additionalMethod;
+
+    return "";
+  }
+
+  private buildDescription() {
+    return `/** ${this.description ?? ""} */`;
+  }
+
   build() {
     const { inside, outside } = this.buildCallMethod();
 
@@ -179,7 +217,7 @@ export class Method {
 
     return `
       ${description}
-      async ${this.name}(behavior: Behavior = new Behavior()) {
+      async ${this.name}(behavior: Behavior<${this.responseTypeInterface}> = new Behavior()) {
         const {onError, onSuccess} = behavior
         ${this.getProps()}
         const endpoint = ${endpoint}
@@ -197,10 +235,8 @@ export class Method {
           this.loading = false
         }
       }
-    `;
-  }
 
-  private buildDescription() {
-    return `/** ${this.description ?? ""} */`;
+      ${this.additionalMethod}
+    `;
   }
 }

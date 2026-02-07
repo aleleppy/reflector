@@ -33,6 +33,6 @@ export class ObjectProp {
   }
 
   bundleBuild() {
-    return `${this.name}: this.${this.name}.bundle()`;
+    return `${this.name}: this.${this.name}?.bundle()`;
   }
 }
