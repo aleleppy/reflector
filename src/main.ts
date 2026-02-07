@@ -145,8 +145,15 @@ export class Reflector {
     this.schemaFile.save();
 
     const buildFunctions = `
+      import toast from "$lib/utils/toast.svelte";
+
       type ValidatorResult = string | null;
       type ValidatorFn<T> = (v: T) => ValidatorResult;
+      type Partial<T> = {
+        [K in Exclude<keyof T, 'bundle'>]?: BuildedInput<T[K]>;
+      } & {
+        bundle: unknown;
+      };
 
       export class Behavior<TSuccess = unknown, TError = unknown> {
         onError?: (e: TError) => void;
@@ -177,7 +184,7 @@ export class Reflector {
 
         validate(): ValidatorResult {
           if (!this.validator) return null;
-          return this.value ? this.validator(this.value) : '';
+          return this.validator(this.value);
         }
       }
 
@@ -188,6 +195,20 @@ export class Reflector {
         validator?: ValidatorFn<T>;
       }): BuildedInput<T> {
         return new BuildedInput(params);
+      }
+
+      export function isFormValid<T>(schema: Partial<T>): boolean {
+        delete schema.bundle;
+
+        const arrayOfBuildedInputs = Object.values(schema) as BuildedInput<unknown>[];
+
+        const isValid = arrayOfBuildedInputs.every((a) => a.validate() === null);
+
+        if (!isValid) {
+          toast.error('Erro ao fazer a requisição', 'Um ou mais campos preenchidos estão incorretos.');
+        }
+
+        return isValid;
       }
     `;
 

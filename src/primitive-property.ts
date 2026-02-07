@@ -45,17 +45,34 @@ export class PrimitiveProp {
     name: string;
     example: string;
     required: boolean;
-    type: string | undefined;
+    type: ReflectorParamType | undefined;
     validator: string | undefined;
   }) {
     const { example, name, required, type, validator } = params;
 
-    const buildedValidator = validator ? `validator: ${validator}` : "";
+    const getValidator = (type: ReflectorParamType) => {
+      if (type === "string") {
+        return "emptyString";
+      }
+
+      return null;
+    };
+
+    const buildedValidator = () => {
+      if (validator) {
+        return `validator: ${validator}`;
+      } else if (required && type) {
+        const v = getValidator(type);
+        return v ? `validator: validateInputs.${v}` : "";
+      }
+
+      return "";
+    };
 
     const sanitizedExample = type === "boolean" || type === "number" ? example : `"${example}"`;
 
     return `
-      build({ key: params?.${name}, example: ${sanitizedExample}, required: ${required}, ${buildedValidator}})
+      build({ key: params?.${name}, example: ${sanitizedExample}, required: ${required}, ${buildedValidator()}})
     `;
   }
 

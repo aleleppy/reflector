@@ -30,7 +30,7 @@ export class Module {
     const { name, operations, moduleName, path } = params;
     this.moduleName = moduleName;
 
-    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import repo from "$repository/main"']);
+    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import api from "$repository/api"']);
 
     this.reflectorImports = new Set<string>(["Behavior"]);
 
@@ -194,6 +194,7 @@ export class Module {
 
         form.push({ name, type });
         formSet.add(`${name}: new ${type}()`);
+        this.reflectorImports.add("isFormValid");
       }
 
       buildedMethods.push(method.build());
@@ -273,6 +274,10 @@ export class Module {
       getParams({ name, props });
     }
 
+    if (buildedParamsTypes.length > 0) {
+      this.imports.add('import { validateInputs } from "$lib/sanitizers/validateFormats"');
+    }
+
     return { buildedParamsTypes, paramAttributes, paramInit, paramClear };
   }
 
@@ -285,10 +290,6 @@ export class Module {
 
     return outPath;
   }
-
-  // private getParameters() {
-
-  // }
 
   private buildClass(params: {
     moduleAttributes: string[];

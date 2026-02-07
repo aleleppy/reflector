@@ -98,7 +98,7 @@ export class Method {
       beforeResponse.push(`this.list = ${this.request.responseType}.from(response.data)`);
 
       const inside = `
-          const response = await repo.api.get<${responseType}, unknown>({
+          const response = await api.get<${responseType}, unknown>({
             endpoint,
             queryData: { ${this.gee(this.querys)} }
           })
@@ -115,7 +115,7 @@ export class Method {
       let querys = this.querys.length > 0 ? `queryData: {${this.querys.map((q) => q.name).join(",")}}` : "";
 
       const inside = `
-          const response = await repo.api.get<${responseType}, unknown>({
+          const response = await api.get<${responseType}, unknown>({
             endpoint,
             ${querys}
           })
@@ -128,7 +128,7 @@ export class Method {
       let headers;
 
       if (this.request.bodyType) {
-        data = `const data = this.forms.${this.name}.bundle()`;
+        data = [`const data = this.forms.${this.name}.bundle()`, `if (!isFormValid(this.forms.${this.name})) return`].join(";");
       }
 
       const hasHeaders = this.request.parameters.some((p) => p.in === "header");
@@ -141,7 +141,7 @@ export class Method {
       const outside = ["this.loading = true", data, headers].join("\n");
 
       const inside = `
-        const response = await repo.api.${this.request.apiType}<${responseType}>({
+        const response = await api.${this.request.apiType}<${responseType}>({
           endpoint,
           ${hasData ? "data," : ""}
           ${hasHeaders ? "headers," : ""}
@@ -151,7 +151,7 @@ export class Method {
       return { outside, inside };
     } else if (this.request.apiType === "delete") {
       const inside = `
-        const response = await repo.api.delete<${responseType}, unknown>({
+        const response = await api.delete<${responseType}, unknown>({
           endpoint,
         })
       `;
