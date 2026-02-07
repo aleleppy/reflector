@@ -254,19 +254,165 @@ Define validators in `src/reflector.config.ts`:
 ```typescript
 export const validators = [
   {
-    fields: ["startDate", "endDate"],
-    validator: "validateDateRange",
+    fields: ["email", "userEmail", "contactEmail"],
+    validator: "validateEmail",
+  },
+  {
+    fields: ["phone", "mobile", "whatsapp"],
+    validator: "validatePhone",
+  },
+  {
+    fields: ["cpf", "cnpj", "document"],
+    validator: "validateDocument",
+  },
+  {
+    fields: ["password", "newPassword"],
+    validator: "validatePassword",
+  },
+  {
+    fields: ["birthDate", "startDate", "endDate"],
+    validator: "validateDate",
+  },
+  {
+    fields: ["zipcode", "cep"],
+    validator: "validateZipcode",
+  },
+  {
+    fields: ["url", "website", "avatarUrl"],
+    validator: "validateUrl",
   },
 ];
 ```
 
-Then implement in your app:
+Then implement in your app at `$lib/sanitizers/validateFormats.ts`:
 
 ```typescript
-// $lib/sanitizers/validateFormats.ts
-export function validateDateRange(value: string): string | null {
+// Email validation
+export function validateEmail(value: string): string | null {
+  if (!value) return null; // Let required handle empty
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(value) ? null : "Invalid email format";
+}
+
+// Brazilian phone validation
+export function validatePhone(value: string): string | null {
+  if (!value) return null;
+  const phoneRegex = /^(\+?55\s?)?(\(?\d{2}\)?\s?)?(\d{4,5}-?\d{4})$/;
+  return phoneRegex.test(value) ? null : "Invalid phone number";
+}
+
+// CPF/CNPJ validation (Brazilian documents)
+export function validateDocument(value: string): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/\D/g, '');
+  
+  if (cleaned.length === 11) {
+    return validateCPF(cleaned) ? null : "Invalid CPF";
+  } else if (cleaned.length === 14) {
+    return validateCNPJ(cleaned) ? null : "Invalid CNPJ";
+  }
+  return "Invalid document format";
+}
+
+function validateCPF(cpf: string): boolean {
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf[9])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  return rev === parseInt(cpf[10]);
+}
+
+function validateCNPJ(cnpj: string): boolean {
+  if (/^(\d)\1{13}$/.test(cnpj)) return false;
+  
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseInt(cnpj[i]) * weights1[i];
+  let rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  if (rev !== parseInt(cnpj[12])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 13; i++) sum += parseInt(cnpj[i]) * weights2[i];
+  rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  return rev === parseInt(cnpj[13]);
+}
+
+// Password strength validation
+export function validatePassword(value: string): string | null {
+  if (!value) return null;
+  if (value.length < 8) return "Password must be at least 8 characters";
+  if (!/[A-Z]/.test(value)) return "Password must contain an uppercase letter";
+  if (!/[a-z]/.test(value)) return "Password must contain a lowercase letter";
+  if (!/[0-9]/.test(value)) return "Password must contain a number";
+  if (!/[!@#$%^&*]/.test(value)) return "Password must contain a special character";
+  return null;
+}
+
+// Date validation
+export function validateDate(value: string): string | null {
+  if (!value) return null;
   const date = new Date(value);
   if (isNaN(date.getTime())) return "Invalid date";
+  if (date > new Date()) return "Date cannot be in the future";
+  return null;
+}
+
+// Brazilian ZIP code (CEP) validation
+export function validateZipcode(value: string): string | null {
+  if (!value) return null;
+  const cepRegex = /^\d{5}-?\d{3}$/;
+  return cepRegex.test(value) ? null : "Invalid ZIP code format";
+}
+
+// URL validation
+export function validateUrl(value: string): string | null {
+  if (!value) return null;
+  try {
+    new URL(value);
+    return null;
+  } catch {
+    return "Invalid URL format";
+  }
+}
+
+// Min/max length validator factory
+export function minLength(min: number) {
+  return (value: string): string | null => {
+    if (!value) return null;
+    return value.length >= min ? null : `Must be at least ${min} characters`;
+  };
+}
+
+export function maxLength(max: number) {
+  return (value: string): string | null => {
+    if (!value) return null;
+    return value.length <= max ? null : `Must be at most ${max} characters`;
+  };
+}
+
+// Number range validator factory
+export function numberRange(min: number, max: number) {
+  return (value: number): string | null => {
+    if (value === null || value === undefined) return null;
+    return value >= min && value <= max ? null : `Must be between ${min} and ${max}`;
+  };
+}
+
+// Required field validator
+export function required(value: string | number | boolean | null): string | null {
+  if (value === null || value === undefined || value === '') {
+    return "This field is required";
+  }
   return null;
 }
 ```
