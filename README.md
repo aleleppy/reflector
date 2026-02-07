@@ -1,6 +1,8 @@
 # Svelte Reflector
 
-[![npm version](https://badge.fury.io/js/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![npm version](https://img.shields.io/npm/v/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![npm downloads](https://img.shields.io/npm/dm/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![npm total downloads](https://img.shields.io/npm/dt/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue.svg)](https://www.typescriptlang.org/)
 [![Svelte](https://img.shields.io/badge/Svelte-5+-orange.svg)](https://svelte.dev/)
 
