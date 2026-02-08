@@ -138,7 +138,7 @@ export class Method {
         headers = `const headers = this.headers.bundle()`;
       }
 
-      const outside = ["this.loading = true", data, headers].join("\n");
+      const outside = [data, headers].join("\n");
 
       const inside = `
         const response = await api.${this.request.apiType}<${responseType}>({
@@ -219,6 +219,8 @@ export class Method {
       ${description}
       async ${this.name}(behavior: Behavior<${this.responseTypeInterface}> = new Behavior()) {
         const {onError, onSuccess} = behavior
+
+        this.loading = true
         ${this.getProps()}
         const endpoint = ${endpoint}
 
