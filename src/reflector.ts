@@ -68,7 +68,7 @@ export class ReflectorFile {
       const arrayOfBuildedInputs = Object.values(schema) as BuildedInput<unknown>[];
 
       const isValid = arrayOfBuildedInputs.every((a) => {
-      const result = a?.validate?.() === null
+      const result = a?.validate?.() ?? null
         return result === null
       });
 
