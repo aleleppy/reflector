@@ -1,6 +1,6 @@
 {
   "name": "svelte-reflector",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "description": "Reflects zod types from openAPI schemas",
   "type": "module",
   "main": "./dist/index.js",
