@@ -18,10 +18,7 @@ export class ObjectProp {
   }
 
   constructorBuild() {
-    const data = this.isNullable ? "" : `data: params?.data?.${this.name},`;
-    const empty = this.isNullable ? "true" : "params?.empty ?? false";
-
-    return `this.${this.name} = new ${this.type}({ ${data} empty: ${empty} })`;
+    return `this.${this.name} = params?.data?.${this.name} ? new ${this.type}({ data: params.data.${this.name} }) : null`;
   }
 
   classBuild() {
