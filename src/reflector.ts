@@ -67,7 +67,10 @@ export class ReflectorFile {
 
       const arrayOfBuildedInputs = Object.values(schema) as BuildedInput<unknown>[];
 
-      const isValid = arrayOfBuildedInputs.every((a) => a.validate() === null);
+      const isValid = arrayOfBuildedInputs.every((a) => {
+      const result = a?.validate?.() === null
+        return result === null
+      });
 
       if (!isValid) {
         toast.error('Erro ao fazer a requisição', 'Um ou mais campos preenchidos estão incorretos.');
