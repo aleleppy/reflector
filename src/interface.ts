@@ -10,11 +10,11 @@ export class ReflectorInterface {
 
     const buildedProps: string[] = [];
 
-    arrayProps.forEach((prop) => {
+    primitiveProps.forEach((prop) => {
       buildedProps.push(prop.interfaceBuild());
     });
 
-    primitiveProps.forEach((prop) => {
+    arrayProps.forEach((prop) => {
       buildedProps.push(prop.interfaceBuild());
     });
 

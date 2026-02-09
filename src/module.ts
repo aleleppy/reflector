@@ -30,7 +30,11 @@ export class Module {
     const { name, operations, moduleName, path } = params;
     this.moduleName = moduleName;
 
-    this.imports = new Set(["// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n", 'import api from "$repository/api"']);
+    this.imports = new Set([
+      "// AUTO GERADO. QUEM ALTERAR GOSTA DE RAPAZES!\n",
+      'import api from "$repository/api"',
+      `import { PUBLIC_ENVIRONMENT } from '$env/static/public'`,
+    ]);
 
     this.reflectorImports = new Set<string>(["Behavior"]);
 
@@ -328,8 +332,7 @@ export class Module {
 
     const teste = `
       constructor(params?: { empty: boolean }) {
-        const isEmpty = params?.empty || import.meta.env.PUBLIC_ENVIRONMENT != 'DEV'
-
+        const isEmpty = PUBLIC_ENVIRONMENT !== 'DEV' || !!params?.empty;
         this.forms = this.buildForms(isEmpty);
       }
 

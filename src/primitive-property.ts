@@ -118,7 +118,7 @@ export class PrimitiveProp {
     };
 
     return `
-      build({ key: params?.data?.${name}, example: ${buildedExample()}, required: ${required}, ${buildedValidator()}})
+      build({ key: params?.data?.${name}, placeholder: ${sanitizedExample()}, example: ${buildedExample()}, required: ${required}, ${buildedValidator()}})
     `;
   }
 

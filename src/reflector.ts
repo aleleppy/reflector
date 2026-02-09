@@ -24,15 +24,21 @@ export class ReflectorFile {
       placeholder: T;
       readonly validator?: ValidatorFn<T>;
 
-      constructor(params: { key?: T | undefined; example: T; required: boolean; validator?: ValidatorFn<T> }) {
-        const { example, required, key, validator } = params;
+      constructor(params: {
+        key?: T | undefined;
+        example: T;
+        required: boolean;
+        placeholder: T;
+        validator?: ValidatorFn<T>;
+      }) {
+        const { example, required, key, validator, placeholder } = params;
 
         const initial = key ?? example;
 
         this.value = initial;
         this.display = initial;
         this.required = required;
-        this.placeholder = example;
+        this.placeholder = placeholder;
 
         if (validator) {
           this.validator = validator;
@@ -50,6 +56,7 @@ export class ReflectorFile {
     `export function build<T>(params: {
       key?: T | undefined;
       example: T;
+      placeholder: T;
       required: boolean;
       validator?: ValidatorFn<T>;
     }): BuildedInput<T> {
