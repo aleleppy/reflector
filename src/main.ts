@@ -8,6 +8,7 @@ import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js
 import { Module } from "./module.js";
 
 import { baseDir, generatedDir } from "./vars.global.js";
+import { ReflectorFile } from "./reflector.js";
 // import { Module } from "./module.js";
 
 export class Reflector {
@@ -144,73 +145,7 @@ export class Reflector {
     );
     this.schemaFile.save();
 
-    const buildFunctions = `
-      import toast from "$lib/utils/toast.svelte";
-
-      type ValidatorResult = string | null;
-      type ValidatorFn<T> = (v: T) => ValidatorResult;
-      type Partial<T> = {
-        [K in Exclude<keyof T, 'bundle'>]?: BuildedInput<T[K]>;
-      } & {
-        bundle: unknown;
-      };
-
-      export class Behavior<TSuccess = unknown, TError = unknown> {
-        onError?: (e: TError) => void;
-        onSuccess?: (v: TSuccess) => void;
-      }
-
-      export class BuildedInput<T> {
-        value = $state<T>(null as any);
-        display = $state<T>(null as any);
-        required: boolean;
-        placeholder: T;
-        readonly validator?: ValidatorFn<T>;
-
-        constructor(params: { key?: T | undefined; example: T; required: boolean; validator?: ValidatorFn<T> }) {
-          const { example, required, key, validator } = params;
-
-          const initial = key ?? example;
-
-          this.value = initial;
-          this.display = initial;
-          this.required = required;
-          this.placeholder = example;
-
-          if (validator) {
-            this.validator = validator;
-          }
-        }
-
-        validate(): ValidatorResult {
-          if (!this.validator) return null;
-          return this.validator(this.value);
-        }
-      }
-
-      export function build<T>(params: {
-        key?: T | undefined;
-        example: T;
-        required: boolean;
-        validator?: ValidatorFn<T>;
-      }): BuildedInput<T> {
-        return new BuildedInput(params);
-      }
-
-      export function isFormValid<T>(schema: Partial<T>): boolean {
-        delete schema.bundle;
-
-        const arrayOfBuildedInputs = Object.values(schema) as BuildedInput<unknown>[];
-
-        const isValid = arrayOfBuildedInputs.every((a) => a.validate() === null);
-
-        if (!isValid) {
-          toast.error('Erro ao fazer a requisição', 'Um ou mais campos preenchidos estão incorretos.');
-        }
-
-        return isValid;
-      }
-    `;
+    const buildFunctions = new ReflectorFile().fileContent;
 
     this.typesSrc.changeData(buildFunctions);
     this.typesSrc.save();

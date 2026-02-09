@@ -3,13 +3,17 @@ import type { SchemaObject } from "./types/open-api-spec.interface.js";
 export class ArrayProp {
   name: string;
   type: string;
-  isSpecial: boolean = false;
+  isRequired: boolean;
+  isParam: boolean;
+  private isPrimitiveType: boolean = false;
 
-  constructor(params: { name: string; schemaObject: SchemaObject; schemaName: string }) {
-    const { name, schemaObject, schemaName } = params;
+  constructor(params: { name: string; schemaObject: SchemaObject; schemaName: string; required: boolean; isParam?: boolean }) {
+    const { name, schemaObject, schemaName, required, isParam } = params;
 
     this.name = this.treatName(name);
     this.type = this.getType({ schemaObject, schemaName });
+    this.isRequired = required;
+    this.isParam = !!isParam;
   }
 
   private treatName(name: string) {
@@ -25,50 +29,59 @@ export class ArrayProp {
   private getType(params: { schemaObject: SchemaObject; schemaName: string }): string {
     const { schemaObject, schemaName } = params;
 
-    const teste = schemaObject.items;
+    const items = schemaObject.items;
+    if (!items) return schemaName;
 
-    if (!teste) return schemaName;
-
-    this.isSpecial = true;
-
-    if ("$ref" in teste) {
-      return teste.$ref.split("/").at(-1) as string;
+    if ("$ref" in items) {
+      const theType = items.$ref.split("/").at(-1);
+      return theType as string;
     }
 
-    if (teste.enum && teste.type === "string") {
-      return "string";
-    }
+    this.isPrimitiveType = true;
 
-    return teste.type ?? "string";
+    // if (teste.enum && teste.type === "string") {
+    //   return "string";
+    // }
+
+    return "string";
   }
 
   constructorBuild() {
-    const result = this.isSpecial ? "" : `.map((param) => new ${this.type}(param))`;
+    const result = this.isPrimitiveType ? "" : `.map((param) => new ${this.type}({ data: param }))`;
 
-    return `this.${this.name} = params?.${this.name}${result} ?? []`;
+    return `this.${this.name} = params?.data?.${this.name}${result} ?? []`;
   }
 
   classBuild() {
-    const sanitizedType = this.isSpecial ? this.type : `${this.type}[]`;
+    const required = this.isRequired ? "" : "?";
+    const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}`;
 
-    return `${this.name}: ${sanitizedType}[]`;
+    return `${this.name}${required}: ${sanitizedType}[]`;
   }
 
   interfaceBuild() {
-    const sanitizedType = this.isSpecial ? this.type : `${this.type}Interface`;
+    const required = this.isRequired ? "" : "?";
+    const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
 
-    return `${this.name}: ${sanitizedType}[]`;
+    return `${this.name}${required}: ${sanitizedType}[]`;
   }
 
+  // toInterfaceArrayBuild() {
+  //   const required = this.isRequired ? "" : "?";
+  //   const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
+
+  //   return `${this.name}${required}: ${sanitizedType}[]`;
+  // }
+
   bundleBuild() {
-    const result = this.isSpecial ? "" : ".map((obj) => obj.bundle())";
+    const result = this.isPrimitiveType ? "" : ".map((obj) => obj.bundle())";
 
     return `${this.name}: this.${this.name}${result}`;
   }
 
   staticBuild() {
-    const result = this.isSpecial ? "obj" : `new ${this.type}(obj)`;
-    const aType = this.isSpecial ? this.type : `${this.type}Interface`;
+    const result = this.isPrimitiveType ? "obj" : `new ${this.type}({ data: obj })`;
+    const aType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
 
     return `
       static from(data: ${aType}[]) {

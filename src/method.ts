@@ -53,11 +53,11 @@ export class Method {
 
       if ("$ref" in schema) continue;
 
-      const properties = { name, required: !!required, schemaObject: schema, validator: undefined };
+      const properties = { name, required: !!required, schemaObject: schema, validator: undefined, isParam: true };
 
       if (inParam === "query") {
         if (schema.type === "array") {
-          this.querys.push(new ArrayProp({ name, schemaObject: schema, schemaName: "" }));
+          this.querys.push(new ArrayProp({ name, schemaObject: schema, schemaName: "", isParam: true, required: !!required }));
         } else {
           this.querys.push(new PrimitiveProp(properties));
         }
@@ -109,7 +109,7 @@ export class Method {
     } else if (this.request.attributeType === "entity") {
       if (this.request.responseType) {
         const entityName = treatByUppercase(this.request.responseType);
-        beforeResponse.push(`this.${entityName} = new ${this.request.responseType}(response)`);
+        beforeResponse.push(`this.${entityName} = new ${this.request.responseType}({ data: response })`);
       }
 
       let querys = this.querys.length > 0 ? `queryData: {${this.querys.map((q) => q.name).join(",")}}` : "";
@@ -173,7 +173,7 @@ export class Method {
       // this.isValid = false;
     }
 
-    return this.request.responseType ? `new ${this.request.responseType}(response)` : "null";
+    return this.request.responseType ? `new ${this.request.responseType}({ data: response })` : "null";
   };
 
   private getAdditionalMethod(params: { attributeType: ReflectorRequestType; name: string }) {

@@ -1,5 +1,4 @@
-import type { ReferenceObject, SchemaObject } from "./types/open-api-spec.interface.js";
-import type { ReflectorParamType } from "./types/types.js";
+import type { ReferenceObject } from "./types/open-api-spec.interface.js";
 
 export class ObjectProp {
   name: string;
@@ -17,7 +16,7 @@ export class ObjectProp {
   }
 
   constructorBuild() {
-    return `this.${this.name} = new ${this.type}(params?.${this.name})`;
+    return `this.${this.name} = new ${this.type}({ data: params?.data?.${this.name}, empty: params?.empty ?? false })`;
   }
 
   classBuild() {

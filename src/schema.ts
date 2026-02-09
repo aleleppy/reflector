@@ -63,7 +63,7 @@ export class Schema {
       if (type === "object") continue;
 
       if (type === "array") {
-        this.arrayProps.push(new ArrayProp({ schemaObject: value, schemaName: this.name, name: key }));
+        this.arrayProps.push(new ArrayProp({ schemaObject: value, schemaName: this.name, name: key, required }));
       } else {
         this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required, validator }));
       }
@@ -107,7 +107,7 @@ export class Schema {
     export class ${this.name} {
       ${keys.join(";")}
 
-      constructor(params?: ${this.name}Interface) { 
+      constructor(params?: { data?: ${this.name}Interface | undefined, empty?: boolean }) { 
         ${constructorThis.join(";\n")}
       }
 

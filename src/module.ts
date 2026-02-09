@@ -44,8 +44,6 @@ export class Module {
       });
     });
 
-    // const { cookies, headers, paths, querys } = this.getParameters();
-
     const allBuilded = this.masterBuilder({
       methods: this.methods,
     });
@@ -84,7 +82,7 @@ export class Module {
       class ${name} {
         ${attributes.join(";")}
 
-        constructor(params?: ${name}Interface){
+        constructor(params?: { data?: ${name}Interface, empty?: boolean }){
           ${constructorThis.join(";")}
         }
 
@@ -206,6 +204,10 @@ export class Module {
         methodsClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
         methodsAttributes.add(`list = $state<${responseType}['data']>([])`);
+
+        this.reflectorImports.add("genericArrayBundler");
+        methodsAttributes.add(`bundledList = $derived(genericArrayBundler(this.list))`);
+
         methodsInit.add("this.clearList()");
         methodsClear.add(`clearList() { this.list = [] }`);
       }
@@ -335,7 +337,7 @@ export class Module {
         if(isEmpty) return this.forms
 
         return {
-          ${form.map((f) => `${f.name}: new ${f.type}()`)}
+          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`)}
         }
       }
     `;
