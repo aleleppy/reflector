@@ -123,10 +123,10 @@ export class Reflector {
   }
 
   build() {
-    const enums = new Set();
+    // const enums = new Set();
 
     const treatedSchemas = this.schemas.map((s) => {
-      s.enums.forEach((en) => enums.add(en));
+      // s.enums.forEach((en) => enums.add(en));
 
       return `
         ${s.interface};

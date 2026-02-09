@@ -1,4 +1,5 @@
 import { ArrayProp } from "./array.property.js";
+import { EnumProp } from "./enum-property.js";
 import { capitalizeFirstLetter } from "./helpers/helpers.js";
 import { ReflectorInterface } from "./interface.js";
 import { ObjectProp } from "./object.property.js";
@@ -13,10 +14,11 @@ export class Schema {
   primitiveProps: PrimitiveProp[] = [];
   arrayProps: ArrayProp[] = [];
   objectProps: ObjectProp[] = [];
+  enumProps: EnumProp[] = [];
 
   schema: string;
-  enums = new Set<string>();
-  objects = new Map<string, string>();
+  // enums = new Set<string>();
+  // objects = new Map<string, string>();
   interface: string;
 
   constructor(params: {
@@ -37,10 +39,6 @@ export class Schema {
           const isRequired = !!value.nullable;
           const nullable = !!value.nullable;
 
-          if (key === "companyReply") {
-            console.log(isRequired, value.nullable);
-          }
-
           if (ref && "$ref" in ref) {
             this.objectProps.push(new ObjectProp({ name: key, referenceObject: ref, isRequired, isNullable: nullable }));
           }
@@ -51,15 +49,14 @@ export class Schema {
       }
 
       const required = requireds.includes(key);
+      const items = value.items;
 
-      const teste = value.items;
-
-      // const enumName = `Enum${treatAndUpper(name)}${capitalizeFirstLetter(key)}`;
-
-      if (teste && !("$ref" in teste) && teste.enum) {
-        this.enums.add(this.getEnumConst({ enums: teste.enum, schemaName: key }));
+      if (items && !("$ref" in items) && items.enum) {
+        this.enumProps.push(new EnumProp({ enums: items.enum, name: key, required }));
+        continue;
       } else if (value.enum) {
-        this.enums.add(this.getEnumConst({ enums: value.enum, schemaName: key }));
+        this.enumProps.push(new EnumProp({ enums: value.enum, name: key, required }));
+        continue;
       }
 
       const validator = validators.get(key);
@@ -69,9 +66,10 @@ export class Schema {
 
       if (type === "array") {
         this.arrayProps.push(new ArrayProp({ schemaObject: value, schemaName: this.name, name: key, required }));
-      } else {
-        this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required, validator }));
+        continue;
       }
+
+      this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required, validator }));
     }
 
     const reflectorInterface = new ReflectorInterface({
@@ -79,6 +77,7 @@ export class Schema {
       arrayProps: this.arrayProps,
       primitiveProps: this.primitiveProps,
       objectProps: this.objectProps,
+      enumProps: this.enumProps,
     });
 
     this.interface = reflectorInterface.builded;
@@ -108,11 +107,19 @@ export class Schema {
       bundleParams.push(prop.bundleBuild());
     });
 
+    this.enumProps.forEach((prop) => {
+      constructorThis.push(prop.constructorBuild());
+      keys.push(prop.classBuild());
+      bundleParams.push(prop.bundleBuild());
+    });
+
+    // console.log(this.enumProps);
+
     this.schema = `
     export class ${this.name} {
       ${keys.join(";")}
 
-      constructor(params?: { data?: ${this.name}Interface, empty?: boolean }) { 
+      constructor(params?: { data?: ${this.name}Interface | undefined, empty?: boolean }) { 
         ${constructorThis.join(";\n")}
       }
 
@@ -124,11 +131,11 @@ export class Schema {
     };`;
   }
 
-  private getEnumConst(params: { enums: string[]; schemaName: string }) {
-    const { enums, schemaName } = params;
+  // private getEnumConst(params: { enums: string[]; schemaName: string }) {
+  //   const { enums, schemaName } = params;
 
-    const enumList = enums.map((en) => `'${en}'`).join("|");
+  //   const enumList = enums.map((en) => `'${en}'`).join("|");
 
-    return `export type Enum${capitalizeFirstLetter(schemaName)} = ${enumList}`;
-  }
+  //   return `export type Enum${capitalizeFirstLetter(schemaName)} = ${enumList}`;
+  // }
 }

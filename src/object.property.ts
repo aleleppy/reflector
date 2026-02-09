@@ -13,10 +13,6 @@ export class ObjectProp {
     this.name = name;
     this.type = referenceObject.$ref.split("/").at(-1) ?? "";
 
-    // if (name === "companyReply") {
-    //   console.log(isRequired);
-    // }
-
     this.required = isRequired ?? true; // tem que ver isso daí
     this.isNullable = !!isNullable;
   }
