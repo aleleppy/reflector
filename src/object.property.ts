@@ -37,11 +37,13 @@ export class ObjectProp {
 
   interfaceBuild() {
     const req = this.required ? "" : "?";
+    const nullable = this.isNullable ? "| null" : "";
 
-    return `${this.name}${req}: ${this.type}Interface`;
+    return `${this.name}${req}: ${this.type}Interface ${nullable}`;
   }
 
   bundleBuild() {
-    return `${this.name}: this.${this.name}?.bundle()`;
+    const nullable = this.isNullable ? "?? null" : "";
+    return `${this.name}: this.${this.name}?.bundle() ${nullable}`;
   }
 }

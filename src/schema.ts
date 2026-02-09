@@ -112,7 +112,7 @@ export class Schema {
     export class ${this.name} {
       ${keys.join(";")}
 
-      constructor(params?: { data?: ${this.name}Interface | undefined, empty?: boolean }) { 
+      constructor(params?: { data?: ${this.name}Interface, empty?: boolean }) { 
         ${constructorThis.join(";\n")}
       }
 
