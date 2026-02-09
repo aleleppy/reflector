@@ -334,7 +334,7 @@ export class Module {
       }
 
       private buildForms(isEmpty: boolean) {
-        if(isEmpty) return this.forms
+        if(!isEmpty) return this.forms
 
         return {
           ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`)}
