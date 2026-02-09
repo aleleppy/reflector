@@ -35,9 +35,14 @@ export class Schema {
         if ("allOf" in value) {
           const ref = value.allOf?.[0];
           const isRequired = !!value.nullable;
+          const nullable = !!value.nullable;
+
+          if (key === "companyReply") {
+            console.log(isRequired, value.nullable);
+          }
 
           if (ref && "$ref" in ref) {
-            this.objectProps.push(new ObjectProp({ name: key, referenceObject: ref, isRequired }));
+            this.objectProps.push(new ObjectProp({ name: key, referenceObject: ref, isRequired, isNullable: nullable }));
           }
         } else if ("$ref" in value) {
           this.objectProps.push(new ObjectProp({ name: key, referenceObject: value }));
