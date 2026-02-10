@@ -1,5 +1,9 @@
 # Svelte Reflector
 
+**Turn your OpenAPI into a first‑class Svelte 5 DX.**
+
+Svelte Reflector is a **developer‑experience–first code generator** that converts OpenAPI specs into fully typed, reactive Svelte 5 modules — ready for production, forms included.
+
 [![npm version](https://img.shields.io/npm/v/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
 [![npm downloads](https://img.shields.io/npm/dm/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
 [![npm total downloads](https://img.shields.io/npm/dt/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
