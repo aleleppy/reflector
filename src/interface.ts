@@ -1,7 +1,7 @@
-import type { ArrayProp } from "./array.property.js";
-import type { EnumProp } from "./enum-property.js";
-import type { ObjectProp } from "./object.property.js";
-import type { PrimitiveProp } from "./primitive-property.js";
+import type { ArrayProp } from "./props/array.property.js";
+import type { EnumProp } from "./props/enum.property.js";
+import type { ObjectProp } from "./props/object.property.js";
+import type { PrimitiveProp } from "./props/primitive.property.js";
 
 export class ReflectorInterface {
   builded: string;

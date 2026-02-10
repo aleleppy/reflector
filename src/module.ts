@@ -5,8 +5,8 @@ import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 import { generatedDir } from "./vars.global.js";
-import type { PrimitiveProp } from "./primitive-property.js";
-import type { ArrayProp } from "./array.property.js";
+import type { PrimitiveProp } from "./props/primitive.property.js";
+import type { ArrayProp } from "./props/array.property.js";
 
 interface Form {
   name: string;
@@ -358,7 +358,7 @@ export class Module {
   }) {
     const { moduleInit, moduleTypes, moduleAttributes, moduleClear, classImports, buildedMethods } = params;
 
-    const reflectorImports = `import { ${Array.from(this.reflectorImports)} } from "$reflector/reflector.svelte";`;
+    const reflectorImports = `import { ${Array.from(this.reflectorImports)}, type ApiErrorResponse } from "$reflector/reflector.svelte";`;
 
     return `
       ${Array.from(this.imports).join(";")}

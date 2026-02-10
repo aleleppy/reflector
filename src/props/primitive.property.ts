@@ -1,5 +1,5 @@
-import type { SchemaObject } from "./types/open-api-spec.interface.js";
-import type { ReflectorParamType } from "./types/types.js";
+import type { SchemaObject } from "../types/open-api-spec.interface.js";
+import type { ReflectorParamType } from "../types/types.js";
 
 const emptyString = "''";
 

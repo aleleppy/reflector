@@ -1,4 +1,5 @@
-import type { SchemaObject } from "./types/open-api-spec.interface.js";
+import type { SchemaObject } from "../types/open-api-spec.interface.js";
+import { EnumProp } from "./enum.property.js";
 
 export class ArrayProp {
   name: string;
@@ -7,8 +8,15 @@ export class ArrayProp {
   isParam: boolean;
   private isPrimitiveType: boolean = false;
 
-  constructor(params: { name: string; schemaObject: SchemaObject; schemaName: string; required: boolean; isParam?: boolean }) {
-    const { name, schemaObject, schemaName, required, isParam } = params;
+  constructor(params: {
+    name: string;
+    schemaObject: SchemaObject;
+    schemaName: string;
+    required: boolean;
+    isParam?: boolean;
+    isEnum?: boolean;
+  }) {
+    const { name, schemaObject, schemaName, required, isParam, isEnum } = params;
 
     this.name = this.treatName(name);
     this.type = this.getType({ schemaObject, schemaName });
@@ -32,16 +40,18 @@ export class ArrayProp {
     const items = schemaObject.items;
     if (!items) return schemaName;
 
+    if (items && !("$ref" in items) && items.enum) {
+      this.isPrimitiveType = true;
+      const enumType = new EnumProp({ enums: items.enum, name: this.name, required: true }).type;
+      return `(${enumType})`;
+    }
+
     if ("$ref" in items) {
       const theType = items.$ref.split("/").at(-1);
       return theType as string;
     }
 
     this.isPrimitiveType = true;
-
-    // if (teste.enum && teste.type === "string") {
-    //   return "string";
-    // }
 
     return "string";
   }

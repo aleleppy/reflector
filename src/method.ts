@@ -2,8 +2,8 @@ import { Request, type ReflectorRequestType } from "./request.js";
 
 import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
 import { createDangerMessage, getFullEndpoint, treatByUppercase } from "./helpers/helpers.js";
-import { PrimitiveProp } from "./primitive-property.js";
-import { ArrayProp } from "./array.property.js";
+import { PrimitiveProp } from "./props/primitive.property.js";
+import { ArrayProp } from "./props/array.property.js";
 
 export class Method {
   name: string;
@@ -217,7 +217,7 @@ export class Method {
 
     return `
       ${description}
-      async ${this.name}(behavior: Behavior<${this.responseTypeInterface}> = new Behavior()) {
+      async ${this.name}(behavior: Behavior<${this.responseTypeInterface}, ApiErrorResponse> = new Behavior()) {
         const {onError, onSuccess} = behavior
 
         this.loading = true
@@ -232,7 +232,8 @@ export class Method {
 
           return ${this.methodReturn()}
         } catch(e) {
-          return onError?.(e)
+          const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
+          return onError?.(parsedError);
         } finally {
           this.loading = false
         }

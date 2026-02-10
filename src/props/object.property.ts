@@ -1,4 +1,4 @@
-import type { ReferenceObject } from "./types/open-api-spec.interface.js";
+import type { ReferenceObject } from "../types/open-api-spec.interface.js";
 
 export class ObjectProp {
   name: string;

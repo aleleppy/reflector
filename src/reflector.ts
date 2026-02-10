@@ -13,6 +13,10 @@ export class ReflectorFile {
   ].join(";");
 
   private readonly classes = [
+    `export interface ApiErrorResponse {
+      error: string;
+      message: string;
+    }`,
     `export class Behavior<TSuccess = unknown, TError = unknown> {
       onError?: (e: TError) => void;
       onSuccess?: (v: TSuccess) => void;
