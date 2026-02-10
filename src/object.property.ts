@@ -18,7 +18,11 @@ export class ObjectProp {
   }
 
   constructorBuild() {
-    return `this.${this.name} = params?.data?.${this.name} ? new ${this.type}({ data: params.data.${this.name} }) : null`;
+    if (this.isNullable) {
+      return `this.${this.name} = params?.data?.${this.name} ? new ${this.type}({ data: params.data.${this.name} }) : null`;
+    }
+
+    return `this.${this.name} = new ${this.type}({ data: params?.data?.${this.name} }) `;
   }
 
   classBuild() {
