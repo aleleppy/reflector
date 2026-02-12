@@ -66,7 +66,7 @@ export class ArrayProp {
     const required = this.isRequired ? "" : "?";
     const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}`;
 
-    return `${this.name}${required}: ${sanitizedType}[]`;
+    return `${this.name}${required} = $state<${sanitizedType}[]>([])`;
   }
 
   interfaceBuild() {
