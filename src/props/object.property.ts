@@ -28,8 +28,9 @@ export class ObjectProp {
   classBuild() {
     const req = this.required ? "" : "?";
     const nullable = this.isNullable ? "| null" : "";
+    const defaultVar = this.isNullable ? "null" : `new ${this.type}`;
 
-    return `${this.name}${req}: ${this.type} ${nullable}`;
+    return `${this.name}${req} = $state<${this.type} ${nullable}>(${defaultVar})`;
   }
 
   interfaceBuild() {
