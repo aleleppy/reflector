@@ -59,6 +59,7 @@ export class PrimitiveProperty extends Property {
 
     const buildedExample = () => {
       if (this.emptyExample === sanitizedExample()) return sanitizedExample();
+      if (type === "boolean") return `!!params?.empty`;
       return `params?.empty ? ${this.emptyExample} : ${sanitizedExample()}`;
     };
 
