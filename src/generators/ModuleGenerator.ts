@@ -4,7 +4,7 @@ import { ModuleFormBuilder } from "../core/ModuleFormBuilder.js";
 import { ModuleStateBuilder } from "../core/ModuleStateBuilder.js";
 import { ModuleMethodProcessor } from "../core/ModuleMethodProcessor.js";
 import { ModuleParameterProcessor } from "../core/ModuleParameterProcessor.js";
-import type { Method } from "../core/Method.js";
+import type { Method } from "../method.js";
 
 export class ModuleGenerator {
   private module: Module;
@@ -49,7 +49,7 @@ ${moduleClass}
   private buildReflectorImports(): string {
     const imports = new Set<string>(["Behavior"]);
     
-    if (this.module.methods.some(m => m.request?.bodyType)) {
+    if (this.module.methods.some(m => m.request.bodyType)) {
       imports.add("isFormValid");
     }
 
@@ -60,12 +60,13 @@ ${moduleClass}
     const entries = new Set<string>();
     
     for (const method of this.module.methods) {
-      if (method.request?.bodyType) {
-        entries.add(method.request.bodyType);
+      const request = method.request;
+      if (request.bodyType) {
+        entries.add(request.bodyType);
       }
-      if (method.responseType) {
-        entries.add(`type ${method.responseType}Interface`);
-        entries.add(method.responseType);
+      if (request.responseType) {
+        entries.add(`type ${request.responseType}Interface`);
+        entries.add(request.responseType);
       }
     }
 
@@ -77,7 +78,21 @@ ${moduleClass}
 
   private buildModuleTypes(): string[] {
     const types: string[] = [];
-    const { querys, headers, paths, cookies } = this.paramProcessor.process(this.module.methods);
+    
+    // Aggregate all params from all methods
+    const querys: any[] = [];
+    const headers: any[] = [];
+    const paths: any[] = [];
+    const cookies: any[] = [];
+    
+    for (const method of this.module.methods) {
+      querys.push(...method.querys);
+      headers.push(...method.headers);
+      paths.push(...method.paths);
+      cookies.push(...method.cookies);
+    }
+    
+    const result = this.paramProcessor.process({ querys, headers, paths, cookies });
 
     if (querys.length > 0) types.push(this.buildClassProps({ props: querys, name: "Querys" }));
     if (headers.length > 0) types.push(this.buildClassProps({ props: headers, name: "Headers" }));
@@ -104,8 +119,22 @@ ${moduleClass}
     const moduleInit = new Set<string>();
     const moduleClear = new Set<string>();
 
-    const { buildedMethods, form, formSet } = this.methodProcessor.process(this.module.methods);
-    const { paramAttributes, paramInit, paramClear } = this.paramProcessor.process(this.module.methods);
+    const { buildedMethods, form, formSet } = this.methodProcessor.process(this.module.methods, this.module.name);
+    
+    // Aggregate all params from all methods
+    const querys: any[] = [];
+    const headers: any[] = [];
+    const paths: any[] = [];
+    const cookies: any[] = [];
+    
+    for (const method of this.module.methods) {
+      querys.push(...method.querys);
+      headers.push(...method.headers);
+      paths.push(...method.paths);
+      cookies.push(...method.cookies);
+    }
+    
+    const { paramAttributes, paramInit, paramClear } = this.paramProcessor.process({ querys, headers, paths, cookies });
 
     paramAttributes.forEach((attr) => moduleAttributes.add(attr));
     paramInit.forEach((init) => moduleInit.add(init));

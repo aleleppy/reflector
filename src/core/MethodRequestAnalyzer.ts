@@ -41,7 +41,7 @@ export class MethodRequestAnalyzer {
   private processQueryParam(name: string, schema: any, moduleName: string, isRequired: boolean): void {
     if (schema.type === "array") {
       this.querys.push(
-        new ArrayPropClass({ name, schemaObject: schema, schemaName: moduleName, isParam: true, required: isRequired })
+        new ArrayPropClass({ name, schemaObject: schema, schemaName: moduleName, isParam: true, isEnum: false, required: isRequired })
       );
       return;
     }

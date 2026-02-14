@@ -124,11 +124,11 @@ export class Schema {
       const items = value.items;
 
       if (items && !("$ref" in items) && items.enum) {
-        this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject }));
+        this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject, isParam: undefined, isEnum: true }));
         // this.enumProps.push(new EnumProp({ enums: items.enum, name, required }));
         continue;
       } else if (value.enum) {
-        this.enumProps.push(new EnumProp({ enums: value.enum, name, required, entityName: schemaName }));
+        this.enumProps.push(new EnumProp({ enums: value.enum, name, required, isParam: undefined, entityName: schemaName }));
         continue;
       }
 
@@ -138,11 +138,11 @@ export class Schema {
       if (type === "object") continue;
 
       if (type === "array") {
-        this.arrayProps.push(new ArrayProp({ schemaObject, schemaName, name, required }));
+        this.arrayProps.push(new ArrayProp({ schemaObject, schemaName, name, required, isParam: undefined, isEnum: false }));
         continue;
       }
 
-      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator }));
+      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined }));
     }
   }
 }

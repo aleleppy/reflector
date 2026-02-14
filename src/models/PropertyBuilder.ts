@@ -25,7 +25,9 @@ export class PropertyBuilder {
 
   fromSchema(schemaObject: SchemaObject, schemaName?: string): this {
     this.schemaObject = schemaObject;
-    this.schemaName = schemaName;
+    if (schemaName !== undefined) {
+      this.schemaName = schemaName;
+    }
     return this;
   }
 
@@ -50,12 +52,16 @@ export class PropertyBuilder {
   }
 
   withValidator(validator: string | undefined): this {
-    this.validator = validator;
+    if (validator !== undefined) {
+      this.validator = validator;
+    }
     return this;
   }
 
   withEntityName(entityName: string | undefined): this {
-    this.schemaName = entityName as string | undefined;
+    if (entityName !== undefined) {
+      this.schemaName = entityName;
+    }
     return this;
   }
 

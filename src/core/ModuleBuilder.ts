@@ -6,7 +6,7 @@ import { getEndpoint } from "../utils/EndpointUtils.js";
 import type { ComponentsObject, PathsObject, OperationObject } from "../types/open-api-spec.interface.js";
 import type { FieldValidators, ReflectorOperation } from "../types/types.js";
 import { Module } from "./Module.js";
-import { MethodBuilder } from "./MethodBuilder.js";
+import { Method } from "../method.js";
 
 interface Info {
   operations: ReflectorOperation[];
@@ -54,9 +54,8 @@ export class ModuleBuilder {
     }
 
     return Array.from(methodsMap).map(([name, info]) => {
-      const methodBuilder = new MethodBuilder();
-      const methods = info.operations.map((op) => methodBuilder.build(op, info.moduleName));
-      const src = new Source();
+      const methods = info.operations.map((op) => new Method({ operation: op, moduleName: info.moduleName }));
+      const src = new Source({ path: "" });
       return new Module({ name, path: info.path, moduleName: info.moduleName, methods, src });
     });
   }

@@ -50,6 +50,7 @@ export class ArrayProp {
         enums: items.enum ?? schemaObject.enum,
         name: this.name,
         required: true,
+        isParam: undefined,
         entityName: schemaName,
       }).enumName;
       return enumType;

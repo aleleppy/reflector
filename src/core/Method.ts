@@ -28,7 +28,7 @@ export class Method {
   endpoint: string;
   apiType: ApiType;
   attributeType: ReflectorRequestType;
-  description: string | undefined;
+  description: string | undefined = undefined;
   analyzers: MethodAnalyzers;
   responseTypeInterface: string;
   isValid: boolean = true;
@@ -38,7 +38,7 @@ export class Method {
     endpoint: string;
     apiType: ApiType;
     attributeType: ReflectorRequestType;
-    description?: string;
+    description: string | undefined;
     analyzers: MethodAnalyzers;
     responseTypeInterface: string;
   }) {

@@ -43,7 +43,9 @@ export class MethodBodyAnalyzer {
     const schema = schemaOrType;
 
     if (schema.enum) {
-      return schema.title || schema["x-enumNames"] || "string";
+      const enumName = schema["x-enumNames"];
+      if (Array.isArray(enumName)) return schema.title || "string";
+      return schema.title || enumName || "string";
     }
 
     const allOfFirst = schema.allOf?.[0];
