@@ -14,6 +14,12 @@
 const trashWords = new Set([
   "Kyc",
   "Get",
+  "Update",
+  "Close",
+  "Find",
+  "Change",
+  "List",
+  "Create",
   "Customer",
   "Response",
   "Res",
@@ -21,7 +27,10 @@ const trashWords = new Set([
   "Admin",
   "Default",
   "Owner",
+  "Repo",
+  "Formatted",
   "Member",
+  "Dto",
   "Public",
 ]);
 
@@ -130,8 +139,8 @@ export function getFullEndpoint(rawEndpoint: string) {
     .join("/");
 }
 
-export function treatenEnum(enums: string[]) {
-  const a = enums.map((e) => `"${e}"`);
+// export function treatenEnum(enums: string[]) {
+//   const a = enums.map((e) => `"${e}"`);
 
-  return ` z.literal([${a}])`;
-}
+//   return ` z.literal([${a}])`;
+// }

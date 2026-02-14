@@ -42,7 +42,7 @@ export class ArrayProp {
 
     if (items && !("$ref" in items) && items.enum) {
       this.isPrimitiveType = true;
-      const enumType = new EnumProp({ enums: items.enum, name: this.name, required: true }).type;
+      const enumType = new EnumProp({ enums: items.enum, name: this.name, required: true, entityName: schemaName }).type;
       return `(${enumType})`;
     }
 

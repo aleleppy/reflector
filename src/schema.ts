@@ -128,7 +128,7 @@ export class Schema {
         // this.enumProps.push(new EnumProp({ enums: items.enum, name, required }));
         continue;
       } else if (value.enum) {
-        this.enumProps.push(new EnumProp({ enums: value.enum, name, required }));
+        this.enumProps.push(new EnumProp({ enums: value.enum, name, required, entityName: schemaName }));
         continue;
       }
 

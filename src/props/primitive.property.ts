@@ -146,3 +146,9 @@ export class PrimitiveProp {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
   }
 }
+
+export class PrimitivePropParam extends PrimitiveProp {
+  override classBuild() {
+    return `${this.name} = $derived.by(() => page.params.${this.name})`;
+  }
+}
