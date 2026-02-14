@@ -1,7 +1,7 @@
-import { ReflectorTypesGenerator } from "./ReflectorTypes";
-import { ReflectorClassesGenerator } from "./ReflectorClasses";
-import { ReflectorFunctionsGenerator } from "./ReflectorFunctions";
-import { QueryBuilderGenerator } from "./QueryBuilderGenerator";
+import { ReflectorTypesGenerator } from "./ReflectorTypes.js";
+import { ReflectorClassesGenerator } from "./ReflectorClasses.js";
+import { ReflectorFunctionsGenerator } from "./ReflectorFunctions.js";
+import { QueryBuilderGenerator } from "./QueryBuilderGenerator.js";
 
 export class ReflectorFileGenerator {
   private readonly imports = [

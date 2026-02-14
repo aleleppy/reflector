@@ -13,11 +13,11 @@ export class PrimitiveProperty extends Property {
     name: string;
     schemaObject: SchemaObject;
     required: boolean;
-    validator?: string;
+    validator: string | undefined;
     isParam?: boolean;
   }) {
     const { name, schemaObject, required, validator, isParam } = params;
-    super({ name, required, isParam });
+    super({ name, required, isParam: isParam ?? false });
 
     const type = (schemaObject.type as string) ?? "string";
     this.rawType = type;
@@ -41,7 +41,7 @@ export class PrimitiveProperty extends Property {
     example: AbstractType;
     required: boolean;
     type: string;
-    validator?: string;
+    validator: string | undefined;
   }): string {
     const { example, name, required, type, validator } = params;
 

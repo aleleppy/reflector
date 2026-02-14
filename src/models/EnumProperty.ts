@@ -16,7 +16,7 @@ export class EnumProperty extends Property {
     entityName: string;
   }) {
     const { name, enums, required, isParam, entityName } = params;
-    super({ name, required, isParam });
+    super({ name, required, isParam: isParam ?? false });
 
     this.type = enums.map((e) => `'${e}'`).join("|");
     this.example = enums[0] as string;

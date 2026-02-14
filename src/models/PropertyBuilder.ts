@@ -49,13 +49,13 @@ export class PropertyBuilder {
     return this;
   }
 
-  withValidator(validator: string): this {
+  withValidator(validator: string | undefined): this {
     this.validator = validator;
     return this;
   }
 
-  withEntityName(entityName: string): this {
-    this.schemaName = entityName;
+  withEntityName(entityName: string | undefined): this {
+    this.schemaName = entityName as string | undefined;
     return this;
   }
 

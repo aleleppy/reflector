@@ -11,7 +11,7 @@ export class EnumProp {
   private readonly isRequired: boolean;
   private readonly example: string;
 
-  constructor(params: { name: string; enums: string[]; required: boolean; isParam?: boolean; entityName: string }) {
+  constructor(params: { name: string; enums: string[]; required: boolean; isParam: boolean | undefined; entityName: string }) {
     const { name, required, isParam, enums, entityName } = params;
 
     this.name = name;

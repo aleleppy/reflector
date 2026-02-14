@@ -11,11 +11,11 @@ export class ObjectProperty extends Property {
     isNullable?: boolean;
   }) {
     const { name, referenceObject, isRequired, isNullable } = params;
-    super({ name, required: isRequired ?? true, isNullable });
+    super({ name, required: isRequired ?? true, isNullable: isNullable ?? false });
 
     const ref = referenceObject.$ref;
     const parts = ref.split("/");
-    this.reference = parts[parts.length - 1];
+    this.reference = parts[parts.length - 1] ?? "unknown";
   }
 
   generateConstructor(): string {

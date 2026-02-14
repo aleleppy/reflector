@@ -22,7 +22,7 @@ export class PrimitiveProp {
     schemaObject: SchemaObject;
     required: boolean;
     validator: string | undefined;
-    isParam?: boolean;
+    isParam: boolean | undefined;
   }) {
     const { name, schemaObject, required, validator, isParam } = params;
     const { example: rawExample, type: rawType } = schemaObject;

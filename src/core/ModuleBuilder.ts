@@ -1,10 +1,12 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "../file.js";
-import { getEndpoint, splitByUppercase } from "../utils/StringUtils.js";
+import { splitByUppercase } from "../utils/StringUtils.js";
+import { getEndpoint } from "../utils/EndpointUtils.js";
 import type { ComponentsObject, PathsObject, OperationObject } from "../types/open-api-spec.interface.js";
 import type { FieldValidators, ReflectorOperation } from "../types/types.js";
 import { Module } from "./Module.js";
+import { MethodBuilder } from "./MethodBuilder.js";
 
 interface Info {
   operations: ReflectorOperation[];
@@ -51,6 +53,11 @@ export class ModuleBuilder {
       }
     }
 
-    return Array.from(methodsMap).map(([name, info]) => new Module({ name, ...info }));
+    return Array.from(methodsMap).map(([name, info]) => {
+      const methodBuilder = new MethodBuilder();
+      const methods = info.operations.map((op) => methodBuilder.build(op, info.moduleName));
+      const src = new Source();
+      return new Module({ name, path: info.path, moduleName: info.moduleName, methods, src });
+    });
   }
 }

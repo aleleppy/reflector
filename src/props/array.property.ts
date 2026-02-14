@@ -15,8 +15,8 @@ export class ArrayProp {
     schemaObject: SchemaObject;
     schemaName: string;
     required: boolean;
-    isParam?: boolean;
-    isEnum?: boolean;
+    isParam: boolean | undefined;
+    isEnum: boolean | undefined;
   }) {
     const { name, schemaObject, schemaName, required, isParam } = params;
 

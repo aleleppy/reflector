@@ -16,7 +16,7 @@ export class ArrayProperty extends Property {
     required?: boolean;
   }) {
     const { name, schemaObject, schemaName, isParam, required } = params;
-    super({ name, required: required ?? true, isParam });
+    super({ name, required: required ?? true, isParam: isParam ?? false });
 
     this.schemaName = schemaName;
     this.isEnum = this.detectEnum(schemaObject);
@@ -46,7 +46,7 @@ export class ArrayProperty extends Property {
     if ("$ref" in items!) {
       const ref = items.$ref;
       const parts = ref.split("/");
-      return parts[parts.length - 1];
+      return parts[parts.length - 1] ?? "unknown";
     }
 
     if (items!.type === "array") {

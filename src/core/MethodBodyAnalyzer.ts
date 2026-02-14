@@ -43,7 +43,7 @@ export class MethodBodyAnalyzer {
     const schema = schemaOrType;
 
     if (schema.enum) {
-      return schema.title || schema["x-enum-name"] || "string";
+      return schema.title || schema["x-enumNames"] || "string";
     }
 
     const allOfFirst = schema.allOf?.[0];
@@ -55,7 +55,7 @@ export class MethodBodyAnalyzer {
     if (schema.type === "array" && schema.items) {
       const items = schema.items;
       if (this.isRef(items)) return this.componentName(items);
-      if (items.enum) return items.title || (items as SchemaObject & { "x-enum-name"?: string })["x-enum-name"] || "string";
+      if (items.enum) return items.title || (items as SchemaObject & { "x-enumNames"?: string })["x-enumNames"] || "string";
       return items.type;
     }
 
@@ -74,7 +74,7 @@ export class MethodBodyAnalyzer {
 
     if (this.isRef(data)) return this.componentName(data);
     if (data.type === "any") return undefined;
-    if (data.enum) return data.title || (data as SchemaObject & { "x-enum-name"?: string })["x-enum-name"] || "string";
+    if (data.enum) return data.title || (data as SchemaObject & { "x-enumNames"?: string })["x-enumNames"] || "string";
     return data.type;
   }
 }
