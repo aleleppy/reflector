@@ -18,9 +18,10 @@ export class EnumProperty extends Property {
     const { name, enums, required, isParam, entityName } = params;
     super({ name, required, isParam: isParam ?? false });
 
-    this.type = enums.map((e) => `'${e}'`).join("|");
-    this.example = enums[0] as string;
-    this.enumName = this.resolveEnumName(entityName, name, enums);
+    const uniqueEnums = [...new Set(enums)];
+    this.type = uniqueEnums.map((e) => `'${e}'`).join("|");
+    this.example = uniqueEnums[0] as string;
+    this.enumName = this.resolveEnumName(entityName, name, uniqueEnums);
   }
 
   private resolveEnumName(entityName: string, propName: string, enums: string[]): string {
