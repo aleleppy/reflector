@@ -1,255 +1,49 @@
-import { Request, type ReflectorRequestType } from "./request.js";
-
-import type { AttributeProp, ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage, getFullEndpoint, isEnumSchema, treatByUppercase } from "./helpers/helpers.js";
-import { PrimitiveProp } from "./props/primitive.property.js";
-import { ArrayProp } from "./props/array.property.js";
-import { EnumProp } from "./props/enum.property.js";
+import { MethodBuilder } from "./core/MethodBuilder.js";
+import { MethodGenerator } from "./generators/MethodGenerator.js";
+import type { ReflectorOperation, AttributeProp } from "./types/types.js";
+import type { PrimitiveProp } from "./props/primitive.property.js";
 
 export class Method {
+  private builder = new MethodBuilder();
+  private generator = new MethodGenerator();
+
   name: string;
-  // zodProperties: Property[];
-  description: string | undefined;
   endpoint: string;
+  description: string | undefined;
   isValid: boolean = true;
 
-  request: Request;
+  private method: ReturnType<MethodBuilder["build"]>;
 
-  paths: PrimitiveProp[] = [];
-  headers: PrimitiveProp[] = [];
-  querys: AttributeProp[] = [];
-  cookies: PrimitiveProp[] = [];
+  get request() {
+    return this.method.analyzers.request;
+  }
 
-  private readonly additionalMethod: string;
-  responseTypeInterface!: string;
+  get headers(): PrimitiveProp[] {
+    return this.method.analyzers.props.headers;
+  }
+
+  get cookies(): PrimitiveProp[] {
+    return this.method.analyzers.props.cookies;
+  }
+
+  get paths(): PrimitiveProp[] {
+    return this.method.analyzers.props.paths;
+  }
+
+  get querys(): AttributeProp[] {
+    return this.method.analyzers.props.querys;
+  }
 
   constructor(params: { operation: ReflectorOperation; moduleName: string }) {
-    const { operation } = params;
-
-    this.request = new Request(operation);
-
-    this.description = operation.description ?? operation.summary;
-    this.endpoint = operation.endpoint;
-
-    this.name = operation.operationId?.split("_")[1] ?? this.request.apiType;
-
-    this.buildProps(params);
-
-    this.additionalMethod = this.getAdditionalMethod({
-      name: this.name,
-      attributeType: this.request.attributeType,
-    });
-  }
-
-  private buildProps(params: { operation: ReflectorOperation; moduleName: string }) {
     const { operation, moduleName } = params;
+    this.method = this.builder.build(operation, moduleName);
 
-    if (!operation.parameters || operation.parameters?.length === 0) return;
-
-    for (const object of operation.parameters) {
-      if ("$ref" in object) continue;
-      if (!object.schema) continue;
-
-      const { required, name, description, schema, in: inParam } = object;
-
-      if ("$ref" in schema) continue;
-
-      const properties = { name, required: !!required, schemaObject: schema, validator: undefined, isParam: true };
-
-      if (inParam === "query") {
-        if (schema.type === "array") {
-          this.querys.push(
-            new ArrayProp({ name, schemaObject: schema, schemaName: moduleName, isParam: true, required: !!required }),
-          );
-          continue;
-        }
-
-        if (schema.enum) {
-          this.querys.push(
-            new EnumProp({ name, required: !!required, enums: schema.enum, isParam: true, entityName: moduleName }),
-          );
-        }
-
-        this.querys.push(new PrimitiveProp(properties));
-      } else if (inParam === "header") {
-        this.headers.push(new PrimitiveProp(properties));
-      } else if (inParam === "path") {
-        this.paths.push(new PrimitiveProp(properties));
-      } else if (inParam === "cookie") {
-        this.paths.push(new PrimitiveProp(properties));
-      }
-    }
+    this.name = this.method.name;
+    this.endpoint = this.method.endpoint;
+    this.description = this.method.description;
   }
 
-  private readonly gee = (props: AttributeProp[]) => {
-    return props.map((x) => x.name).join(",");
-  };
-
-  private getProps() {
-    const headers = this.gee(this.headers);
-    const querys = this.gee(this.querys);
-    const paths = this.gee(this.paths);
-    const cookies = this.gee(this.cookies);
-
-    return `
-      ${querys.length > 0 ? `const { ${querys} } = this.querys.bundle()` : ""};
-      ${paths.length > 0 ? `const { ${paths} } = this.paths` : ""};
-      ${cookies.length > 0 ? `const cookies = this.cookies` : ""};
-    `;
-  }
-
-  private buildCallMethod(): { inside: string; outside: string } {
-    const beforeResponse: string[] = [];
-
-    const responseType = this.request.responseType ? `${this.request.responseType}Interface` : "null";
-    this.responseTypeInterface = responseType;
-
-    if (this.request.attributeType === "list") {
-      beforeResponse.push(`this.list = ${this.request.responseType}.from(response.data)`);
-
-      const inside = `
-          const response = await api.get<${responseType}, unknown>({
-            endpoint,
-            queryData: { ${this.gee(this.querys)} }
-          })
-          ${beforeResponse.join(";")}
-        `;
-
-      return { inside, outside: "" };
-    } else if (this.request.attributeType === "entity") {
-      if (this.request.responseType) {
-        const entityName = treatByUppercase(this.request.responseType);
-        beforeResponse.push(`this.${entityName} = new ${this.request.responseType}({ data: response })`);
-      }
-
-      let querys = this.querys.length > 0 ? `queryData: {${this.querys.map((q) => q.name).join(",")}}` : "";
-
-      const inside = `
-          const response = await api.get<${responseType}, unknown>({
-            endpoint,
-            ${querys}
-          })
-          ${beforeResponse.join(";")}
-        `;
-
-      return { inside, outside: "" };
-    } else if (this.request.apiType === "post" || this.request.apiType === "put" || this.request.apiType === "patch") {
-      let data;
-      let headers;
-
-      if (this.request.bodyType) {
-        data = [`const data = this.forms.${this.name}.bundle()`, `if (!isFormValid(this.forms.${this.name})) return`].join(";");
-      }
-
-      const hasHeaders = this.request.parameters.some((p) => p.in === "header");
-      const hasData = this.request.bodyType;
-
-      if (hasHeaders) {
-        headers = `const headers = this.headers.bundle()`;
-      }
-
-      const outside = [data, headers].join("\n");
-
-      const inside = `
-        const response = await api.${this.request.apiType}<${responseType}>({
-          endpoint,
-          ${hasData ? "data," : ""}
-          ${hasHeaders ? "headers," : ""}
-        })
-      `;
-
-      return { outside, inside };
-    } else if (this.request.apiType === "delete") {
-      const inside = `
-        const response = await api.delete<${responseType}, unknown>({
-          endpoint,
-        })
-      `;
-
-      const outside = "";
-
-      return { inside, outside };
-    }
-
-    return { inside: "", outside: "" };
-  }
-
-  private readonly methodReturn = () => {
-    if (this.request.attributeType === "list") {
-      return "this.list";
-    }
-
-    if (!this.request.responseType) {
-      // this.isValid = false;
-    }
-
-    return this.request.responseType ? `new ${this.request.responseType}({ data: response })` : "null";
-  };
-
-  private getAdditionalMethod(params: { attributeType: ReflectorRequestType; name: string }) {
-    const { attributeType, name } = params;
-    let additionalMethod = "";
-    const canAddClearMethod = attributeType === "form" || attributeType === "entity";
-
-    if (canAddClearMethod && attributeType === "form") {
-      additionalMethod = `
-        /** Limpa o form depois do back retornar uma resposta de sucesso */
-        async ${name}AndClear(behavior: Behavior = new Behavior()) {
-          const data = await this.${name}(behavior)
-
-          if (data) {
-            this.clearForms()
-          }
-
-          return data
-        }
-      `;
-    }
-    // return additionalMethod;
-
-    return "";
-  }
-
-  private buildDescription() {
-    return `/** ${this.description ?? ""} */`;
-  }
-
-  build() {
-    const { inside, outside } = this.buildCallMethod();
-
-    if (this.name === "list") this.name = "listAll";
-
-    const description = this.buildDescription();
-
-    const a = "`";
-
-    const endpoint = `${a}${getFullEndpoint(this.endpoint)}${a}`;
-
-    return `
-      ${description}
-      async ${this.name}(behavior: Behavior<${this.responseTypeInterface}, ApiErrorResponse> = new Behavior()) {
-        const {onError, onSuccess} = behavior
-
-        this.loading = true
-        ${this.getProps()}
-        const endpoint = ${endpoint}
-
-        ${outside}
-
-        try{
-          ${inside}
-          onSuccess?.(response)
-
-          return ${this.methodReturn()}
-        } catch(e) {
-          const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
-          return onError?.(parsedError);
-        } finally {
-          this.loading = false
-        }
-      }
-
-      ${this.additionalMethod}
-    `;
+  build(): string {
+    return this.generator.generate(this.method);
   }
 }
