@@ -40,6 +40,18 @@ export class ReflectorFunctionsGenerator {
   url.searchParams.set(key, String(newValue));
   goto(url, { replaceState: true, keepFocus: true });
 }`,
+      `export function changeArrayParam({ values, key }: { values: string[]; key: string }) {
+  const url = new URL(page.url);
+  url.searchParams.delete(key);
+  values.forEach((value) => url.searchParams.append(key, value));
+  goto(url, { replaceState: true, keepFocus: true });
+}`,
+      `export function changeArrayParamFromEvent({ event, key }: QueryContract) {
+  const selectedOptions = Array.from(event.currentTarget.selectedOptions).map(
+    (opt) => (opt as HTMLOptionElement).value
+  );
+  changeArrayParam({ values: selectedOptions, key });
+}`,
     ].join(";");
   }
 }
