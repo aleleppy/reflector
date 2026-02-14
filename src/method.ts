@@ -1,9 +1,10 @@
 import { Request, type ReflectorRequestType } from "./request.js";
 
-import type { ReflectorOperation, ReflectorParamType } from "./types/types.js";
-import { createDangerMessage, getFullEndpoint, treatByUppercase } from "./helpers/helpers.js";
+import type { AttributeProp, ReflectorOperation, ReflectorParamType } from "./types/types.js";
+import { createDangerMessage, getFullEndpoint, isEnumSchema, treatByUppercase } from "./helpers/helpers.js";
 import { PrimitiveProp } from "./props/primitive.property.js";
 import { ArrayProp } from "./props/array.property.js";
+import { EnumProp } from "./props/enum.property.js";
 
 export class Method {
   name: string;
@@ -16,7 +17,7 @@ export class Method {
 
   paths: PrimitiveProp[] = [];
   headers: PrimitiveProp[] = [];
-  querys: (PrimitiveProp | ArrayProp)[] = [];
+  querys: AttributeProp[] = [];
   cookies: PrimitiveProp[] = [];
 
   private readonly additionalMethod: string;
@@ -41,7 +42,7 @@ export class Method {
   }
 
   private buildProps(params: { operation: ReflectorOperation; moduleName: string }) {
-    const { operation } = params;
+    const { operation, moduleName } = params;
 
     if (!operation.parameters || operation.parameters?.length === 0) return;
 
@@ -57,10 +58,19 @@ export class Method {
 
       if (inParam === "query") {
         if (schema.type === "array") {
-          this.querys.push(new ArrayProp({ name, schemaObject: schema, schemaName: "", isParam: true, required: !!required }));
-        } else {
-          this.querys.push(new PrimitiveProp(properties));
+          this.querys.push(
+            new ArrayProp({ name, schemaObject: schema, schemaName: moduleName, isParam: true, required: !!required }),
+          );
+          continue;
         }
+
+        if (schema.enum) {
+          this.querys.push(
+            new EnumProp({ name, required: !!required, enums: schema.enum, isParam: true, entityName: moduleName }),
+          );
+        }
+
+        this.querys.push(new PrimitiveProp(properties));
       } else if (inParam === "header") {
         this.headers.push(new PrimitiveProp(properties));
       } else if (inParam === "path") {
@@ -71,7 +81,7 @@ export class Method {
     }
   }
 
-  private readonly gee = (props: (PrimitiveProp | ArrayProp)[]) => {
+  private readonly gee = (props: AttributeProp[]) => {
     return props.map((x) => x.name).join(",");
   };
 
@@ -83,8 +93,8 @@ export class Method {
 
     return `
       ${querys.length > 0 ? `const { ${querys} } = this.querys.bundle()` : ""};
-      ${paths.length > 0 ? `const paths = this.paths.bundle()` : ""};
-      ${cookies.length > 0 ? `const cookies = this.cookies.bundle()` : ""};
+      ${paths.length > 0 ? `const { ${paths} } = this.paths` : ""};
+      ${cookies.length > 0 ? `const cookies = this.cookies` : ""};
     `;
   }
 

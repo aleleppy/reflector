@@ -3,10 +3,9 @@ import * as fs from "node:fs";
 import { Source } from "./file.js";
 import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
-import type { ReflectorOperation } from "./types/types.js";
+import type { AttributeProp, ParamType, ReflectorOperation } from "./types/types.js";
 import { generatedDir } from "./vars.global.js";
 import type { PrimitiveProp } from "./props/primitive.property.js";
-import type { ArrayProp } from "./props/array.property.js";
 
 interface Form {
   name: string;
@@ -24,6 +23,7 @@ export class Module {
   methods: Method[];
 
   reflectorImports: Set<string>;
+  enumImports: Set<string>;
   moduleConstructor: string;
 
   constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string }) {
@@ -37,6 +37,7 @@ export class Module {
     ]);
 
     this.reflectorImports = new Set<string>(["Behavior"]);
+    this.enumImports = new Set<string>();
 
     this.name = capitalizeFirstLetter(name);
     this.path = path;
@@ -61,43 +62,66 @@ export class Module {
     });
   }
 
-  private buildClassProps(params: { props: (ArrayProp | PrimitiveProp)[]; name: string }) {
+  private buildClassProps(params: { props: AttributeProp[]; name: ParamType }) {
     const { name, props } = params;
 
     const bundle: string[] = [];
     const attributes: string[] = [];
-    const constructorThis: string[] = [];
-    const interfaceBuild: string[] = [];
+    // const constructorThis: string[] = [];
+    // const interfaceBuild: string[] = [];
+    // const uptadeThis: string[] = [];
 
-    props.forEach((prop) => {
-      constructorThis.push(prop.constructorBuild());
-      bundle.push(prop.bundleBuild());
-      attributes.push(prop.classBuild());
-      interfaceBuild.push(prop.interfaceBuild());
-    });
+    if (name === "Paths") {
+      props.forEach((prop) => {
+        if ("rawType" in prop) {
+          attributes.push(prop.patchBuild());
+        }
+      });
 
-    const buildedInterface = `
-      interface ${name}Interface {
-        ${interfaceBuild.join(";")}
+      this.imports.add(`import { page } from "$app/state"`);
+
+      return `
+      class ${name} {
+        ${attributes.join(";")}
       }
-    `;
+      `;
+    } else if (name === "Querys") {
+      props.forEach((prop) => {
+        if ("rawType" in prop) {
+          attributes.push(prop.queryBuild());
+          // uptadeThis.push(prop.updateQueryBuild());
+          bundle.push(prop.bundleBuild());
+        }
+      });
+    } else {
+      props.forEach((prop) => {
+        if ("isEnum" in prop || "enumName" in prop) {
+          this.enumImports.add(prop.type);
+        }
+        attributes.push(prop.classBuild());
+      });
+    }
+
+    const bundleBuild =
+      bundle.length > 0
+        ? `
+      bundle() {
+        return {
+          ${bundle.join(",")}
+        }
+      }
+    `
+        : "";
 
     const buildedClass = `
       class ${name} {
         ${attributes.join(";")}
 
-        constructor(params?: { data?: ${name}Interface, empty?: boolean }){
-          ${constructorThis.join(";")}
-        }
-
-        bundle(){
-          return { ${bundle.join(",")} }
-        }
+        ${bundleBuild}
       }
-
     `;
 
-    return [buildedInterface, buildedClass].join(";");
+    return [buildedClass].join(";");
   }
 
   private masterBuilder(params: { methods: Method[] }): {
@@ -171,7 +195,7 @@ export class Module {
     const entries = new Set();
     const buildedMethods: string[] = [];
 
-    const queryMap = new Map<string, PrimitiveProp | ArrayProp>();
+    const queryMap = new Map<string, AttributeProp>();
     const headerMap = new Map<string, PrimitiveProp>();
     const pathMap = new Map<string, PrimitiveProp>();
     const cookieMap = new Map<string, PrimitiveProp>();
@@ -242,7 +266,7 @@ export class Module {
   }
 
   private processParams(params: {
-    querys: (PrimitiveProp | ArrayProp)[];
+    querys: AttributeProp[];
     paths: PrimitiveProp[];
     headers: PrimitiveProp[];
     cookies: PrimitiveProp[];
@@ -254,12 +278,12 @@ export class Module {
     const paramInit = new Set<string>([]);
     const paramClear = new Set<string>([]);
 
-    const getParams = (params: { name: string; props: (ArrayProp | PrimitiveProp)[] }) => {
+    const getParams = (params: { name: string; props: AttributeProp[] }) => {
       const { name, props } = params;
-      const capitalizedName = capitalizeFirstLetter(name);
+      const capitalizedName = capitalizeFirstLetter(name) as ParamType;
 
       buildedParamsTypes.push(this.buildClassProps({ props, name: capitalizedName }));
-      paramAttributes.add(`${name} = $state(new ${capitalizedName}())`);
+      paramAttributes.add(`${name} = new ${capitalizedName}()`);
       paramInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
       paramClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
     };
@@ -274,15 +298,14 @@ export class Module {
     for (const { name, props } of argEntries) {
       if (!props.length) continue;
 
-      this.reflectorImports.add("build");
-      this.reflectorImports.add("BuildedInput");
+      this.reflectorImports.add("QueryBuilder");
 
       getParams({ name, props });
     }
 
-    if (buildedParamsTypes.length > 0) {
-      this.imports.add('import { validateInputs } from "$lib/sanitizers/validateFormats"');
-    }
+    // if (buildedParamsTypes.length > 0) {
+    //   this.imports.add('import { validateInputs } from "$lib/sanitizers/validateFormats"');
+    // }
 
     return { buildedParamsTypes, paramAttributes, paramInit, paramClear };
   }
@@ -359,10 +382,12 @@ export class Module {
     const { moduleInit, moduleTypes, moduleAttributes, moduleClear, classImports, buildedMethods } = params;
 
     const reflectorImports = `import { ${Array.from(this.reflectorImports)}, type ApiErrorResponse } from "$reflector/reflector.svelte";`;
+    const enumImports = this.enumImports.size > 0 ? `import {${Array.from(this.enumImports)} } from "$reflector/enums"` : "";
 
     return `
       ${Array.from(this.imports).join(";")}
       ${reflectorImports}
+      ${enumImports}
       ${classImports}
 
       ${moduleTypes.join(";")}

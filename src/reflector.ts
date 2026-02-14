@@ -1,5 +1,9 @@
 export class ReflectorFile {
-  private readonly imports = ['import toast from "$lib/utils/toast.svelte"'].join(";");
+  private readonly imports = [
+    'import toast from "$lib/utils/toast.svelte"',
+    'import { goto } from "$app/navigation"',
+    'import { page } from "$app/state"',
+  ].join(";");
 
   private readonly types = [
     "type ValidatorResult = string | null",
@@ -10,6 +14,13 @@ export class ReflectorFile {
         } & {
           bundle: unknown;
         }`,
+    `export interface QueryContract {
+      event: SvelteEvent;
+      key: string;
+    }`,
+    `export type SvelteEvent = Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    }`,
   ].join(";");
 
   private readonly classes = [
@@ -90,6 +101,30 @@ export class ReflectorFile {
         return item;
       });
     }`,
+    `
+    export function changeParam({ event, key }: QueryContract) {
+      const newValue = event.currentTarget.value;
+      const url = new URL(page.url);
+      url.searchParams.set(key, String(newValue));
+      goto(url, { replaceState: true, keepFocus: true });
+    }
+    `,
+    `
+    export class QueryBuilder {
+      private readonly key: string = '';
+      value = $derived(page.url.searchParams.get(this.key));
+
+      constructor(params: { key: string; value: string | number | null }) {
+        const { key } = params;
+
+        this.key = key;
+      }
+
+      update(event: SvelteEvent) {
+        return changeParam({ key: this.key, event });
+      }
+    }
+    `,
   ].join(";");
 
   fileContent = `

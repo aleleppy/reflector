@@ -1,3 +1,4 @@
+import { isEnumSchema } from "../helpers/helpers.js";
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import { EnumProp } from "./enum.property.js";
 
@@ -7,6 +8,7 @@ export class ArrayProp {
   isRequired: boolean;
   isParam: boolean;
   private isPrimitiveType: boolean = false;
+  readonly isEnum: boolean;
 
   constructor(params: {
     name: string;
@@ -16,7 +18,9 @@ export class ArrayProp {
     isParam?: boolean;
     isEnum?: boolean;
   }) {
-    const { name, schemaObject, schemaName, required, isParam, isEnum } = params;
+    const { name, schemaObject, schemaName, required, isParam } = params;
+
+    this.isEnum = isEnumSchema(schemaObject);
 
     this.name = this.treatName(name);
     this.type = this.getType({ schemaObject, schemaName });
@@ -42,8 +46,13 @@ export class ArrayProp {
 
     if (items && !("$ref" in items) && items.enum) {
       this.isPrimitiveType = true;
-      const enumType = new EnumProp({ enums: items.enum, name: this.name, required: true, entityName: schemaName }).type;
-      return `(${enumType})`;
+      const enumType = new EnumProp({
+        enums: items.enum ?? schemaObject.enum,
+        name: this.name,
+        required: true,
+        entityName: schemaName,
+      }).enumName;
+      return enumType;
     }
 
     if ("$ref" in items) {

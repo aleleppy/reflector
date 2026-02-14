@@ -3,6 +3,8 @@
 //   const [lhs, rhsRaw = ""] = attr.split("=");
 //   const rhs = rhsRaw.trim();
 
+import type { SchemaObject } from "../types/open-api-spec.interface.js";
+
 //   // remove apenas UM wrapper $state( ... ) do início ao fim
 //   const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
 
@@ -12,24 +14,19 @@
 // }
 
 const trashWords = new Set([
-  "Kyc",
   "Get",
-  "Update",
-  "Close",
-  "Find",
-  "Change",
-  "List",
-  "Create",
-  "Customer",
-  "Response",
+  // "Update",
+  // "Close",
+  // "Find",
+  // "Change",
+  // "List",
+  // "Create",
+  // "Response",
   "Res",
-  "Self",
-  "Admin",
+  // "Self",
   "Default",
-  "Owner",
-  "Repo",
-  "Formatted",
-  "Member",
+  // "Repo",
+  // "Formatted",
   "Dto",
   "Public",
 ]);
@@ -67,12 +64,12 @@ export function splitByUppercase(text: string) {
   return text.split(/(?=[A-Z])/);
 }
 
-export function treatByUppercase(text?: string): string {
-  const base = (text ?? "").trim();
-  const raw = base.length > 0 ? base : "entity";
+export function treatByUppercase(text: string): string {
+  const base = text;
+  // const raw = base.length > 0 ? base : "entity";
 
   // Se splitByUppercase tiver tipagem "string[] | undefined", isso resolve.
-  const parts: string[] = (splitByUppercase(raw) ?? [])
+  const parts: string[] = (splitByUppercase(base) ?? [])
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
     .filter((p) => !trashWords.has(p));
@@ -132,11 +129,20 @@ export function getFullEndpoint(rawEndpoint: string) {
       const match = new RegExp(/^\{(.+)\}$/).exec(str);
       if (match) {
         const key = match[1]; // sem { }
-        return `\${paths.${key}}`; // gera "${paths.key}" como texto
+        return `\${${key}}`; // gera "${paths.key}" como texto
       }
       return str;
     })
     .join("/");
+}
+
+export function isEnumSchema(schema: SchemaObject): boolean {
+  if (schema.enum) return true;
+  if (schema.items) {
+    if ("$ref" in schema.items) return false;
+    if (schema.items.enum) return true;
+  }
+  return false;
 }
 
 // export function treatenEnum(enums: string[]) {

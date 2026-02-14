@@ -142,13 +142,19 @@ export class PrimitiveProp {
     return `${this.name}${req}: ${this.rawType}`;
   }
 
+  patchBuild() {
+    return `readonly ${this.name} = $derived.by(() => page.params.${this.name})`;
+  }
+
+  queryBuild() {
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${this.emptyExample} }))`;
+  }
+
+  updateQueryBuild() {
+    return `${this.name}: (event: SvelteEvent) => changeParam({ key: '${this.name}', event })`;
+  }
+
   bundleBuild() {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
-  }
-}
-
-export class PrimitivePropParam extends PrimitiveProp {
-  override classBuild() {
-    return `${this.name} = $derived.by(() => page.params.${this.name})`;
   }
 }

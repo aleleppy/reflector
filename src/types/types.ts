@@ -1,3 +1,6 @@
+import type { ArrayProp } from "../props/array.property.js";
+import type { EnumProp } from "../props/enum.property.js";
+import type { PrimitiveProp } from "../props/primitive.property.js";
 import type { OperationObject } from "./open-api-spec.interface.js";
 
 export type ReflectorParamType = "string" | "boolean" | "number" | "array" | "object" | "enum";
@@ -20,3 +23,5 @@ export interface ValidatorField {
 }
 
 export type FieldValidators = Map<string, string>;
+export type AttributeProp = PrimitiveProp | ArrayProp | EnumProp;
+export type ParamType = "Paths" | "Querys" | "Headers";

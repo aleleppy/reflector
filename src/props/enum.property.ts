@@ -1,3 +1,4 @@
+import { EnumClass } from "../enum.class.js";
 import { splitByUppercase, treatByUppercase } from "../helpers/helpers.js";
 import { enumTypes } from "../main.js";
 
@@ -22,6 +23,8 @@ export class EnumProp {
     const types = enumTypes.get(enums.join(","));
 
     if (!types) {
+      // const teste2 = new EnumClass({ entityName, propName: this.name, enums });
+      // console.log(teste2.build());
       const teste = splitByUppercase(treatByUppercase(entityName)).map((x) => x.toUpperCase());
       const naaa = `ENUM_${teste.join("_")}_${this.name.toUpperCase()}`.split("_");
       const aaa = [...new Set(naaa)].join("_");
