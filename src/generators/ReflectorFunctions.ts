@@ -47,8 +47,9 @@ export class ReflectorFunctionsGenerator {
   goto(url, { replaceState: true, keepFocus: true });
 }`,
       `export function changeArrayParamFromEvent({ event, key }: QueryContract) {
-  const selectedOptions = Array.from(event.currentTarget.selectedOptions).map(
-    (opt) => (opt as HTMLOptionElement).value
+  const select = event.currentTarget as HTMLSelectElement;
+  const selectedOptions = Array.from(select.selectedOptions).map(
+    (opt) => opt.value
   );
   changeArrayParam({ values: selectedOptions, key });
 }`,
