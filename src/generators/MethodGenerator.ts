@@ -4,9 +4,9 @@ import { MethodApiCallBuilder } from "./MethodApiCallBuilder.js";
 import { MethodPropsBuilder } from "./MethodPropsBuilder.js";
 
 export class MethodGenerator {
-  private endpointBuilder = new MethodEndpointBuilder();
-  private apiCallBuilder = new MethodApiCallBuilder();
-  private propsBuilder = new MethodPropsBuilder();
+  private readonly endpointBuilder = new MethodEndpointBuilder();
+  private readonly apiCallBuilder = new MethodApiCallBuilder();
+  private readonly propsBuilder = new MethodPropsBuilder();
 
   generate(method: Method): string {
     const description = this.buildDescription(method);
@@ -17,30 +17,30 @@ export class MethodGenerator {
     const additionalMethod = this.buildAdditionalMethod(method);
 
     return `
-${description}
-async ${method.name}(behavior: Behavior<${method.responseTypeInterface}, ApiErrorResponse> = new Behavior()) {
-  const {onError, onSuccess} = behavior
+      ${description}
+      async ${method.name}(behavior: Behavior<${method.responseTypeInterface}, ApiErrorResponse> = new Behavior()) {
+        const {onError, onSuccess} = behavior
 
-  this.loading = true
-  ${props}
-  const endpoint = ${endpoint}
+        this.loading = true
+        ${props}
+        const endpoint = ${endpoint}
 
-  ${outside}
+        ${outside}
 
-  try {
-    ${inside}
-    onSuccess?.(response)
+        try {
+          ${inside}
+          onSuccess?.(response)
 
-    return ${methodReturn}
-  } catch(e) {
-    const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
-    return onError?.(parsedError);
-  } finally {
-    this.loading = false
-  }
-}
+          return ${methodReturn}
+        } catch(e) {
+          const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
+          return onError?.(parsedError);
+        } finally {
+          this.loading = false
+        }
+      }
 
-${additionalMethod}
+      ${additionalMethod}
     `.trim();
   }
 
@@ -74,14 +74,15 @@ ${additionalMethod}
     }
 
     return `
-async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
-  const data = await this.${method.name}(behavior)
+      async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
+        const data = await this.${method.name}(behavior)
 
-  if (data) {
-    this.clearForms()
-  }
+        if (data) {
+          this.clearForms()
+        }
 
-  return data
-}`;
+        return data
+      }
+    `;
   }
 }
