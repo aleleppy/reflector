@@ -67,9 +67,6 @@ export class Module {
 
     const bundle: string[] = [];
     const attributes: string[] = [];
-    // const constructorThis: string[] = [];
-    // const interfaceBuild: string[] = [];
-    // const uptadeThis: string[] = [];
 
     if (name === "Paths") {
       props.forEach((prop) => {

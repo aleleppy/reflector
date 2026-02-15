@@ -86,13 +86,6 @@ export class ArrayProp {
     return `${this.name}${required}: ${sanitizedType}[]`;
   }
 
-  // toInterfaceArrayBuild() {
-  //   const required = this.isRequired ? "" : "?";
-  //   const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
-
-  //   return `${this.name}${required}: ${sanitizedType}[]`;
-  // }
-
   bundleBuild() {
     const result = this.isPrimitiveType ? "" : ".map((obj) => obj.bundle())";
 

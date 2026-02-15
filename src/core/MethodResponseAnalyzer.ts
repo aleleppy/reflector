@@ -1,5 +1,10 @@
-import type { ResponsesObject, SchemaObject, ResponseObject, ContentObject, ReferenceObject } from "../types/open-api-spec.interface.js";
-import { isEnumSchema } from "../helpers/helpers.js";
+import type {
+  ResponsesObject,
+  SchemaObject,
+  ResponseObject,
+  ContentObject,
+  ReferenceObject,
+} from "../types/open-api-spec.interface.js";
 
 type RefLike = { $ref: string };
 
@@ -19,9 +24,7 @@ export class MethodResponseAnalyzer {
     }
   }
 
-  private isRef<T extends object>(
-    v: ResponseObject | ReferenceObject | ContentObject | SchemaObject
-  ): v is T & RefLike {
+  private isRef<T extends object>(v: ResponseObject | ReferenceObject | ContentObject | SchemaObject): v is T & RefLike {
     return !!v && typeof v === "object" && "$ref" in v;
   }
 

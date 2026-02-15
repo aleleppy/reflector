@@ -130,7 +130,6 @@ export class Schema {
 
       if (items && !("$ref" in items) && items.enum) {
         this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject, isParam: undefined, isEnum: true }));
-        // this.enumProps.push(new EnumProp({ enums: items.enum, name, required }));
         continue;
       } else if (value.enum) {
         this.enumProps.push(new EnumProp({ enums: value.enum, name, required, isParam: undefined, entityName: schemaName }));

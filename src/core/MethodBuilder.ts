@@ -6,10 +6,10 @@ import { MethodApiTypeAnalyzer } from "./MethodApiTypeAnalyzer.js";
 import { MethodBodyAnalyzer } from "./MethodBodyAnalyzer.js";
 
 export class MethodBuilder {
-  private requestAnalyzer = new MethodRequestAnalyzer();
-  private responseAnalyzer = new MethodResponseAnalyzer();
-  private apiTypeAnalyzer = new MethodApiTypeAnalyzer();
-  private bodyAnalyzer = new MethodBodyAnalyzer();
+  private readonly requestAnalyzer = new MethodRequestAnalyzer();
+  private readonly responseAnalyzer = new MethodResponseAnalyzer();
+  private readonly apiTypeAnalyzer = new MethodApiTypeAnalyzer();
+  private readonly bodyAnalyzer = new MethodBodyAnalyzer();
 
   build(operation: ReflectorOperation, moduleName: string): Method {
     const name = this.extractName(operation);
@@ -28,9 +28,9 @@ export class MethodBuilder {
         attributeType,
         apiType,
         parameters: this.requestAnalyzer.paths,
-        hasEnumResponse: this.responseAnalyzer.hasEnumResponse
+        hasEnumResponse: this.responseAnalyzer.hasEnumResponse,
       },
-      props
+      props,
     };
 
     const responseTypeInterface = this.buildResponseTypeInterface(analyzers.request.responseType);
@@ -42,7 +42,7 @@ export class MethodBuilder {
       attributeType,
       description,
       analyzers,
-      responseTypeInterface
+      responseTypeInterface,
     });
   }
 

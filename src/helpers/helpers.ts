@@ -1,35 +1,6 @@
-// export function stripState(attr: string): string {
-//   // Ex.: "form = $state(newForm(DefaultCreateUserDtoSchema))"
-//   const [lhs, rhsRaw = ""] = attr.split("=");
-//   const rhs = rhsRaw.trim();
-
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 
-//   // remove apenas UM wrapper $state( ... ) do início ao fim
-//   const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
-
-//   if (!lhs) return "";
-
-//   return `${lhs.trim()} = ${cleaned}`;
-// }
-
-const trashWords = new Set([
-  "Get",
-  // "Update",
-  // "Close",
-  // "Find",
-  // "Change",
-  // "List",
-  // "Create",
-  // "Response",
-  "Res",
-  // "Self",
-  "Default",
-  // "Repo",
-  // "Formatted",
-  "Dto",
-  "Public",
-]);
+const trashWords = new Set(["Get", "Res", "Default", "Dto", "Public"]);
 
 export function toCamelCase(str: string) {
   return str
@@ -66,9 +37,7 @@ export function splitByUppercase(text: string) {
 
 export function treatByUppercase(text: string): string {
   const base = text;
-  // const raw = base.length > 0 ? base : "entity";
 
-  // Se splitByUppercase tiver tipagem "string[] | undefined", isso resolve.
   const parts: string[] = (splitByUppercase(base) ?? [])
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
@@ -144,9 +113,3 @@ export function isEnumSchema(schema: SchemaObject): boolean {
   }
   return false;
 }
-
-// export function treatenEnum(enums: string[]) {
-//   const a = enums.map((e) => `"${e}"`);
-
-//   return ` z.literal([${a}])`;
-// }
