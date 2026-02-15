@@ -17,7 +17,7 @@ export class ModuleConstructorBuilder {
         if(!isEmpty) return this.forms
 
         return {
-          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(",\n          ")}
+          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(",\n")}
         }
       }
     `;

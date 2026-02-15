@@ -126,11 +126,7 @@ export class Reflector {
   }
 
   build() {
-    // const enums = new Set();
-
     const treatedSchemas = this.schemas.map((s) => {
-      // s.enums.forEach((en) => enums.add(en));
-
       return `
         ${s.interface};
 
@@ -143,7 +139,6 @@ export class Reflector {
         'import { build, BuildedInput } from "$reflector/reflector.svelte";',
         'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         `import {${Array.from(enumTypes.values())}} from "$reflector/enums"`,
-        // ...Array.from(enums),
         ...treatedSchemas,
       ].join("\n\n"),
     );

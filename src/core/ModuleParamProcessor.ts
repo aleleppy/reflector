@@ -37,9 +37,7 @@ export class ModuleParamProcessor {
       const { name, props } = paramsData;
       const capitalizedName = capitalizeFirstLetter(name) as ParamType;
 
-      buildedParamsTypes.push(
-        this.classBuilder.buildClassProps({ props, name: capitalizedName })
-      );
+      buildedParamsTypes.push(this.classBuilder.buildClassProps({ props, name: capitalizedName }));
       paramAttributes.add(`${name} = new ${capitalizedName}()`);
       paramInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
       paramClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);

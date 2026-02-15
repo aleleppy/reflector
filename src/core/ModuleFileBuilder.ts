@@ -1,5 +1,4 @@
 import type { ModuleImports } from "./ModuleImports.js";
-import type { Form } from "./ModuleConstructorBuilder.js";
 
 export interface FileBuildParams {
   moduleAttributes: string[];

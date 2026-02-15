@@ -22,8 +22,6 @@ export class EnumProp {
     const types = enumTypes.get(enums.join(","));
 
     if (!types) {
-      // const teste2 = new EnumClass({ entityName, propName: this.name, enums });
-      // console.log(teste2.build());
       const teste = splitByUppercase(treatByUppercase(entityName)).map((x) => x.toUpperCase());
       const naaa = `ENUM_${teste.join("_")}_${this.name.toUpperCase()}`.split("_");
       const aaa = [...new Set(naaa)].join("_");
@@ -48,6 +46,12 @@ export class EnumProp {
     const req = this.isRequired ? "" : "?";
 
     return `${this.name}${req}: ${this.enumName}`;
+  }
+
+  queryBuild() {
+    const example = this.isRequired ? `'${this.example}'` : null;
+
+    return `readonly ${this.name} = $derived(new QueryBuilder<${this.enumName}>({ key: '${this.name}', value: ${example} }))`;
   }
 
   bundleBuild() {

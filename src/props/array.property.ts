@@ -87,18 +87,21 @@ export class ArrayProp {
   }
 
   bundleBuild() {
-    const result = this.isPrimitiveType ? "" : ".map((obj) => obj.bundle())";
+    const result = () => {
+      if (this.isPrimitiveType || this.isEnum) return "";
+      return ".map((obj) => obj.bundle())";
+    };
 
-    if (this.isEnum) {
-      return `${this.name}: this.${this.name}?.values`;
-    }
+    return `${this.name}: this.${this.name}${result()}`;
+  }
 
-    return `${this.name}: this.${this.name}${result}`;
+  queryBundleBuild() {
+    return `${this.name}: this.${this.name}?.values`;
   }
 
   queryBuild(): string {
     if (this.isEnum) {
-      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}', values: [] as ${this.type}[] }))`;
+      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}', values: [] }))`;
     }
     // Para arrays normais (não enum), usamos QueryBuilder padrão
     return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: null }))`;

@@ -66,40 +66,32 @@ export class ReflectorFile {
       }
     }`,
     `
-    export class EnumQueryBuilder<T extends string> {
-      private readonly key: string = '';
-      values = $state<string[]>([]);
+      export class EnumQueryBuilder<T> {
+        private readonly key: string = '';
+        values = $derived(page.url.searchParams.getAll(this.key)) as T[];
+        selected = $state<T | null>(null);
 
-      constructor(params: { key: string; values: T[] }) {
-        const { key } = params;
+        constructor(params: { key: string; values: T[] }) {
+          const { key } = params;
 
-        this.key = key;
-      }
-
-      update() {
-        return changeArrayParam({ key: this.key, values: this.values });
-      }
-
-      toggle(value: T) {
-        const index = this.values.indexOf(value);
-        if (index === -1) {
-          this.values = [...this.values, value];
-        } else {
-          this.values = this.values.filter((v) => v !== value);
+          this.key = key;
         }
-        this.update();
-      }
 
-      set(values: T[]) {
-        this.values = values;
-        this.update();
-      }
+        add() {
+          if (!this.selected) return;
+          const values = [...this.values, this.selected] as string[];
+          changeArrayParam({ key: this.key, values });
+          this.selected = null;
+        }
 
-      clear() {
-        this.values = [];
-        this.update();
+        remove(index: number) {
+          const values = [
+            ...this.values.slice(0, index),
+            ...this.values.slice(index + 1),
+          ] as string[];
+          return changeArrayParam({ key: this.key, values });
+        }
       }
-    }
     `,
   ].join(";");
 
@@ -146,17 +138,33 @@ export class ReflectorFile {
     }
     `,
     `
-    export class QueryBuilder {
+    function rawChangeParam<T>(params: { key: string; value: T }) {
+      const { key, value } = params;
+      const url = new URL(page.url);
+      url.searchParams.set(key, String(value));
+      goto(url, { replaceState: true, keepFocus: false });
+    }
+    `,
+    `
+    export class QueryBuilder<T> {
       private readonly key: string = '';
-      value = $derived(page.url.searchParams.get(this.key));
+      value = $state<T | null>(null);
 
-      constructor(params: { key: string; value: string | number | null }) {
-        const { key } = params;
-
+      constructor(params: { key: string; value: T | null }) {
+        const { key, value } = params;
         this.key = key;
+
+        const urlValue = page.url.searchParams.get(key) as T;
+        this.value = urlValue ?? value;
+
+        if (urlValue === null && value !== null) {
+          rawChangeParam({ key, value });
+        }
       }
 
       update(event: SvelteEvent) {
+        const newValue = event.currentTarget.value;
+        this.value = newValue as T;
         return changeParam({ key: this.key, event });
       }
     }

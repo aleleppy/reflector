@@ -5,8 +5,6 @@ import type { PrimitiveProp } from "../props/primitive.property.js";
 import type { ModuleImports } from "./ModuleImports.js";
 import type { Form } from "./ModuleConstructorBuilder.js";
 
-export { type Form };
-
 export interface ProcessedMethods {
   buildedMethods: string[];
   entries: Set<string>;
@@ -108,3 +106,5 @@ export class ModuleMethodProcessor {
     };
   }
 }
+
+export { type Form } from "./ModuleConstructorBuilder.js";

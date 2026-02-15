@@ -40,6 +40,15 @@ export class ModuleClassBuilder {
           } else {
             bundle.push(prop.bundleBuild());
           }
+        } else if ("enumName" in prop) {
+          this.imports.addEnumImport(prop.enumName);
+          attributes.push(prop.queryBuild());
+          bundle.push(prop.bundleBuild());
+        } else {
+          attributes.push(prop.queryBuild());
+          this.imports.addEnumImport(prop.type);
+          bundle.push(prop.queryBundleBuild());
+          this.imports.addReflectorImport("EnumQueryBuilder");
         }
       });
     } else {
