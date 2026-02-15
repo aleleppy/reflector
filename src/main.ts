@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { getEndpoint, splitByUppercase } from "./helpers/helpers.js";
+import { getEndpoint, splitByUppercase, setConfig } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js";
@@ -10,6 +10,19 @@ import { Module } from "./module.js";
 import { baseDir, generatedDir } from "./vars.global.js";
 import { ReflectorFile } from "./reflector.js";
 // import { Module } from "./module.js";
+
+// Carregar configuração do usuário se existir
+const configPath = path.resolve(process.cwd(), "reflector.config.ts");
+if (fs.existsSync(configPath)) {
+  try {
+    // Nota: Em runtime real, isso precisaria de ts-node ou similar
+    // Para build, a config deve ser carregada antes
+    console.log("[Reflector] Configuração encontrada em reflector.config.ts");
+    console.log("[Reflector] Para aplicar configurações personalizadas, importe e chame setConfig() antes de instanciar o Reflector");
+  } catch {
+    // Ignora erro se não conseguir carregar
+  }
+}
 
 export const enumTypes = new Map<string, string>();
 

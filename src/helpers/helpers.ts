@@ -4,32 +4,42 @@
 //   const rhs = rhsRaw.trim();
 
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
+import type { ReflectorConfig } from "../config/types.js";
+import { defaultConfig } from "../config/defaults.js";
 
-//   // remove apenas UM wrapper $state( ... ) do início ao fim
-//   const cleaned = rhs.startsWith("$state(") && rhs.endsWith(")") ? rhs.slice("$state(".length, -1).trim() : rhs;
+// Configuração global (pode ser sobrescrita pelo usuário)
+let globalConfig: ReflectorConfig = { ...defaultConfig };
 
-//   if (!lhs) return "";
+/**
+ * Define a configuração global do reflector
+ */
+export function setConfig(config: ReflectorConfig): void {
+  globalConfig = {
+    naming: {
+      ...defaultConfig.naming,
+      ...config.naming,
+    },
+  };
+}
 
-//   return `${lhs.trim()} = ${cleaned}`;
-// }
+/**
+ * Obtém a configuração atual
+ */
+export function getConfig(): ReflectorConfig {
+  return globalConfig;
+}
 
-const trashWords = new Set([
-  "Get",
-  // "Update",
-  // "Close",
-  // "Find",
-  // "Change",
-  // "List",
-  // "Create",
-  // "Response",
-  "Res",
-  // "Self",
-  "Default",
-  // "Repo",
-  // "Formatted",
-  "Dto",
-  "Public",
-]);
+/**
+ * Obtém o conjunto de palavras a serem filtradas
+ * @deprecated Use getFilterWords() em vez de trashWords diretamente
+ */
+export function getFilterWords(): Set<string> {
+  const words = globalConfig.naming?.filterWords ?? defaultConfig.naming!.filterWords!;
+  return new Set(words);
+}
+
+// Mantido para compatibilidade retroativa
+const trashWords = getFilterWords();
 
 export function toCamelCase(str: string) {
   return str
@@ -66,13 +76,13 @@ export function splitByUppercase(text: string) {
 
 export function treatByUppercase(text: string): string {
   const base = text;
-  // const raw = base.length > 0 ? base : "entity";
+  const filterWords = getFilterWords();
 
   // Se splitByUppercase tiver tipagem "string[] | undefined", isso resolve.
   const parts: string[] = (splitByUppercase(base) ?? [])
     .map((p) => p.trim())
     .filter((p) => p.length > 0)
-    .filter((p) => !trashWords.has(p));
+    .filter((p) => !filterWords.has(p));
 
   if (parts.length === 0) return "entity";
 
