@@ -1,6 +1,5 @@
 import type { ReflectorOperation, AttributeProp } from "../types/types.js";
 import type { PrimitiveProp } from "../props/primitive.property.js";
-
 import { PrimitiveProp as PrimitivePropClass } from "../props/primitive.property.js";
 import { ArrayProp as ArrayPropClass } from "../props/array.property.js";
 import { EnumProp as EnumPropClass } from "../props/enum.property.js";

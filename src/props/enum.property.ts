@@ -1,4 +1,3 @@
-import { EnumClass } from "../enum.class.js";
 import { splitByUppercase, treatByUppercase } from "../helpers/helpers.js";
 import { enumTypes } from "../main.js";
 
