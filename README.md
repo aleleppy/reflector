@@ -1,93 +1,58 @@
-<p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Svelte_Logo.svg/199px-Svelte_Logo.svg.png" width="80" alt="Svelte Logo" />
-</p>
+# Svelte Reflector
 
-<p align="center">
-  <strong>🦍 Svelte Reflector</strong><br>
-  Turn your OpenAPI into a first-class Svelte 5 DX
-</p>
+**Turn your OpenAPI into a first‑class Svelte 5 DX.**
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/svelte-reflector">
-    <img src="https://img.shields.io/npm/v/svelte-reflector.svg?style=flat&color=cb3837" alt="npm version" />
-  </a>
-  <a href="https://www.npmjs.com/package/svelte-reflector">
-    <img src="https://img.shields.io/npm/dm/svelte-reflector.svg?style=flat&color=cb3837" alt="npm downloads" />
-  </a>
-  <img src="https://img.shields.io/badge/TypeScript-5.9+-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Svelte-5+-FF3E00?style=flat&logo=svelte&logoColor=white" alt="Svelte 5" />
-  <img src="https://img.shields.io/badge/OpenAPI-3.0-6BA539?style=flat&logo=swagger&logoColor=white" alt="OpenAPI" />
-  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=nodedotjs&logoColor=white" alt="Node.js" />
-</p>
+Svelte Reflector is a **developer‑experience–first code generator** that converts OpenAPI specs into fully typed, reactive Svelte 5 modules — ready for production, forms included.
 
----
+[![npm version](https://img.shields.io/npm/v/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![npm downloads](https://img.shields.io/npm/dm/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![npm total downloads](https://img.shields.io/npm/dt/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue.svg)](https://www.typescriptlang.org/)
+[![Svelte](https://img.shields.io/badge/Svelte-5+-orange.svg)](https://svelte.dev/)
 
-## 📖 Introdução
+A TypeScript code generator that creates type-safe Svelte 5 modules from OpenAPI specifications. It transforms your backend's OpenAPI/Swagger docs into fully-typed Svelte stores with built-in form handling, validation, and API integration.
 
-O **Svelte Reflector** é um **gerador de código focado em DX (Developer Experience)** que converte especificações OpenAPI em módulos Svelte 5 totalmente tipados e reativos — prontos para produção, com formulários inclusos.
+## 🚀 Features
 
-Desenvolvido pela [Pináculo Digital](https://pinaculodigital.com.br), este package transforma a documentação OpenAPI/Swagger do seu backend em stores Svelte com manipulação de formulários, validação e integração de API integradas.
+- **🔮 Automatic Type Generation** - Generates TypeScript interfaces and classes from OpenAPI schemas
+- **⚡ Svelte 5 Runes Integration** - Uses `$state` for reactive state management
+- **📝 Form Handling** - Auto-generates form schemas with validation support
+- **🎯 Type-Safe API Calls** - Full TypeScript support for all API operations
+- **🔌 OpenAPI/Swagger Compatible** - Works with any backend that exposes OpenAPI specs
+- **🧪 Development Mode** - Smart regeneration based on environment
+- **✅ Validation Ready** - Built-in support for custom field validators
 
-### 🎯 Para que serve?
-
-- **Projetos Svelte 5** que consomem APIs RESTful documentadas com OpenAPI
-- **Aplicações que precisam de formulários tipados** gerados automaticamente
-- **Times que querem eliminar o boilerplate** de integração com APIs
-- **Projetos que precisam de type-safety** entre frontend e backend
-- **Desenvolvimento ágil** com geração automática de código a partir do backend
-
----
-
-## 🚀 Pré-requisitos
-
-Antes de começar, certifique-se de ter:
-
-| Requisito | Versão | Descrição |
-|-----------|--------|-----------|
-| Node.js | 20+ | Runtime JavaScript |
-| npm/yarn/pnpm | - | Gerenciador de pacotes |
-| Svelte | 5+ | Framework frontend |
-| TypeScript | 5.9+ | Superset tipado |
-| Backend com OpenAPI | 3.0+ | API documentada com Swagger/OpenAPI |
-
----
-
-## 📦 Instalação
+## 📦 Installation
 
 ```bash
-# npm
 npm install svelte-reflector
-
-# yarn
+# or
 yarn add svelte-reflector
-
-# pnpm
+# or
 pnpm add svelte-reflector
 ```
 
----
-
 ## 🏁 Quick Start
 
-### 1. Configurar Variáveis de Ambiente
+### 1. Configure Environment Variables
 
-Crie um arquivo `.env` na raiz do projeto:
+Create a `.env` file in your project root:
 
 ```env
-# Obrigatório - URL do backend
-BACKEND_URL=https://api.exemplo.com/
-# ou
-PUBLIC_BACKEND=https://api.exemplo.com/
+# Required - Your backend URL
+BACKEND_URL=https://api.example.com/
+# or
+PUBLIC_BACKEND=https://api.example.com/
 
-# Opcional - Ambiente (padrão: PROD)
+# Optional - Environment (defaults to PROD)
 ENVIRONMENT=DEV
-# ou
+# or
 VITE_ENVIRONMENT=DEV
 ```
 
-### 2. Criar Configuração do Reflector (Opcional)
+### 2. Create Reflector Config (Optional)
 
-Crie `src/reflector.config.ts` para definir validadores customizados:
+Create a `src/reflector.config.ts` to define custom validators:
 
 ```typescript
 export const validators = [
@@ -106,204 +71,113 @@ export const validators = [
 ];
 ```
 
-### 3. Executar o Gerador
+### 3. Run the Generator
 
 ```bash
-# Geração manual (recomendado para DEV)
+# Manual generation (recommended for DEV environment)
 npx reflect
 
-# Ou programaticamente
+# Or programmatically
 import { reflector } from "svelte-reflector";
-await reflector(true); // true = forçar geração
+await reflector(true); // true = force generation
 ```
 
-### 4. Usar os Módulos Gerados
+### 4. Use Generated Modules
 
-O gerador cria arquivos em `src/reflector/`:
+The generator creates files in `src/reflector/`:
 
 ```typescript
 import { UserModule } from "$reflector/controllers/user/user.module.svelte";
 import type { User } from "$reflector/schemas.svelte";
 
-// Criar instância do módulo
+// Create module instance
 const userModule = new UserModule();
 
-// Acessar estado reativo
+// Access reactive state
 console.log(userModule.loading); // $state<boolean>
 console.log(userModule.list);    // $state<User[]>
 
-// Chamar métodos da API
+// Call API methods
 await userModule.listAll({
   onSuccess: (response) => console.log(response),
   onError: (error) => console.error(error),
 });
 
-// Trabalhar com formulários
+// Work with forms
 const userForm = userModule.forms.createUser;
-userForm.name.value = "João Silva";
-userForm.email.value = "joao@exemplo.com";
+userForm.name.value = "John Doe";
+userForm.email.value = "john@example.com";
 
-// Submeter formulário
+// Submit form
 await userModule.createUser();
 ```
 
----
-
-## 🏗️ Estrutura do Projeto
-
-### Estrutura Gerada
+## 📁 Generated Structure
 
 ```
 src/reflector/
 ├── controllers/
-│   └── [nome-controller]/
-│       └── [nome].module.svelte.ts    # Módulo de API com métodos
-├── schemas.svelte.ts                   # Schemas e tipos gerados
-├── reflector.svelte.ts                # Utilitários core (build, isFormValid)
-├── fields.ts                          # Constantes de nomes de campos
-└── backup.json                        # Cache da spec OpenAPI
+│   └── user/
+│       └── user.module.svelte.ts    # API module with methods
+├── schemas.svelte.ts                 # Generated schemas & types
+├── reflector.svelte.ts              # Core utilities (build, isFormValid)
+├── fields.ts                        # Field name constants
+└── backup.json                      # Cached OpenAPI spec
 ```
 
-### Estrutura do Package
+## 🧩 Generated Module API
 
-```
-svelte-reflector/
-├── src/
-│   ├── core/                # Núcleo do gerador
-│   │   └── index.ts
-│   ├── generators/          # Geradores de código
-│   │   ├── index.ts
-│   │   ├── module.generator.ts
-│   │   └── schema.generator.ts
-│   ├── helpers/             # Funções auxiliares
-│   │   └── index.ts
-│   ├── models/              # Modelos de dados
-│   │   ├── index.ts
-│   │   ├── field.model.ts
-│   │   └── method.model.ts
-│   ├── types/               # Tipos TypeScript
-│   │   └── index.ts
-│   ├── utils/               # Utilitários
-│   │   └── index.ts
-│   ├── cli.ts               # Entry point CLI
-│   ├── index.ts             # Entry point principal
-│   ├── main.ts              # Lógica principal
-│   ├── reflector.ts         # Configuração do reflector
-│   ├── schema.ts            # Processamento de schemas
-│   ├── module.ts            # Geração de módulos
-│   ├── method.ts            # Processamento de métodos
-│   ├── request.ts           # Geração de requests
-│   ├── interface.ts         # Interfaces do sistema
-│   ├── enum.class.ts        # Enums e classes
-│   ├── file.ts              # Utilitários de arquivo
-│   └── vars.global.ts       # Variáveis globais
-├── dist/                    # Código compilado
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+Each generated module provides:
 
----
+### State Properties
 
-## ✨ Funcionalidades Principais
+| Property | Type | Description |
+|----------|------|-------------|
+| `loading` | `$state<boolean>` | Request loading state |
+| `list` | `$state<T[]>` | List results (for list endpoints) |
+| `forms` | `$state<Record<string, T>>` | Form instances |
+| `querys` | `QueryParams` | Query parameter state |
+| `headers` | `HeaderParams` | Header state |
+| `paths` | `PathParams` | Path parameter state |
 
-### 🔮 Geração Automática de Tipos
-- Gera interfaces TypeScript a partir de schemas OpenAPI
-- Type-safe em todas as operações de API
-- Autocomplete inteligente no IDE
-
-### ⚡ Integração com Svelte 5 Runes
-- Usa `$state` para gerenciamento reativo de estado
-- Compatível com runes do Svelte 5
-- Reactividade nativa sem boilerplate
-
-### 📝 Formulários Gerados Automaticamente
-- Schemas de formulário com suporte a validação
-- Campos tipados com valores, placeholders e validadores
-- Suporte a validação customizada por campo
-
-### 🔌 Compatível com OpenAPI/Swagger
-- Funciona com qualquer backend que exponha OpenAPI
-- Suporte a OpenAPI 3.0+
-- Cache local da especificação (backup.json)
-
-### 🧪 Modo Desenvolvimento Inteligente
-- Regeneração inteligente baseada no ambiente
-- Em DEV: regeneração manual para builds mais rápidos
-- Em PROD: regeneração automática em cada build
-
-### ✅ Validação Pronta para Uso
-- Suporte integrado a validadores customizados
-- Validação de email, telefone, CPF/CNPJ, senha, etc.
-- Fácil extensão com novos validadores
-
----
-
-## 🛠️ Stack Tecnológica
-
-| Tecnologia | Versão | Uso |
-|------------|--------|-----|
-| TypeScript | 5.9+ | Linguagem principal |
-| Svelte | 5+ | Framework frontend alvo |
-| Node.js | 20+ | Runtime e CLI |
-| Axios | 1.12+ | Cliente HTTP para fetch OpenAPI |
-| OpenAPI | 3.0+ | Especificação de API |
-
----
-
-## 📚 API dos Módulos Gerados
-
-### Propriedades de Estado
-
-| Propriedade | Tipo | Descrição |
-|-------------|------|-----------|
-| `loading` | `$state<boolean>` | Estado de carregamento da requisição |
-| `list` | `$state<T[]>` | Resultados de listagem (endpoints com page) |
-| `forms` | `$state<Record<string, T>>` | Instâncias de formulários |
-| `querys` | `QueryParams` | Estado dos parâmetros de query |
-| `headers` | `HeaderParams` | Estado dos headers |
-| `paths` | `PathParams` | Estado dos parâmetros de path |
-
-### Métodos Disponíveis
+### Methods
 
 ```typescript
-// Listar todos (GET com page)
+// List all items (GET with page parameter)
 async listAll(behavior?: Behavior<ResponseType>): Promise<T[]>
 
-// Obter entidade única (GET sem page)
+// Get single entity (GET without page parameter)
 async get(behavior?: Behavior<ResponseType>): Promise<T>
 
-// Criar/Atualizar (POST/PUT/PATCH)
+// Create/Update (POST/PUT/PATCH)
 async create(behavior?: Behavior<ResponseType>): Promise<T>
 async update(behavior?: Behavior<ResponseType>): Promise<T>
 
-// Deletar (DELETE)
+// Delete (DELETE)
 async delete(behavior?: Behavior<ResponseType>): Promise<void>
 
-// Formulário com auto-limpeza
+// Form with auto-clear
 async createAndClear(behavior?: Behavior<ResponseType>): Promise<T>
 
-// Resetar todo o estado
+// Reset all state
 reset(): void
 ```
 
----
+## ⚙️ Configuration
 
-## ⚙️ Configuração Avançada
+### Environment Variables
 
-### Variáveis de Ambiente
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BACKEND_URL` | ✅ | Backend API URL |
+| `PUBLIC_BACKEND` | ✅ | Alternative to BACKEND_URL |
+| `ENVIRONMENT` | ❌ | DEV/PROD (defaults to PROD) |
+| `VITE_ENVIRONMENT` | ❌ | Vite-specific env var |
+| `NODE_ENV` | ❌ | Node environment |
 
-| Variável | Obrigatória | Descrição |
-|----------|-------------|-----------|
-| `BACKEND_URL` | ✅ | URL da API backend |
-| `PUBLIC_BACKEND` | ✅ | Alternativa ao BACKEND_URL |
-| `ENVIRONMENT` | ❌ | DEV/PROD (padrão: PROD) |
-| `VITE_ENVIRONMENT` | ❌ | Variável específica do Vite |
-| `NODE_ENV` | ❌ | Ambiente Node.js |
+### Behavior Pattern
 
-### Padrão Behavior
-
-Todos os métodos de API aceitam um objeto `Behavior` para callbacks:
+All API methods accept a `Behavior` object for callbacks:
 
 ```typescript
 interface Behavior<TSuccess, TError> {
@@ -311,33 +185,31 @@ interface Behavior<TSuccess, TError> {
   onError?: (error: TError) => void;
 }
 
-// Uso
+// Usage
 await userModule.createUser({
-  onSuccess: (user) => console.log("Criado:", user),
-  onError: (err) => console.error("Erro:", err),
+  onSuccess: (user) => console.log("Created:", user),
+  onError: (err) => console.error("Failed:", err),
 });
 ```
 
-### Validação de Formulários
+### Form Validation
 
-Os formulários usam a classe `BuildedInput` com validação:
+Forms use `BuildedInput` class with validation:
 
 ```typescript
 interface BuildedInput<T> {
-  value: T;                    // Valor atual ($state)
-  display: T;                  // Valor de exibição ($state)
-  required: boolean;           // Campo obrigatório
-  placeholder: T;              // Placeholder/valor exemplo
-  validator?: (v: T) => string | null; // Função de validação
-  validate(): string | null;  // Executar validação
+  value: T;           // Current value ($state)
+  display: T;         // Display value ($state)
+  required: boolean;  // Is field required
+  placeholder: T;     // Placeholder/example value
+  validator?: (v: T) => string | null; // Validation function
+  validate(): string | null; // Run validation
 }
 ```
 
----
+## 🔧 TypeScript Configuration
 
-## 🔧 Configuração TypeScript
-
-Adicione aliases de path ao `tsconfig.json`:
+Add path aliases to your `tsconfig.json`:
 
 ```json
 {
@@ -350,7 +222,7 @@ Adicione aliases de path ao `tsconfig.json`:
 }
 ```
 
-Para projetos Vite, atualize também o `vite.config.ts`:
+For Vite projects, also update `vite.config.ts`:
 
 ```typescript
 export default defineConfig({
@@ -363,29 +235,27 @@ export default defineConfig({
 });
 ```
 
----
+## 🔄 Workflow
 
-## 🔄 Fluxo de Trabalho
+### Development Mode
 
-### Modo Desenvolvimento (DEV)
+In `ENVIRONMENT=DEV`:
+- Schemas are **NOT** auto-regenerated on build
+- Use `npx reflect` to manually regenerate
+- Faster builds, manual control
 
-- Schemas **NÃO** são regenerados automaticamente no build
-- Use `npx reflect` para regenerar manualmente
-- Builds mais rápidos, controle manual
+### Production Mode
 
-### Modo Produção (PROD)
+In `ENVIRONMENT=PROD`:
+- Schemas are auto-regenerated on each build
+- Fresh types from latest OpenAPI spec
+- Fallback to `backup.json` if backend is unavailable
 
-- Schemas são regenerados automaticamente em cada build
-- Tipos atualizados da última spec OpenAPI
-- Fallback para `backup.json` se backend estiver indisponível
+## 🛠️ Advanced Usage
 
----
+### Custom Validators
 
-## 🛡️ Validação Customizada
-
-### Configuração de Validadores
-
-Defina validadores em `src/reflector.config.ts`:
+Define validators in `src/reflector.config.ts`:
 
 ```typescript
 export const validators = [
@@ -420,87 +290,174 @@ export const validators = [
 ];
 ```
 
-### Implementação dos Validadores
-
-Implemente em `$lib/sanitizers/validateFormats.ts`:
+Then implement in your app at `$lib/sanitizers/validateFormats.ts`:
 
 ```typescript
-// Validação de email
+// Email validation
 export function validateEmail(value: string): string | null {
-  if (!value) return null;
+  if (!value) return null; // Let required handle empty
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(value) ? null : "Formato de email inválido";
+  return emailRegex.test(value) ? null : "Invalid email format";
 }
 
-// Validação de telefone brasileiro
+// Brazilian phone validation
 export function validatePhone(value: string): string | null {
   if (!value) return null;
   const phoneRegex = /^(\+?55\s?)?(\(?\d{2}\)?\s?)?(\d{4,5}-?\d{4})$/;
-  return phoneRegex.test(value) ? null : "Telefone inválido";
+  return phoneRegex.test(value) ? null : "Invalid phone number";
 }
 
-// Validação de CPF/CNPJ
+// CPF/CNPJ validation (Brazilian documents)
 export function validateDocument(value: string): string | null {
   if (!value) return null;
   const cleaned = value.replace(/\D/g, '');
   
   if (cleaned.length === 11) {
-    return validateCPF(cleaned) ? null : "CPF inválido";
+    return validateCPF(cleaned) ? null : "Invalid CPF";
   } else if (cleaned.length === 14) {
-    return validateCNPJ(cleaned) ? null : "CNPJ inválido";
+    return validateCNPJ(cleaned) ? null : "Invalid CNPJ";
   }
-  return "Formato de documento inválido";
+  return "Invalid document format";
 }
 
-// Força da senha
+function validateCPF(cpf: string): boolean {
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf[9])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  return rev === parseInt(cpf[10]);
+}
+
+function validateCNPJ(cnpj: string): boolean {
+  if (/^(\d)\1{13}$/.test(cnpj)) return false;
+  
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseInt(cnpj[i]) * weights1[i];
+  let rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  if (rev !== parseInt(cnpj[12])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 13; i++) sum += parseInt(cnpj[i]) * weights2[i];
+  rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  return rev === parseInt(cnpj[13]);
+}
+
+// Password strength validation
 export function validatePassword(value: string): string | null {
   if (!value) return null;
-  if (value.length < 8) return "Mínimo 8 caracteres";
-  if (!/[A-Z]/.test(value)) return "Precisa de letra maiúscula";
-  if (!/[a-z]/.test(value)) return "Precisa de letra minúscula";
-  if (!/[0-9]/.test(value)) return "Precisa de número";
-  if (!/[!@#$%^&*]/.test(value)) return "Precisa de caractere especial";
+  if (value.length < 8) return "Password must be at least 8 characters";
+  if (!/[A-Z]/.test(value)) return "Password must contain an uppercase letter";
+  if (!/[a-z]/.test(value)) return "Password must contain a lowercase letter";
+  if (!/[0-9]/.test(value)) return "Password must contain a number";
+  if (!/[!@#$%^&*]/.test(value)) return "Password must contain a special character";
+  return null;
+}
+
+// Date validation
+export function validateDate(value: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "Invalid date";
+  if (date > new Date()) return "Date cannot be in the future";
+  return null;
+}
+
+// Brazilian ZIP code (CEP) validation
+export function validateZipcode(value: string): string | null {
+  if (!value) return null;
+  const cepRegex = /^\d{5}-?\d{3}$/;
+  return cepRegex.test(value) ? null : "Invalid ZIP code format";
+}
+
+// URL validation
+export function validateUrl(value: string): string | null {
+  if (!value) return null;
+  try {
+    new URL(value);
+    return null;
+  } catch {
+    return "Invalid URL format";
+  }
+}
+
+// Min/max length validator factory
+export function minLength(min: number) {
+  return (value: string): string | null => {
+    if (!value) return null;
+    return value.length >= min ? null : `Must be at least ${min} characters`;
+  };
+}
+
+export function maxLength(max: number) {
+  return (value: string): string | null => {
+    if (!value) return null;
+    return value.length <= max ? null : `Must be at most ${max} characters`;
+  };
+}
+
+// Number range validator factory
+export function numberRange(min: number, max: number) {
+  return (value: number): string | null => {
+    if (value === null || value === undefined) return null;
+    return value >= min && value <= max ? null : `Must be between ${min} and ${max}`;
+  };
+}
+
+// Required field validator
+export function required(value: string | number | boolean | null): string | null {
+  if (value === null || value === undefined || value === '') {
+    return "This field is required";
+  }
   return null;
 }
 ```
 
----
+### Manual Schema Access
 
-## 🐛 Solução de Problemas
+```typescript
+import { User } from "$reflector/schemas.svelte";
 
-### Erro "BACKEND_URL vazio"
+// Create instance
+const user = new User({ name: "John", email: "john@example.com" });
 
-Certifique-se de ter configurado `BACKEND_URL` ou `PUBLIC_BACKEND` no arquivo `.env`.
+// Get data bundle
+const data = user.bundle(); // { name: "John", email: "john@example.com" }
+```
 
-### Schemas não atualizam
+## 🐛 Troubleshooting
 
-No modo DEV, execute `npx reflect` manualmente. Verifique se a spec OpenAPI está acessível em `{BACKEND_URL}openapi.json`.
+### "BACKEND_URL vazio" Error
 
-### Erros de tipo após geração
+Ensure you have set `BACKEND_URL` or `PUBLIC_BACKEND` in your `.env` file.
 
-1. Reinicie o servidor de linguagem TypeScript
-2. Verifique os aliases de path no `tsconfig.json`
-3. Confirme que o alias `$reflector/*` está configurado
+### Schemas Not Updating
 
----
+In DEV mode, run `npx reflect` manually. Check that your backend's OpenAPI spec is accessible at `{BACKEND_URL}openapi.json`.
 
-## 🤝 Como Contribuir
+### Type Errors After Generation
 
-Contribuições são bem-vindas! Para contribuir:
+1. Restart your TypeScript language server
+2. Check path aliases in `tsconfig.json`
+3. Ensure `$reflector/*` alias is configured
 
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
-5. Abra um Pull Request
+## 📄 License
 
----
+MIT License - see [LICENSE](LICENSE) for details.
 
-## 📄 Licença
+## 🤝 Contributing
 
-Este projeto é licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
----
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🔗 Links
 
@@ -511,6 +468,4 @@ Este projeto é licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE
 
 ---
 
-<p align="center">
-  Desenvolvido com 🦍 pela equipe <a href="https://pinaculodigital.com.br">Pináculo Digital</a>
-</p>
+Built with 🦍 by the Pináculo Digital team.

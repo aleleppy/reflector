@@ -1,5 +1,4 @@
 import type { AttributeProp } from "../types/types.js";
-import type { ArrayProp } from "../props/array.property.js";
 
 interface ParamProcessorResult {
   buildedParamsTypes: string[];
@@ -7,7 +6,6 @@ interface ParamProcessorResult {
   paramInit: Set<string>;
   paramClear: Set<string>;
   reflectorImports: Set<string>;
-  enumImports: Set<string>;
 }
 
 export class ModuleParameterProcessor {
@@ -23,7 +21,6 @@ export class ModuleParameterProcessor {
     const paramInit = new Set<string>();
     const paramClear = new Set<string>();
     const reflectorImports = new Set<string>();
-    const enumImports = new Set<string>();
 
     const argEntries = [
       { name: "querys", props: querys },
@@ -36,28 +33,13 @@ export class ModuleParameterProcessor {
       if (!props.length) continue;
       reflectorImports.add("QueryBuilder");
       const capitalizedName = this.capitalizeFirstLetter(name);
-      
-      // Check for enum arrays in querys
-      if (name === "querys") {
-        for (const prop of props) {
-          if (this.isArrayProp(prop) && prop.isEnum) {
-            reflectorImports.add("EnumQueryBuilder");
-            enumImports.add(prop.type);
-          }
-        }
-      }
-      
       buildedParamsTypes.push(this.buildClassProps({ props, name: capitalizedName as "Paths" | "Querys" | "Headers" }));
       paramAttributes.add(`${name} = new ${capitalizedName}()`);
       paramInit.add(`this.clear${capitalizedName}()`);
       paramClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
     }
 
-    return { buildedParamsTypes, paramAttributes, paramInit, paramClear, reflectorImports, enumImports };
-  }
-
-  private isArrayProp(prop: AttributeProp): prop is ArrayProp {
-    return "isEnum" in prop && "type" in prop;
+    return { buildedParamsTypes, paramAttributes, paramInit, paramClear, reflectorImports };
   }
 
   private buildClassProps(params: { props: AttributeProp[]; name: "Paths" | "Querys" | "Headers" }): string {
@@ -78,7 +60,7 @@ export class ModuleParameterProcessor {
       props.forEach((prop) => {
         if ("rawType" in prop) {
           attributes.push(prop.queryBuild());
-          bundle.push(this.buildBundleEntry(prop));
+          bundle.push(prop.bundleBuild());
         }
       });
     } else {
@@ -97,14 +79,6 @@ export class ModuleParameterProcessor {
         ${bundleBuild}
       }
     `;
-  }
-
-  private buildBundleEntry(prop: AttributeProp): string {
-    // For array enum queries, use .values
-    if (this.isArrayProp(prop) && prop.isEnum) {
-      return `${prop.name}: this.${prop.name}?.values`;
-    }
-    return prop.bundleBuild();
   }
 
   private capitalizeFirstLetter(str: string): string {
