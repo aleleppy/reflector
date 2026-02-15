@@ -90,7 +90,15 @@ export class Module {
         if ("rawType" in prop) {
           attributes.push(prop.queryBuild());
           // uptadeThis.push(prop.updateQueryBuild());
-          bundle.push(prop.bundleBuild());
+          
+          // Check if it's an enum array for correct bundle
+          if ("isEnum" in prop && prop.isEnum) {
+            this.reflectorImports.add("EnumQueryBuilder");
+            this.enumImports.add(prop.type);
+            bundle.push(`${prop.name}: this.${prop.name}?.values`);
+          } else {
+            bundle.push(prop.bundleBuild());
+          }
         }
       });
     } else {
