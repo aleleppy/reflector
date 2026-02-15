@@ -99,13 +99,6 @@ export class ArrayProp {
     return `${this.name}: this.${this.name}${result}`;
   }
 
-  queryBuild() {
-    if (this.isEnum) {
-      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}', values: [] }))`;
-    }
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
-  }
-
   staticBuild() {
     const result = this.isPrimitiveType ? "obj" : `new ${this.type}({ data: obj })`;
     const aType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
