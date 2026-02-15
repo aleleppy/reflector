@@ -6,6 +6,7 @@ import { Method } from "./method.js";
 import type { AttributeProp, ParamType, ReflectorOperation } from "./types/types.js";
 import { generatedDir } from "./vars.global.js";
 import type { PrimitiveProp } from "./props/primitive.property.js";
+import { ArrayProp } from "./props/array.property.js";
 
 interface Form {
   name: string;
@@ -86,16 +87,14 @@ export class Module {
       props.forEach((prop) => {
         if ("rawType" in prop) {
           attributes.push(prop.queryBuild());
-          // uptadeThis.push(prop.updateQueryBuild());
 
-          // Check if it's an enum array for correct bundle
+          // Check if it's an enum array and add necessary imports
           if ("isEnum" in prop && prop.isEnum) {
             this.reflectorImports.add("EnumQueryBuilder");
-            this.enumImports.add(prop.type as string);
-            bundle.push(`${prop.name}: this.${prop.name}?.values`);
-          } else {
-            bundle.push(prop.bundleBuild());
+            this.enumImports.add(String(prop.type));
           }
+
+          bundle.push(prop.bundleBuild());
         }
       });
     } else {

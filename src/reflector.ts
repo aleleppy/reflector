@@ -66,32 +66,40 @@ export class ReflectorFile {
       }
     }`,
     `
-      export class EnumQueryBuilder<T> {
-        private readonly key: string = '';
-        values = $derived(page.url.searchParams.getAll(this.key)) as T[];
-        selected = $state<T | null>(null);
+    export class EnumQueryBuilder<T extends string> {
+      private readonly key: string = '';
+      values = $state<string[]>([]);
 
-        constructor(params: { key: string; values: T[] }) {
-          const { key } = params;
+      constructor(params: { key: string; values: T[] }) {
+        const { key } = params;
 
-          this.key = key;
-        }
-
-        add() {
-          if (!this.selected) return;
-          const values = [...this.values, this.selected] as string[];
-          changeArrayParam({ key: this.key, values });
-          this.selected = null;
-        }
-
-        remove(index: number) {
-          const values = [
-            ...this.values.slice(0, index),
-            ...this.values.slice(index + 1),
-          ] as string[];
-          return changeArrayParam({ key: this.key, values });
-        }
+        this.key = key;
       }
+
+      update() {
+        return changeArrayParam({ key: this.key, values: this.values });
+      }
+
+      toggle(value: T) {
+        const index = this.values.indexOf(value);
+        if (index === -1) {
+          this.values = [...this.values, value];
+        } else {
+          this.values = this.values.filter((v) => v !== value);
+        }
+        this.update();
+      }
+
+      set(values: T[]) {
+        this.values = values;
+        this.update();
+      }
+
+      clear() {
+        this.values = [];
+        this.update();
+      }
+    }
     `,
   ].join(";");
 

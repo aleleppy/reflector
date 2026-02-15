@@ -92,7 +92,7 @@ export interface BaseParameterObject {
   allowReserved?: boolean;
   schema?: SchemaObject | ReferenceObject;
   examples?: Record<string, ExampleObject | ReferenceObject>;
-  example?: any;
+  example?: unknown;
   content?: ContentObject;
 }
 export interface ParameterObject extends BaseParameterObject {
