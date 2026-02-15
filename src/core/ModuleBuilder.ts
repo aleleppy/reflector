@@ -1,10 +1,8 @@
-import * as path from "node:path";
-import * as fs from "node:fs";
 import { Source } from "../file.js";
 import { splitByUppercase } from "../utils/StringUtils.js";
 import { getEndpoint } from "../utils/EndpointUtils.js";
 import type { ComponentsObject, PathsObject, OperationObject } from "../types/open-api-spec.interface.js";
-import type { FieldValidators, ReflectorOperation } from "../types/types.js";
+import type { ReflectorOperation } from "../types/types.js";
 import { Module } from "./Module.js";
 import { Method } from "../method.js";
 
@@ -15,8 +13,8 @@ interface Info {
 }
 
 export class ModuleBuilder {
-  private components: ComponentsObject;
-  private paths: PathsObject;
+  private readonly components: ComponentsObject;
+  private readonly paths: PathsObject;
 
   constructor(params: { components: ComponentsObject; paths: PathsObject }) {
     this.components = params.components;

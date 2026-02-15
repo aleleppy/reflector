@@ -95,6 +95,6 @@ export class ModuleMethodProcessor {
   }
 
   private treatByUppercase(str: string): string {
-    return str.replace(/([A-Z])/g, "$1").trim();
+    return str.replaceAll(/([A-Z])/g, "$1").trim();
   }
 }

@@ -1,5 +1,3 @@
-import { getFullEndpoint } from "../helpers/helpers.js";
-
 export class MethodEndpointBuilder {
   build(rawEndpoint: string, paths: { name: string }[]): string {
     const processed = this.processEndpoint(rawEndpoint);

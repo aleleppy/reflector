@@ -10,10 +10,10 @@ export class ReflectorFile {
     "type ValidatorFn<T> = (v: T) => ValidatorResult",
     "type BundleResult<T> = T extends { bundle: () => infer R } ? R : T;",
     `type Partial<T> = {
-          [K in Exclude<keyof T, "bundle">]?: BuildedInput<T[K]>;
-        } & {
-          bundle: unknown;
-        }`,
+        [K in Exclude<keyof T, "bundle">]?: BuildedInput<T[K]>;
+      } & {
+        bundle: unknown;
+      }`,
     `export interface QueryContract {
       event: SvelteEvent;
       key: string;
@@ -65,6 +65,34 @@ export class ReflectorFile {
         return this.validator(this.value);
       }
     }`,
+    `
+      export class EnumQueryBuilder<T> {
+        private readonly key: string = '';
+        values = $derived(page.url.searchParams.getAll(this.key)) as T[];
+        selected = $state<T | null>(null);
+
+        constructor(params: { key: string; values: T[] }) {
+          const { key } = params;
+
+          this.key = key;
+        }
+
+        add() {
+          if (!this.selected) return;
+          const values = [...this.values, this.selected] as string[];
+          changeArrayParam({ key: this.key, values });
+          this.selected = null;
+        }
+
+        remove(index: number) {
+          const values = [
+            ...this.values.slice(0, index),
+            ...this.values.slice(index + 1),
+          ] as string[];
+          return changeArrayParam({ key: this.key, values });
+        }
+      }
+    `,
   ].join(";");
 
   private readonly functions = [
@@ -123,6 +151,20 @@ export class ReflectorFile {
       update(event: SvelteEvent) {
         return changeParam({ key: this.key, event });
       }
+    }
+    `,
+    `
+    export function changeArrayParam({
+      values,
+      key,
+    }: {
+      values: string[];
+      key: string;
+    }) {
+      const url = new URL(page.url);
+      url.searchParams.delete(key);
+      values.forEach((value) => url.searchParams.append(key, value));
+      goto(url, { replaceState: true, keepFocus: true });
     }
     `,
   ].join(";");
