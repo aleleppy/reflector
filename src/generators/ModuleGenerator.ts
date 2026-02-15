@@ -25,6 +25,7 @@ export class ModuleGenerator {
     const imports = this.buildImports();
     const reflectorImports = this.buildReflectorImports();
     const classImports = this.buildClassImports();
+    const enumImports = this.buildEnumImports();
     const moduleTypes = this.buildModuleTypes();
     const moduleClass = this.buildModuleClass();
 
@@ -32,6 +33,7 @@ export class ModuleGenerator {
 ${imports}
 ${reflectorImports}
 ${classImports}
+${enumImports}
 
 ${moduleTypes.join(";")}
 
@@ -74,6 +76,28 @@ ${moduleClass}
     return cleanEntries.length > 0 
       ? `import { ${cleanEntries.join(", ")} } from '$reflector/schemas.svelte';`
       : "";
+  }
+
+  private buildEnumImports(): string {
+    // Aggregate all params from all methods
+    const querys: any[] = [];
+    const headers: any[] = [];
+    const paths: any[] = [];
+    const cookies: any[] = [];
+    
+    for (const method of this.module.methods) {
+      querys.push(...method.querys);
+      headers.push(...method.headers);
+      paths.push(...method.paths);
+      cookies.push(...method.cookies);
+    }
+    
+    const { enumImports } = this.paramProcessor.process({ querys, headers, paths, cookies });
+    
+    if (enumImports.size === 0) return "";
+    
+    const imports = Array.from(enumImports).map(enumType => `type ${enumType}`).join(", ");
+    return `import { ${imports} } from '$reflector/enums';`;
   }
 
   private buildModuleTypes(): string[] {
