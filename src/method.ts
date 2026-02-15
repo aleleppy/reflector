@@ -4,15 +4,15 @@ import type { ReflectorOperation, AttributeProp } from "./types/types.js";
 import type { PrimitiveProp } from "./props/primitive.property.js";
 
 export class Method {
-  private builder = new MethodBuilder();
-  private generator = new MethodGenerator();
+  private readonly builder = new MethodBuilder();
+  private readonly generator = new MethodGenerator();
 
   name: string;
   endpoint: string;
   description: string | undefined;
   isValid: boolean = true;
 
-  private method: ReturnType<MethodBuilder["build"]>;
+  private readonly method: ReturnType<MethodBuilder["build"]>;
 
   get request() {
     return this.method.analyzers.request;

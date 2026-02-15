@@ -1,8 +1,6 @@
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "../types/types.js";
 
-const emptyString = "''";
-
 type AbstractType = string | boolean | Date | number | undefined;
 type EmptyExample = string | false | 1;
 

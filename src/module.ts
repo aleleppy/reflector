@@ -67,9 +67,6 @@ export class Module {
 
     const bundle: string[] = [];
     const attributes: string[] = [];
-    // const constructorThis: string[] = [];
-    // const interfaceBuild: string[] = [];
-    // const uptadeThis: string[] = [];
 
     if (name === "Paths") {
       props.forEach((prop) => {
@@ -90,11 +87,11 @@ export class Module {
         if ("rawType" in prop) {
           attributes.push(prop.queryBuild());
           // uptadeThis.push(prop.updateQueryBuild());
-          
+
           // Check if it's an enum array for correct bundle
           if ("isEnum" in prop && prop.isEnum) {
             this.reflectorImports.add("EnumQueryBuilder");
-            this.enumImports.add(prop.type);
+            this.enumImports.add(prop.type as string);
             bundle.push(`${prop.name}: this.${prop.name}?.values`);
           } else {
             bundle.push(prop.bundleBuild());

@@ -1,7 +1,5 @@
 import type { ReflectorOperation, AttributeProp } from "../types/types.js";
 import type { PrimitiveProp } from "../props/primitive.property.js";
-import type { ArrayProp } from "../props/array.property.js";
-import type { EnumProp } from "../props/enum.property.js";
 import { PrimitiveProp as PrimitivePropClass } from "../props/primitive.property.js";
 import { ArrayProp as ArrayPropClass } from "../props/array.property.js";
 import { EnumProp as EnumPropClass } from "../props/enum.property.js";
@@ -41,19 +39,28 @@ export class MethodRequestAnalyzer {
   private processQueryParam(name: string, schema: any, moduleName: string, isRequired: boolean): void {
     if (schema.type === "array") {
       this.querys.push(
-        new ArrayPropClass({ name, schemaObject: schema, schemaName: moduleName, isParam: true, isEnum: false, required: isRequired })
+        new ArrayPropClass({
+          name,
+          schemaObject: schema,
+          schemaName: moduleName,
+          isParam: true,
+          isEnum: false,
+          required: isRequired,
+        }),
       );
       return;
     }
 
     if (schema.enum) {
       this.querys.push(
-        new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName })
+        new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName }),
       );
       return;
     }
 
-    this.querys.push(new PrimitivePropClass({ name, required: isRequired, schemaObject: schema, validator: undefined, isParam: true }));
+    this.querys.push(
+      new PrimitivePropClass({ name, required: isRequired, schemaObject: schema, validator: undefined, isParam: true }),
+    );
   }
 
   getProps() {
@@ -61,7 +68,7 @@ export class MethodRequestAnalyzer {
       paths: this.paths,
       headers: this.headers,
       querys: this.querys,
-      cookies: this.cookies
+      cookies: this.cookies,
     };
   }
 }

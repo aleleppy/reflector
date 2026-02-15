@@ -4,9 +4,9 @@ import { MethodApiCallBuilder } from "./MethodApiCallBuilder.js";
 import { MethodPropsBuilder } from "./MethodPropsBuilder.js";
 
 export class MethodGenerator {
-  private endpointBuilder = new MethodEndpointBuilder();
-  private apiCallBuilder = new MethodApiCallBuilder();
-  private propsBuilder = new MethodPropsBuilder();
+  private readonly endpointBuilder = new MethodEndpointBuilder();
+  private readonly apiCallBuilder = new MethodApiCallBuilder();
+  private readonly propsBuilder = new MethodPropsBuilder();
 
   generate(method: Method): string {
     const description = this.buildDescription(method);

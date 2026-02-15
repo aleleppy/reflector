@@ -1,4 +1,4 @@
-import type { ReflectorOperation, ApiType } from "../types/types.js";
+import type { ApiType } from "../types/types.js";
 import type { PrimitiveProp } from "../props/primitive.property.js";
 import type { ArrayProp } from "../props/array.property.js";
 import type { EnumProp } from "../props/enum.property.js";
@@ -15,6 +15,7 @@ export interface MethodAnalyzers {
     parameters: any[];
     hasEnumResponse: boolean;
   };
+
   props: {
     paths: PrimitiveProp[];
     headers: PrimitiveProp[];
