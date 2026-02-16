@@ -1,4 +1,5 @@
-import type { AttributeProp, ParamType } from "../types/types.js";
+import { mockedParams } from "../../main.js";
+import type { AttributeProp, ParamType } from "../../types/types.js";
 import type { ModuleImports } from "./ModuleImports.js";
 
 export class ModuleClassBuilder {
@@ -15,18 +16,21 @@ export class ModuleClassBuilder {
     const attributes: string[] = [];
 
     if (name === "Paths") {
+      this.imports.addMockedImport("mockedParams");
       props.forEach((prop) => {
         if ("rawType" in prop) {
           attributes.push(prop.patchBuild());
         }
+
+        mockedParams.add(prop.name);
       });
 
       this.imports.addPageStateImport();
 
       return `
-      class ${name} {
-        ${attributes.join(";")}
-      }
+        class ${name} {
+          ${attributes.join(";")}
+        }
       `;
     } else if (name === "Querys") {
       props.forEach((prop) => {
@@ -51,12 +55,17 @@ export class ModuleClassBuilder {
           this.imports.addReflectorImport("EnumQueryBuilder");
         }
       });
-    } else {
+    } else if (name === "Headers") {
+      this.imports.addReflectorImport("BuildedInput");
+      this.imports.addReflectorImport("build");
       props.forEach((prop) => {
-        if ("isEnum" in prop || "enumName" in prop) {
-          this.imports.addEnumImport((prop as { type: string }).type);
-        }
-        attributes.push(prop.classBuild());
+        // if ("isEnum" in prop || "enumName" in prop) {
+        //   this.imports.addEnumImport((prop as { type: string }).type);
+        // }
+
+        const buildedProp = `${prop.classBuild()} = build({required: true, example: '', placeholder: ''})`;
+        attributes.push(buildedProp);
+        bundle.push(prop.bundleBuild());
       });
     }
 

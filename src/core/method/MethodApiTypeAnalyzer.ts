@@ -1,5 +1,5 @@
-import type { ReflectorOperation, ApiType } from "../types/types.js";
-import type { ReflectorRequestType } from "../request.js";
+import type { ReflectorOperation, ApiType } from "../../types/types.js";
+import type { ReflectorRequestType } from "../../request.js";
 
 export class MethodApiTypeAnalyzer {
   analyze(operation: ReflectorOperation): { apiType: ApiType; attributeType: ReflectorRequestType } {

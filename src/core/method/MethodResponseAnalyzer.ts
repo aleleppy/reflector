@@ -4,7 +4,7 @@ import type {
   ResponseObject,
   ContentObject,
   ReferenceObject,
-} from "../types/open-api-spec.interface.js";
+} from "../../types/open-api-spec.interface.js";
 
 type RefLike = { $ref: string };
 

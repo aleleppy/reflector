@@ -1,16 +1,16 @@
 // Core module exports
-export { ModuleImports } from "./ModuleImports.js";
-export { ModuleMethodProcessor, type ProcessedMethods } from "./ModuleMethodProcessor.js";
-export { ModuleParamProcessor, type ProcessedParams } from "./ModuleParamProcessor.js";
-export { ModuleClassBuilder } from "./ModuleClassBuilder.js";
-export { ModuleConstructorBuilder, type Form } from "./ModuleConstructorBuilder.js";
-export { ModuleFileBuilder, type FileBuildParams } from "./ModuleFileBuilder.js";
+export { ModuleImports } from "./module/ModuleImports.js";
+export { ModuleMethodProcessor, type ProcessedMethods } from "./module/ModuleMethodProcessor.js";
+export { ModuleParamProcessor, type ProcessedParams } from "./module/ModuleParamProcessor.js";
+export { ModuleClassBuilder } from "./module/ModuleClassBuilder.js";
+export { ModuleConstructorBuilder, type Form } from "./module/ModuleConstructorBuilder.js";
+export { ModuleFileBuilder, type FileBuildParams } from "./module/ModuleFileBuilder.js";
 
 // Method-related exports
-export { Method } from "./Method.js";
-export { MethodBuilder } from "./MethodBuilder.js";
-export { MethodApiTypeAnalyzer } from "./MethodApiTypeAnalyzer.js";
-export { MethodBodyAnalyzer } from "./MethodBodyAnalyzer.js";
-export { MethodEndpointBuilder } from "./MethodEndpointBuilder.js";
-export { MethodRequestAnalyzer } from "./MethodRequestAnalyzer.js";
-export { MethodResponseAnalyzer } from "./MethodResponseAnalyzer.js";
+export { Method } from "./method/Method.js";
+export { MethodBuilder } from "./method/MethodBuilder.js";
+export { MethodApiTypeAnalyzer } from "./method/MethodApiTypeAnalyzer.js";
+export { MethodBodyAnalyzer } from "./method/MethodBodyAnalyzer.js";
+export { MethodEndpointBuilder } from "./method/MethodEndpointBuilder.js";
+export { MethodRequestAnalyzer } from "./method/MethodRequestAnalyzer.js";
+export { MethodResponseAnalyzer } from "./method/MethodResponseAnalyzer.js";

@@ -12,6 +12,7 @@ import { ReflectorFile } from "./reflector.js";
 // import { Module } from "./module.js";
 
 export const enumTypes = new Map<string, string>();
+export const mockedParams = new Set<string>();
 
 export class Reflector {
   readonly components: ComponentsObject;
@@ -25,6 +26,7 @@ export class Reflector {
   readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/schemas.svelte.ts`) });
   readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`) });
   readonly enumFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/enums.ts`) });
+  readonly mockedParamsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/mocked-params.svelte.ts`) });
 
   files: Source[];
   schemas: Schema[];
@@ -69,10 +71,7 @@ export class Reflector {
         propertiesNames.add(prop);
       });
 
-      schemas.push(
-        new Schema({ ...schema, isEmpty: false, validators }),
-        // new Schema({ ...schema, isEmpty: true })
-      );
+      schemas.push(new Schema({ ...schema, isEmpty: false, validators }));
     }
 
     console.log(`${schemas.length} schemas gerados com sucesso.`);
@@ -138,7 +137,7 @@ export class Reflector {
       [
         'import { build, BuildedInput } from "$reflector/reflector.svelte";',
         'import { validateInputs } from "$lib/sanitizers/validateFormats";',
-        `import {${Array.from(enumTypes.values())}} from "$reflector/enums"`,
+        `import type {${Array.from(enumTypes.values())}} from "$reflector/enums"`,
         ...treatedSchemas,
       ].join("\n\n"),
     );
@@ -165,12 +164,30 @@ export class Reflector {
 
     const enumss = Array.from(enumTypes)
       .map(([types, key]) => {
-        return `export enum ${key} { ${types} }`;
+        return `export const ${key} = [ ${types} ] as const; export type ${key} = typeof ${key}[number] `;
       })
       .join(";");
 
     this.enumFile.changeData(enumss);
     this.enumFile.save();
+
+    const mockedParamss = Array.from(mockedParams)
+      .map((paramName) => {
+        return `${paramName} = $state<string | null>(null)`;
+      })
+      .join(";");
+
+    const mockedFile = `
+      class MockedParams {
+        ${mockedParamss}
+      }
+
+      const mockedParams = new MockedParams()
+      export default mockedParams
+    `;
+
+    this.mockedParamsFile.changeData(mockedFile);
+    this.mockedParamsFile.save();
 
     return {};
   }

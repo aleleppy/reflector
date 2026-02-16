@@ -141,7 +141,7 @@ export class PrimitiveProp {
   }
 
   patchBuild() {
-    return `readonly ${this.name} = $derived.by(() => page.params.${this.name})`;
+    return `readonly ${this.name} = $derived.by(() => '${this.name}' in page.params ? page.params.${this.name} : mockedParams.${this.name})`;
   }
 
   queryBuild() {

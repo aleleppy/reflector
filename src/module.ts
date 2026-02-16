@@ -77,10 +77,7 @@ export class Module {
     });
   }
 
-  private buildModuleData(
-    processedMethods: ProcessedMethods,
-    processedParams: ProcessedParams
-  ) {
+  private buildModuleData(processedMethods: ProcessedMethods, processedParams: ProcessedParams) {
     const moduleAttributes = new Set<string>().add("loading = $state<boolean>(false)");
     const moduleInit = new Set<string>([]);
     const moduleClear = new Set<string>([]);
@@ -100,9 +97,7 @@ export class Module {
 
     // Monta os imports de classes
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
-    const classImports = cleanEntries.length > 0
-      ? `import { ${cleanEntries.join(", ")} } from '$reflector/schemas.svelte';`
-      : "";
+    const classImports = cleanEntries.length > 0 ? `import { ${cleanEntries.join(", ")} } from '$reflector/schemas.svelte';` : "";
 
     // Adiciona suporte a forms
     if (formSet.size > 0) {

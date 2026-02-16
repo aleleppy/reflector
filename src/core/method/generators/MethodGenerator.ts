@@ -1,5 +1,5 @@
-import type { Method } from "../core/Method.js";
-import { MethodEndpointBuilder } from "../core/MethodEndpointBuilder.js";
+import type { Method } from "../Method.js";
+import { MethodEndpointBuilder } from "../MethodEndpointBuilder.js";
 import { MethodApiCallBuilder } from "./MethodApiCallBuilder.js";
 import { MethodPropsBuilder } from "./MethodPropsBuilder.js";
 

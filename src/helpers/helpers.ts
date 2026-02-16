@@ -1,6 +1,6 @@
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 
-const trashWords = new Set(["Get", "Res", "Default", "Dto", "Public"]);
+const trashWords = new Set(["Get", "Res", "Default", "Dto", "Public", "Response", "Self"]);
 
 export function toCamelCase(str: string) {
   return str

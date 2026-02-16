@@ -1,4 +1,4 @@
-import type { ReflectorOperation } from "../types/types.js";
+import type { ReflectorOperation } from "../../types/types.js";
 import { Method, type MethodAnalyzers } from "./Method.js";
 import { MethodRequestAnalyzer } from "./MethodRequestAnalyzer.js";
 import { MethodResponseAnalyzer } from "./MethodResponseAnalyzer.js";

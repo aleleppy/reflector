@@ -1,6 +1,6 @@
-import type { AttributeProp, ParamType } from "../types/types.js";
-import type { PrimitiveProp } from "../props/primitive.property.js";
-import { capitalizeFirstLetter } from "../helpers/helpers.js";
+import type { AttributeProp, ParamType } from "../../types/types.js";
+import type { PrimitiveProp } from "../../props/primitive.property.js";
+import { capitalizeFirstLetter } from "../../helpers/helpers.js";
 import type { ModuleImports } from "./ModuleImports.js";
 import type { ModuleClassBuilder } from "./ModuleClassBuilder.js";
 

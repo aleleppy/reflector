@@ -32,10 +32,12 @@ export class ModuleFileBuilder {
 
     const reflectorImports = this.imports.buildReflectorImportsLine();
     const enumImports = this.imports.buildEnumImportsLine();
+    const mockedImports = this.imports.buildMockedImportsLine();
 
     return `
       ${this.imports.getImportsArray().join(";")}
       ${reflectorImports}
+      ${mockedImports}
       ${enumImports}
       ${classImports}
 

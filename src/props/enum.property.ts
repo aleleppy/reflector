@@ -17,19 +17,19 @@ export class EnumProp {
     this.isParam = !!isParam;
     this.isRequired = required;
 
-    this.type = enums.map((e) => `'${e}'`).join("|");
+    this.type = enums.map((e) => `'${e}'`).join(",");
 
-    const types = enumTypes.get(enums.join(","));
+    const types = enumTypes.get(this.type);
 
     if (!types) {
       const teste = splitByUppercase(treatByUppercase(entityName)).map((x) => x.toUpperCase());
       const naaa = `ENUM_${teste.join("_")}_${this.name.toUpperCase()}`.split("_");
       const aaa = [...new Set(naaa)].join("_");
-      enumTypes.set(enums.join(","), aaa);
+      enumTypes.set(this.type, aaa);
     }
 
     this.example = enums[0] as string;
-    this.enumName = enumTypes.get(enums.join(",")) ?? "";
+    this.enumName = enumTypes.get(this.type) ?? "";
   }
 
   classBuild() {
@@ -39,7 +39,7 @@ export class EnumProp {
   }
 
   constructorBuild() {
-    return `this.${this.name} = build({ key: params?.data?.${this.name}, placeholder: ${this.enumName}.${this.example}, example: ${this.enumName}.${this.example}, required: ${this.isRequired}})`;
+    return `this.${this.name} = build({ key: params?.data?.${this.name}, placeholder: '${this.example}', example: '${this.example}', required: ${this.isRequired}})`;
   }
 
   interfaceBuild() {

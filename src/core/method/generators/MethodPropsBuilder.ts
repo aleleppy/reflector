@@ -1,5 +1,5 @@
-import type { Method } from "../core/Method.js";
-import type { AttributeProp } from "../types/types.js";
+import type { Method } from "../Method.js";
+import type { AttributeProp } from "../../../types/types.js";
 
 export class MethodPropsBuilder {
   build(method: Method): string {

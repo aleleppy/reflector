@@ -3,6 +3,7 @@ export class ModuleImports {
   readonly imports: Set<string>;
   readonly reflectorImports: Set<string>;
   readonly enumImports: Set<string>;
+  readonly mockedImports: Set<string>;
 
   constructor() {
     this.imports = new Set([
@@ -13,10 +14,15 @@ export class ModuleImports {
 
     this.reflectorImports = new Set<string>(["Behavior"]);
     this.enumImports = new Set<string>();
+    this.mockedImports = new Set<string>();
   }
 
   addImport(importStr: string): void {
     this.imports.add(importStr);
+  }
+
+  addMockedImport(importStr: string): void {
+    this.mockedImports.add(importStr);
   }
 
   addReflectorImport(importStr: string): void {
@@ -47,6 +53,14 @@ export class ModuleImports {
     return this.enumImports.size > 0;
   }
 
+  private hasMockedImports(): boolean {
+    return this.mockedImports.size > 0;
+  }
+
+  getMockedImports(): string[] {
+    return Array.from(this.mockedImports);
+  }
+
   buildReflectorImportsLine(): string {
     return `import { ${this.getReflectorImportsArray().join(", ")}, type ApiErrorResponse } from "$reflector/reflector.svelte";`;
   }
@@ -54,5 +68,10 @@ export class ModuleImports {
   buildEnumImportsLine(): string {
     if (!this.hasEnumImports()) return "";
     return `import {${this.getEnumImportsArray().join(", ")} } from "$reflector/enums"`;
+  }
+
+  buildMockedImportsLine(): string {
+    if (!this.hasMockedImports()) return "";
+    return `import ${this.getMockedImports()} from "$reflector/mocked-params.svelte"`;
   }
 }

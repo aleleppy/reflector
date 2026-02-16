@@ -1,5 +1,5 @@
-import { MethodBuilder } from "./core/MethodBuilder.js";
-import { MethodGenerator } from "./generators/MethodGenerator.js";
+import { MethodBuilder } from "./core/method/MethodBuilder.js";
+import { MethodGenerator } from "./core/method/generators/MethodGenerator.js";
 import type { ReflectorOperation, AttributeProp } from "./types/types.js";
 import type { PrimitiveProp } from "./props/primitive.property.js";
 

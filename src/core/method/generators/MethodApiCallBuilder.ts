@@ -1,5 +1,6 @@
-import type { Method } from "../core/Method.js";
-import type { AttributeProp } from "../types/types.js";
+import type { Method } from "../Method.js";
+import { treatByUppercase } from "../../../helpers/helpers.js";
+import type { AttributeProp } from "../../../types/types.js";
 
 export class MethodApiCallBuilder {
   build(method: Method): { inside: string; outside: string } {
@@ -39,7 +40,7 @@ export class MethodApiCallBuilder {
 
   private buildEntityCall(method: Method, responseType: string): { inside: string; outside: string } {
     const querys = this.buildQuerys(method.analyzers.props.querys);
-    const entityName = this.treatEntityName(method.analyzers.request.responseType);
+    const entityName = treatByUppercase(method.analyzers.request.responseType ?? "");
 
     const inside = `
       const response = await api.get<${responseType}, unknown>({
@@ -92,22 +93,5 @@ export class MethodApiCallBuilder {
   private buildQuerys(querys: AttributeProp[]): string {
     if (querys.length === 0) return "";
     return `queryData: {${querys.map((q) => q.name).join(",")}}`;
-  }
-
-  private treatEntityName(name: string | null): string {
-    if (!name) return "entity";
-    const parts = name.split(/(?=[A-Z])/);
-    const filtered = parts.filter((p: string) => !["Get", "Res", "Default", "Dto", "Public"].includes(p));
-    if (filtered.length === 0) return "entity";
-    const first = filtered[0];
-    if (!first) return "entity";
-    let result = first.charAt(0).toLowerCase() + first.slice(1);
-    for (let i = 1; i < filtered.length; i++) {
-      const part = filtered[i];
-      if (part) {
-        result += part.charAt(0).toUpperCase() + part.slice(1);
-      }
-    }
-    return result;
   }
 }

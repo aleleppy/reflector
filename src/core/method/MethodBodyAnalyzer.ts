@@ -1,5 +1,5 @@
-import type { ReflectorOperation } from "../types/types.js";
-import type { RequestBodyObject, ReferenceObject, ContentObject, SchemaObject } from "../types/open-api-spec.interface.js";
+import type { ReflectorOperation } from "../../types/types.js";
+import type { RequestBodyObject, ReferenceObject, ContentObject, SchemaObject } from "../../types/open-api-spec.interface.js";
 
 export class MethodBodyAnalyzer {
   bodyType?: string;
@@ -16,7 +16,9 @@ export class MethodBodyAnalyzer {
     return this.typeFromSchemaOrType(schemaOrType);
   }
 
-  private isRef<T extends object>(v: RequestBodyObject | ReferenceObject | ContentObject | SchemaObject): v is T & { $ref: string } {
+  private isRef<T extends object>(
+    v: RequestBodyObject | ReferenceObject | ContentObject | SchemaObject,
+  ): v is T & { $ref: string } {
     return !!v && typeof v === "object" && "$ref" in v;
   }
 
