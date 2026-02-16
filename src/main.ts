@@ -138,8 +138,10 @@ export class Reflector {
         'import { build, BuildedInput } from "$reflector/reflector.svelte";',
         'import { validateInputs } from "$lib/sanitizers/validateFormats";',
         `import type {${Array.from(enumTypes.values())}} from "$reflector/enums"`,
+        "import { PUBLIC_ENVIRONMENT } from '$env/static/public';",
+        "const isEmpty = PUBLIC_ENVIRONMENT !== 'DEV';",
         ...treatedSchemas,
-      ].join("\n\n"),
+      ].join("\n"),
     );
     this.schemaFile.save();
 

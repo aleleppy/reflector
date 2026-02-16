@@ -60,7 +60,11 @@ export class MethodApiCallBuilder {
     const outside: string[] = [];
     if (hasData) {
       outside.push(`const data = this.forms.${method.name}.bundle()`);
-      outside.push(`if (!isFormValid(this.forms.${method.name})) return`);
+      //   outside.push(`    try{
+      //   isFormValid(this.forms.create)
+      // } finally {
+      //   this.loading = false
+      // }`);
     }
     if (hasHeaders) {
       outside.push(`const headers = this.headers.bundle()`);

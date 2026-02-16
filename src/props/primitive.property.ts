@@ -112,7 +112,7 @@ export class PrimitiveProp {
         return sanitizedExample();
       }
 
-      return `params?.empty ? ${this.emptyExample} : ${sanitizedExample()}`;
+      return `params?.empty || isEmpty ? ${this.emptyExample} : ${sanitizedExample()}`;
     };
 
     return `
@@ -141,7 +141,7 @@ export class PrimitiveProp {
   }
 
   patchBuild() {
-    return `readonly ${this.name} = $derived.by(() => '${this.name}' in page.params ? page.params.${this.name} : mockedParams.${this.name})`;
+    return `readonly ${this.name} = $derived.by(() => '${this.name}' in page.params ? page.params.${this.name} : mockedParams.${this.name}) as string | null;`;
   }
 
   queryBuild() {
