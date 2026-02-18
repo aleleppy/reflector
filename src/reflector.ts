@@ -77,14 +77,14 @@ export class ReflectorFile {
           this.key = key;
         }
 
-        add() {
+        add = () => {
           if (!this.selected) return;
           const values = [...this.values, this.selected] as string[];
           changeArrayParam({ key: this.key, values });
           this.selected = null;
         }
 
-        remove(index: number) {
+        remove = (index: number) => {
           const values = [
             ...this.values.slice(0, index),
             ...this.values.slice(index + 1),
