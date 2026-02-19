@@ -29,12 +29,12 @@ export class MethodGenerator {
 
         try {
           ${inside}
-          onSuccess?.(response)
+          await onSuccess?.(response)
 
           return ${methodReturn}
         } catch(e) {
           const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
-          return onError?.(parsedError);
+          return await onError?.(parsedError);
         } finally {
           this.loading = false
         }

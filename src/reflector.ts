@@ -9,11 +9,12 @@ export class ReflectorFile {
     "type ValidatorResult = string | null",
     "type ValidatorFn<T> = (v: T) => ValidatorResult",
     "type BundleResult<T> = T extends { bundle: () => infer R } ? R : T;",
-    `type Partial<T> = {
-        [K in Exclude<keyof T, "bundle">]?: BuildedInput<T[K]>;
+    `type PartialBuildedInput<T> = {
+        [K in Exclude<keyof T, 'bundle'>]?: BuildedInput<T[K]>;
       } & {
         bundle: unknown;
-      }`,
+      }
+    `,
     `export interface QueryContract {
       event: SvelteEvent;
       key: string;
@@ -29,14 +30,15 @@ export class ReflectorFile {
       message: string;
     }`,
     `export class Behavior<TSuccess = unknown, TError = unknown> {
-      onError?: (e: TError) => void;
-      onSuccess?: (v: TSuccess) => void;
+      onError?: (e: TError) => Promise<void> | void;
+      onSuccess?: (v: TSuccess) => Promise<void> | void;
     }`,
     `export class BuildedInput<T> {
       value = $state<T>(null as any);
       display = $state<T>(null as any);
       required: boolean;
       placeholder: T;
+      readonly kind = 'builded';
       readonly validator?: ValidatorFn<T>;
 
       constructor(params: {
@@ -105,7 +107,7 @@ export class ReflectorFile {
     }): BuildedInput<T> {
       return new BuildedInput(params);
     }`,
-    `export function isFormValid<T>(schema: Partial<T>): boolean {
+    `export function isFormValid<T>(schema: PartialBuildedInput<T>): boolean {
       delete schema.bundle;
 
       const arrayOfBuildedInputs = Object.values(schema) as BuildedInput<unknown>[];
@@ -157,6 +159,7 @@ export class ReflectorFile {
     export class QueryBuilder<T> {
       private readonly key: string = '';
       value = $state<T | null>(null);
+      readonly kind = 'query';
 
       constructor(params: { key: string; value: T | null }) {
         const { key, value } = params;
