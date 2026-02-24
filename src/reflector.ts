@@ -123,10 +123,10 @@ export class ReflectorFile {
       });
 
       if (!isValid) {
-        toast.error(
-          'Erro ao fazer a requisição',
-          'Um ou mais campos preenchidos estão incorretos.'
-        );
+        toast.error({
+          title: 'Erro ao fazer a requisição',
+          description: 'Um ou mais campos preenchidos estão incorretos.',
+        });
       }
 
       return isValid;
