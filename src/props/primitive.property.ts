@@ -11,7 +11,7 @@ export class PrimitiveProp {
   isParam: boolean;
 
   private readonly required: boolean;
-  private readonly rawType: string;
+  readonly rawType: string;
   private readonly buildedConst: string;
   private readonly emptyExample: EmptyExample;
 

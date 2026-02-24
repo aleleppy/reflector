@@ -14,14 +14,19 @@ export class MethodGenerator {
     const { inside, outside } = this.apiCallBuilder.build(method);
     const props = this.propsBuilder.build(method);
     const methodReturn = this.buildMethodReturn(method);
-    const additionalMethod = this.buildAdditionalMethod(method);
+    // const additionalMethod = this.buildAdditionalMethod(method);
+    const pathsInfo = this.propsBuilder.getPaths(method);
+
+    const paramsType = this.buildParamsType(method, pathsInfo);
 
     return `
       ${description}
-      async ${method.name}(behavior: Behavior<${method.responseTypeInterface}, ApiErrorResponse> = new Behavior()) {
-        const {onError, onSuccess} = behavior
+      async ${method.name}(params?: ${paramsType}) {
 
-        this.loading = true
+        const behavior = params?.behavior ?? new Behavior();
+        const { onError, onSuccess } = behavior;
+
+        this.loading = true;
         ${props}
         const endpoint = ${endpoint}
 
@@ -29,19 +34,32 @@ export class MethodGenerator {
 
         try {
           ${inside}
-          await onSuccess?.(response)
+          await onSuccess?.(response);
 
-          return ${methodReturn}
-        } catch(e) {
+          return ${methodReturn};
+        } catch (e) {
           const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
           return await onError?.(parsedError);
         } finally {
-          this.loading = false
+          this.loading = false;
         }
       }
 
-      ${additionalMethod}
-    `.trim();
+    `;
+  }
+
+  private buildParamsType(method: Method, paramsPaths?: string): string {
+    const behaviorType = `Behavior<${method.responseTypeInterface}, ApiErrorResponse>`;
+
+    if (paramsPaths) {
+      return `{
+        behavior?: ${behaviorType};${paramsPaths}
+      }`;
+    }
+
+    return `{
+      behavior?: ${behaviorType};
+    }`;
   }
 
   private buildDescription(method: Method): string {
@@ -75,7 +93,7 @@ export class MethodGenerator {
 
     return `
       async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
-        const data = await this.${method.name}(behavior)
+        const data = await this.${method.name}({behavior})
 
         if (data) {
           this.clearForms()

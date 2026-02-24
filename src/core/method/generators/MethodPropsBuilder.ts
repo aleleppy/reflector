@@ -11,13 +11,31 @@ export class MethodPropsBuilder {
       lines.push(`const { ${this.joinNames(querys)} } = this.querys.bundle()`);
     }
     if (paths.length > 0) {
-      lines.push(`const { ${this.joinNames(paths)} } = this.paths`);
+      lines.push(`const { ${this.joinNames(paths)} } = params?.paths ?? this.paths`);
     }
     if (cookies.length > 0) {
       lines.push(`const cookies = this.cookies`);
     }
 
     return lines.join("\n");
+  }
+
+  getPaths(method: Method) {
+    const { paths } = method.analyzers.props;
+
+    if (paths.length === 0) return;
+
+    const paramsPaths = `
+    paths?: {
+      ${paths
+        .map((path) => {
+          const type = path.rawType ?? path.type;
+          return `${path.name}: ${type}`;
+        })
+        .join("\n")}
+    }`;
+
+    return paramsPaths;
   }
 
   private joinNames(props: AttributeProp[]): string {

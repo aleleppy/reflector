@@ -72,12 +72,9 @@ export class Schema {
       bundleParams.push(prop.bundleBuild());
     });
 
-    const hasAttributes = keys.length > 0;
-    const constructorCode = hasAttributes
-      ? `constructor(params?: { data?: ${this.name}Interface | undefined, empty?: boolean }) { 
+    const constructorCode = `constructor(params?: { data?: ${this.name}Interface | undefined, empty?: boolean }) { 
         ${constructorThis.join(";\n")}
-      }`
-      : "";
+      }`;
 
     this.schema = `
     export class ${this.name} {
