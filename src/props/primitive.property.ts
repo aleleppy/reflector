@@ -132,7 +132,7 @@ export class PrimitiveProp {
       return "";
     };
 
-    const buildedExample = `params?.empty || isEmpty ? ${this.example} : ${this.fallbackExample}`;
+    const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
 
     return `
       build({ key: params?.data?.${name}, placeholder: ${this.fallbackExample}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
