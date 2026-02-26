@@ -12,7 +12,7 @@ export class PrimitiveProp {
   isParam: boolean;
 
   private readonly required: boolean;
-  readonly rawType: string;
+  readonly rawType: ReflectorParamType;
   private readonly buildedConst: string;
   private readonly example: Example;
   private readonly fallbackExample: Example;
@@ -164,7 +164,9 @@ export class PrimitiveProp {
   }
 
   queryBuild() {
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${this.example} }))`;
+    const example = this.rawType === "string" ? this.fallbackExample : this.example;
+
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${example} }))`;
   }
 
   updateQueryBuild() {
