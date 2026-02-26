@@ -1,8 +1,9 @@
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "../types/types.js";
 
-type AbstractType = string | boolean | Date | number | undefined;
-type EmptyExample = string | false | 1;
+type AbstractType = string | boolean | number | undefined;
+type Example = string | boolean | number;
+// type FallbackExample = string | false | number;
 
 export class PrimitiveProp {
   name: string;
@@ -13,7 +14,8 @@ export class PrimitiveProp {
   private readonly required: boolean;
   readonly rawType: string;
   private readonly buildedConst: string;
-  private readonly emptyExample: EmptyExample;
+  private readonly example: Example;
+  private readonly fallbackExample: Example;
 
   constructor(params: {
     name: string;
@@ -27,10 +29,20 @@ export class PrimitiveProp {
 
     const type = (rawType as ReflectorParamType) ?? "string";
 
-    this.emptyExample = this.getEmptyExample({ type, schemaObject });
-    const example: AbstractType = schemaObject.example ?? schemaObject.default;
+    const { emptyExample, example } = this.getExampleAndFallback({ schemaObject, type });
+
+    this.example = example;
+    this.fallbackExample = emptyExample;
 
     const buildedType = type;
+
+    // if (name === "limit") {
+    //   console.log(example);
+    // }
+
+    // if (isParam) {
+    //   console.log(name, example);
+    // }
 
     this.name = this.treatName(name);
     this.rawType = type ?? "any";
@@ -39,7 +51,7 @@ export class PrimitiveProp {
 
     this.isParam = !!isParam;
 
-    this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator, emptyExample: this.emptyExample });
+    this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator, emptyExample: this.example });
   }
 
   private treatName(name: string) {
@@ -67,15 +79,39 @@ export class PrimitiveProp {
     }
   }
 
+  private getExampleAndFallback(params: { schemaObject: SchemaObject; type: ReflectorParamType }) {
+    const { schemaObject, type } = params;
+
+    const example: AbstractType = schemaObject.example ?? schemaObject.default;
+    const emptyExample = this.getEmptyExample({ type, schemaObject });
+
+    if (!example)
+      return {
+        example: emptyExample,
+        emptyExample,
+      };
+
+    if (type === "string")
+      return {
+        example: `"${example}"`,
+        emptyExample,
+      };
+
+    return {
+      example,
+      emptyExample,
+    };
+  }
+
   private buildConst(params: {
     name: string;
     example: AbstractType;
-    emptyExample: EmptyExample;
+    emptyExample: Example;
     required: boolean;
     type: ReflectorParamType | undefined;
     validator: string | undefined;
   }) {
-    const { example, name, required, type, validator, emptyExample } = params;
+    const { name, required, type, validator } = params;
 
     const getValidator = (type: ReflectorParamType) => {
       if (type === "string") {
@@ -96,27 +132,10 @@ export class PrimitiveProp {
       return "";
     };
 
-    const sanitizedExample = () => {
-      if (this.isParam || !example) {
-        return emptyExample;
-      }
-
-      if (type === "string") {
-        return `"${example}"`;
-      }
-      return example;
-    };
-
-    const buildedExample = () => {
-      if (this.emptyExample === sanitizedExample()) {
-        return sanitizedExample();
-      }
-
-      return `params?.empty || isEmpty ? ${this.emptyExample} : ${sanitizedExample()}`;
-    };
+    const buildedExample = `params?.empty || isEmpty ? ${this.example} : ${this.fallbackExample}`;
 
     return `
-      build({ key: params?.data?.${name}, placeholder: ${sanitizedExample()}, example: ${buildedExample()}, required: ${required}, ${buildedValidator()}})
+      build({ key: params?.data?.${name}, placeholder: ${this.fallbackExample}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
     `;
   }
 
@@ -145,7 +164,7 @@ export class PrimitiveProp {
   }
 
   queryBuild() {
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${this.emptyExample} }))`;
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${this.example} }))`;
   }
 
   updateQueryBuild() {
