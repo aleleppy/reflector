@@ -28,6 +28,8 @@ export class ModuleParamProcessor {
   }): ProcessedParams {
     const { cookies, headers, paths, querys } = params;
 
+    // console.log(querys);
+
     const buildedParamsTypes: string[] = [];
     const paramAttributes = new Set<string>();
     const paramInit = new Set<string>([]);

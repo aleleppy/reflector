@@ -23,12 +23,12 @@ export class PrimitiveProp {
     isParam: boolean | undefined;
   }) {
     const { name, schemaObject, required, validator, isParam } = params;
-    const { example: rawExample, type: rawType } = schemaObject;
+    const { type: rawType } = schemaObject;
 
     const type = (rawType as ReflectorParamType) ?? "string";
 
     this.emptyExample = this.getEmptyExample({ type, schemaObject });
-    const example: AbstractType = rawExample;
+    const example: AbstractType = schemaObject.example ?? schemaObject.default;
 
     const buildedType = type;
 
