@@ -59,10 +59,6 @@ export class ModuleClassBuilder {
       this.imports.addReflectorImport("BuildedInput");
       this.imports.addReflectorImport("build");
       props.forEach((prop) => {
-        // if ("isEnum" in prop || "enumName" in prop) {
-        //   this.imports.addEnumImport((prop as { type: string }).type);
-        // }
-
         const buildedProp = `${prop.classBuild()} = build({required: true, example: '', placeholder: ''})`;
         attributes.push(buildedProp);
         bundle.push(prop.bundleBuild());

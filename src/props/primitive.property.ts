@@ -36,14 +36,6 @@ export class PrimitiveProp {
 
     const buildedType = type;
 
-    // if (name === "limit") {
-    //   console.log(example);
-    // }
-
-    // if (isParam) {
-    //   console.log(name, example);
-    // }
-
     this.name = this.treatName(name);
     this.rawType = type ?? "any";
     this.type = `BuildedInput<${buildedType}>`;

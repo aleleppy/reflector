@@ -16,11 +16,12 @@ export class ReflectorFile {
       }
     `,
     `export interface QueryContract {
-      event: SvelteEvent;
+      event: string;
       key: string;
     }`,
-    `export type SvelteEvent = Event & {
-      currentTarget: EventTarget & HTMLInputElement;
+    `type HTMLElement = HTMLInputElement | HTMLButtonElement;
+    export type SvelteEvent = {
+      currentTarget: EventTarget & HTMLElement;
     }`,
   ].join(";");
 
@@ -141,24 +142,21 @@ export class ReflectorFile {
     }`,
     `
     export function changeParam({ event, key }: QueryContract) {
-      const newValue = event.currentTarget.value;
+      const newValue = event;
       const url = new URL(page.url);
       url.searchParams.set(key, String(newValue));
       goto(url, { replaceState: true, keepFocus: true });
     }
     `,
-    `
-    function rawChangeParam<T>(params: { key: string; value: T }) {
+    `function rawChangeParam<T>(params: { key: string; value: T }) {
       const { key, value } = params;
       const url = new URL(page.url);
       url.searchParams.set(key, String(value));
       goto(url, { replaceState: true, keepFocus: false });
-    }
-    `,
-    `
-    export class QueryBuilder<T> {
+    }`,
+    `export class QueryBuilder<T> {
       private readonly key: string = '';
-      value = $state<T | null>(null);
+      value = $state<string | null>(null);
       readonly kind = 'query';
 
       constructor(params: { key: string; value: T | null }) {
@@ -166,22 +164,21 @@ export class ReflectorFile {
         this.key = key;
 
         const urlValue = page.url.searchParams.get(key) as T;
-        this.value = urlValue ?? value;
+        this.value = String(urlValue ?? value);
 
         if (urlValue === null && value !== null) {
           rawChangeParam({ key, value });
         }
       }
 
-      update(event: SvelteEvent) {
-        const newValue = event.currentTarget.value;
-        this.value = newValue as T;
-        return changeParam({ key: this.key, event });
+      update(event: string | number | null) {
+        if (!event) return;
+        const newValue = event;
+        this.value = String(newValue);
+        return rawChangeParam({ key: this.key, value: newValue });
       }
-    }
-    `,
-    `
-    export function changeArrayParam({
+    }`,
+    `export function changeArrayParam({
       values,
       key,
     }: {

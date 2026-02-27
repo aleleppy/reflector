@@ -33,7 +33,8 @@ export class MethodApiCallBuilder {
         endpoint,
         queryData: { ${querys} }
       })
-      this.list = ${method.analyzers.request.responseType}.from(response.data)
+      this.list = ${method.analyzers.request.responseType}.from(response.data);
+      this.totalPages = response.totalPages;
     `;
     return { inside, outside: "" };
   }
