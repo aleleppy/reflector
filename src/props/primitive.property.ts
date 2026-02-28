@@ -127,7 +127,7 @@ export class PrimitiveProp {
     const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
 
     return `
-      build({ key: params?.data?.${name}, placeholder: ${this.fallbackExample}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
+      build({ key: params?.data?.${name}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
     `;
   }
 
