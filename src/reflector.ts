@@ -174,8 +174,11 @@ export class ReflectorFile {
         return changeParam({ key: this.key, event: this.value });
       }
     }`,
-    `export function setQueryGroupAndReturnQueryBuilders(group: QuerySeiLa[]) {
+    `export function setQueryGroup(group: QuerySeiLa[]) {
       const url = new URL(page.url);
+
+      const isFilledSearchParam = url.searchParams.get(key) && url.searchParams.get(key)!.length;
+      const updatedValue = isFilledSearchParam ? url.searchParams.get(key) : value;
 
       for (const p of group) {
         const { key, value } = p;
