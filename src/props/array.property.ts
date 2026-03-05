@@ -101,10 +101,10 @@ export class ArrayProp {
 
   queryBuild(): string {
     if (this.isEnum) {
-      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}', values: [] }))`;
+      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}' }))`;
     }
     // Para arrays normais (não enum), usamos QueryBuilder padrão
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: null }))`;
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
   }
 
   staticBuild() {
@@ -116,5 +116,9 @@ export class ArrayProp {
         return data.map((obj) => ${result});
       }
     `;
+  }
+
+  queryDefaultValue() {
+    return "[]";
   }
 }

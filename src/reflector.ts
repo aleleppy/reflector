@@ -19,9 +19,9 @@ export class ReflectorFile {
       event: string;
       key: string;
     }`,
-    `type HTMLElement = HTMLInputElement | HTMLButtonElement;
+    `type SeiLa = HTMLInputElement | HTMLButtonElement;
     export type SvelteEvent = {
-      currentTarget: EventTarget & HTMLElement;
+      currentTarget: EventTarget & SeiLa;
     }`,
   ].join(";");
 
@@ -74,7 +74,7 @@ export class ReflectorFile {
         values = $derived(page.url.searchParams.getAll(this.key)) as T[];
         selected = $state<T | null>(null);
 
-        constructor(params: { key: string; values: T[] }) {
+        constructor(params: { key: string }) {
           const { key } = params;
 
           this.key = key;
@@ -148,35 +148,49 @@ export class ReflectorFile {
       goto(url, { replaceState: true, keepFocus: true });
     }
     `,
-    `function rawChangeParam<T>(params: { key: string; value: T }) {
-      const { key, value } = params;
-      const url = new URL(page.url);
-      url.searchParams.set(key, String(value));
-      goto(url, { replaceState: true, keepFocus: false });
-    }`,
-    `export class QueryBuilder<T> {
+    `type StringOrNumber = string | number;
+
+    type QuerySeiLa = {
+      key: string;
+      value: string | number | null | StringOrNumber[];
+    };`,
+    `export class QueryBuilder {
       private readonly key: string = '';
       value = $state<string | null>(null);
       readonly kind = 'query';
 
-      constructor(params: { key: string; value: T | null }) {
-        const { key, value } = params;
+      constructor(params: { key: string }) {
+        const { key } = params;
         this.key = key;
 
-        const urlValue = page.url.searchParams.get(key) as T;
-        this.value = String(urlValue ?? value);
-
-        if (urlValue === null && value !== null) {
-          rawChangeParam({ key, value });
-        }
+        const urlValue = page.url.searchParams.get(key);
+        this.value = String(urlValue);
       }
 
       update(event: string | number | null) {
         if (!event) return;
         const newValue = event;
         this.value = String(newValue);
-        return rawChangeParam({ key: this.key, value: newValue });
+        return changeParam({ key: this.key, event: this.value });
       }
+    }`,
+    `export function setQueryGroupAndReturnQueryBuilders(group: QuerySeiLa[]) {
+      const url = new URL(page.url);
+
+      for (const p of group) {
+        const { key, value } = p;
+
+        const updatedValue = url.searchParams.get(key) ?? value;
+
+        if (Array.isArray(value)) {
+          value.forEach((v) => url.searchParams.append(key, String(v)));
+          continue;
+        }
+
+        url.searchParams.set(key, String(updatedValue));
+      }
+
+      goto(url, { replaceState: true, keepFocus: false });
     }`,
     `export function changeArrayParam({
       values,

@@ -29,6 +29,10 @@ export class ModuleImports {
     this.reflectorImports.add(importStr);
   }
 
+  addSetQueryGroupImport(): void {
+    this.reflectorImports.add("setQueryGroupAndReturnQueryBuilders");
+  }
+
   addEnumImport(enumName: string): void {
     this.enumImports.add(enumName);
   }
@@ -62,7 +66,17 @@ export class ModuleImports {
   }
 
   buildReflectorImportsLine(): string {
-    return `import { ${this.getReflectorImportsArray().join(", ")}, type ApiErrorResponse } from "$reflector/reflector.svelte";`;
+    const imports = this.getReflectorImportsArray();
+    const regularImports = imports.filter(i => i !== "setQueryGroupAndReturnQueryBuilders");
+    const hasSetQueryGroup = imports.includes("setQueryGroupAndReturnQueryBuilders");
+    
+    let result = `import { ${regularImports.join(", ")}, type ApiErrorResponse`;
+    if (hasSetQueryGroup) {
+      result += `, setQueryGroupAndReturnQueryBuilders`;
+    }
+    result += ` } from "$reflector/reflector.svelte";`;
+    
+    return result;
   }
 
   buildEnumImportsLine(): string {

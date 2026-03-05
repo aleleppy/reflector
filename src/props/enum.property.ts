@@ -49,12 +49,14 @@ export class EnumProp {
   }
 
   queryBuild() {
-    const example = this.isRequired ? `'${this.example}'` : null;
-
-    return `readonly ${this.name} = $derived(new QueryBuilder<${this.enumName}>({ key: '${this.name}', value: ${example} }))`;
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
   }
 
   bundleBuild() {
     return `${this.name}: this.${this.name}?.value`;
+  }
+
+  queryDefaultValue() {
+    return `'${this.example}'`;
   }
 }

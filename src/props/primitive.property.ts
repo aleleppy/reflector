@@ -156,9 +156,7 @@ export class PrimitiveProp {
   }
 
   queryBuild() {
-    const example = this.rawType === "string" ? this.fallbackExample : this.example;
-
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}', value: ${example} }))`;
+    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
   }
 
   updateQueryBuild() {
@@ -167,5 +165,9 @@ export class PrimitiveProp {
 
   bundleBuild() {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
+  }
+
+  queryDefaultValue() {
+    return this.fallbackExample;
   }
 }
