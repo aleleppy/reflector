@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { Source } from "./file.js";
-import { capitalizeFirstLetter } from "./helpers/helpers.js";
+import { capitalizeFirstLetter, toKebabCase } from "./helpers/helpers.js";
 import { Method } from "./method.js";
 import type { ReflectorOperation } from "./types/types.js";
 import { generatedDir } from "./vars.global.js";
@@ -124,9 +124,9 @@ export class Module {
   }
 
   private getPath(): string {
-    const fileName = this.path.split("/").slice(-2).join("-");
-    const inPath = path.join(generatedDir, this.path);
-    const outPath = path.join(inPath, `${fileName.toLowerCase()}.module.svelte.ts`);
+    const kebabName = toKebabCase(this.name);
+    const inPath = path.join(generatedDir, "controllers", kebabName);
+    const outPath = path.join(inPath, `${kebabName}.module.svelte.ts`);
     fs.mkdirSync(inPath, { recursive: true });
     return outPath;
   }

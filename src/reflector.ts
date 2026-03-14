@@ -177,19 +177,16 @@ export class ReflectorFile {
     `export function setQueryGroup(group: QuerySeiLa[]) {
       const url = new URL(page.url);
 
-      const isFilledSearchParam = url.searchParams.get(key) && url.searchParams.get(key)!.length;
-      const updatedValue = isFilledSearchParam ? url.searchParams.get(key) : value;
-
       for (const p of group) {
         const { key, value } = p;
 
-        const updatedValue = url.searchParams.get(key) ?? value;
-
         if (Array.isArray(value)) {
+          url.searchParams.delete(key);
           value.forEach((v) => url.searchParams.append(key, String(v)));
           continue;
         }
 
+        const updatedValue = url.searchParams.get(key) ?? value;
         url.searchParams.set(key, String(updatedValue));
       }
 

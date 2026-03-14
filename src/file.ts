@@ -23,7 +23,7 @@ export class Source {
     writeFileSync(this.path, this.data, "utf8");
   }
 
-  async changeData(data: string) {
+  changeData(data: string) {
     this.data = data;
   }
 

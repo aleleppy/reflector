@@ -1,8 +1,8 @@
 # Svelte Reflector
 
-**Turn your OpenAPI into a first‑class Svelte 5 DX.**
+**Turn your OpenAPI into a first-class Svelte 5 DX.**
 
-Svelte Reflector is a **developer‑experience–first code generator** that converts OpenAPI specs into fully typed, reactive Svelte 5 modules — ready for production, forms included.
+Svelte Reflector is a **developer-experience-first code generator** that converts OpenAPI specs into fully typed, reactive Svelte 5 modules — ready for production, forms included.
 
 [![npm version](https://img.shields.io/npm/v/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
 [![npm downloads](https://img.shields.io/npm/dm/svelte-reflector.svg)](https://www.npmjs.com/package/svelte-reflector)
@@ -12,17 +12,20 @@ Svelte Reflector is a **developer‑experience–first code generator** that con
 
 A TypeScript code generator that creates type-safe Svelte 5 modules from OpenAPI specifications. It transforms your backend's OpenAPI/Swagger docs into fully-typed Svelte stores with built-in form handling, validation, and API integration.
 
-## 🚀 Features
+## Features
 
-- **🔮 Automatic Type Generation** - Generates TypeScript interfaces and classes from OpenAPI schemas
-- **⚡ Svelte 5 Runes Integration** - Uses `$state` for reactive state management
-- **📝 Form Handling** - Auto-generates form schemas with validation support
-- **🎯 Type-Safe API Calls** - Full TypeScript support for all API operations
-- **🔌 OpenAPI/Swagger Compatible** - Works with any backend that exposes OpenAPI specs
-- **🧪 Development Mode** - Smart regeneration based on environment
-- **✅ Validation Ready** - Built-in support for custom field validators
+- **Automatic Type Generation** - Generates TypeScript interfaces and classes from OpenAPI schemas
+- **Svelte 5 Runes Integration** - Uses `$state` and `$derived` for reactive state management
+- **Form Handling** - Auto-generates form schemas with validation support
+- **Type-Safe API Calls** - Full TypeScript support for all API operations
+- **Query Parameter Sync** - `QueryBuilder` and `EnumQueryBuilder` keep state synced with URL searchParams
+- **Enum Support** - Auto-generates enum types and array enum query builders
+- **OpenAPI/Swagger Compatible** - Works with any backend that exposes OpenAPI specs
+- **Development Mode** - Smart regeneration based on environment
+- **Validation Ready** - Built-in support for custom field validators
+- **Vite Plugin** - Can be used as a Vite plugin for automatic generation on build
 
-## 📦 Installation
+## Installation
 
 ```bash
 npm install svelte-reflector
@@ -32,7 +35,7 @@ yarn add svelte-reflector
 pnpm add svelte-reflector
 ```
 
-## 🏁 Quick Start
+## Quick Start
 
 ### 1. Configure Environment Variables
 
@@ -77,7 +80,7 @@ export const validators = [
 # Manual generation (recommended for DEV environment)
 npx reflect
 
-# Or programmatically
+# Or programmatically as a Vite plugin
 import { reflector } from "svelte-reflector";
 await reflector(true); // true = force generation
 ```
@@ -99,8 +102,10 @@ console.log(userModule.list);    // $state<User[]>
 
 // Call API methods
 await userModule.listAll({
-  onSuccess: (response) => console.log(response),
-  onError: (error) => console.error(error),
+  behavior: {
+    onSuccess: (response) => console.log(response),
+    onError: (error) => console.error(error),
+  },
 });
 
 // Work with forms
@@ -112,7 +117,7 @@ userForm.email.value = "john@example.com";
 await userModule.createUser();
 ```
 
-## 📁 Generated Structure
+## Generated Structure
 
 ```
 src/reflector/
@@ -120,12 +125,14 @@ src/reflector/
 │   └── user/
 │       └── user.module.svelte.ts    # API module with methods
 ├── schemas.svelte.ts                 # Generated schemas & types
-├── reflector.svelte.ts              # Core utilities (build, isFormValid)
+├── reflector.svelte.ts              # Core utilities (build, isFormValid, QueryBuilder, etc.)
 ├── fields.ts                        # Field name constants
+├── enums.ts                         # Enum type definitions
+├── mocked-params.svelte.ts          # Mocked path parameters ($state)
 └── backup.json                      # Cached OpenAPI spec
 ```
 
-## 🧩 Generated Module API
+## Generated Module API
 
 Each generated module provides:
 
@@ -136,44 +143,61 @@ Each generated module provides:
 | `loading` | `$state<boolean>` | Request loading state |
 | `list` | `$state<T[]>` | List results (for list endpoints) |
 | `forms` | `$state<Record<string, T>>` | Form instances |
-| `querys` | `QueryParams` | Query parameter state |
-| `headers` | `HeaderParams` | Header state |
-| `paths` | `PathParams` | Path parameter state |
+| `querys` | `Querys` | Query parameter state (QueryBuilder instances) |
+| `headers` | `Headers` | Header state |
+| `paths` | `Paths` | Path parameter state |
 
 ### Methods
 
 ```typescript
 // List all items (GET with page parameter)
-async listAll(behavior?: Behavior<ResponseType>): Promise<T[]>
+async listAll(params?: { behavior?: Behavior }): Promise<T[]>
 
 // Get single entity (GET without page parameter)
-async get(behavior?: Behavior<ResponseType>): Promise<T>
+async get(params?: { behavior?: Behavior }): Promise<T>
 
 // Create/Update (POST/PUT/PATCH)
-async create(behavior?: Behavior<ResponseType>): Promise<T>
-async update(behavior?: Behavior<ResponseType>): Promise<T>
+async create(params?: { behavior?: Behavior }): Promise<T>
+async update(params?: { behavior?: Behavior }): Promise<T>
 
 // Delete (DELETE)
-async delete(behavior?: Behavior<ResponseType>): Promise<void>
-
-// Form with auto-clear
-async createAndClear(behavior?: Behavior<ResponseType>): Promise<T>
+async delete(params?: { behavior?: Behavior }): Promise<void>
 
 // Reset all state
 reset(): void
+
+// Clear forms
+clearForms(): void
 ```
 
-## ⚙️ Configuration
+### QueryBuilder
+
+Query parameters are wrapped in `QueryBuilder` instances that sync with URL searchParams:
+
+```typescript
+// Single value query parameter
+const querys = module.querys;
+querys.status.update("active"); // Updates URL searchParam and internal state
+
+// Array enum query parameter
+const enumQuery = module.querys.roles; // EnumQueryBuilder<RoleType>
+enumQuery.selected = "admin";
+enumQuery.add();      // Adds to URL searchParams
+enumQuery.remove(0);  // Removes from URL searchParams
+enumQuery.values;     // $derived from URL - always in sync
+```
+
+## Configuration
 
 ### Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `BACKEND_URL` | ✅ | Backend API URL |
-| `PUBLIC_BACKEND` | ✅ | Alternative to BACKEND_URL |
-| `ENVIRONMENT` | ❌ | DEV/PROD (defaults to PROD) |
-| `VITE_ENVIRONMENT` | ❌ | Vite-specific env var |
-| `NODE_ENV` | ❌ | Node environment |
+| `BACKEND_URL` | Yes | Backend API URL |
+| `PUBLIC_BACKEND` | Yes | Alternative to BACKEND_URL |
+| `ENVIRONMENT` | No | DEV/PROD (defaults to PROD) |
+| `VITE_ENVIRONMENT` | No | Vite-specific env var |
+| `NODE_ENV` | No | Node environment |
 
 ### Behavior Pattern
 
@@ -181,14 +205,16 @@ All API methods accept a `Behavior` object for callbacks:
 
 ```typescript
 interface Behavior<TSuccess, TError> {
-  onSuccess?: (value: TSuccess) => void;
-  onError?: (error: TError) => void;
+  onSuccess?: (value: TSuccess) => Promise<void> | void;
+  onError?: (error: TError) => Promise<void> | void;
 }
 
 // Usage
 await userModule.createUser({
-  onSuccess: (user) => console.log("Created:", user),
-  onError: (err) => console.error("Failed:", err),
+  behavior: {
+    onSuccess: (user) => console.log("Created:", user),
+    onError: (err) => console.error("Failed:", err),
+  },
 });
 ```
 
@@ -197,17 +223,25 @@ await userModule.createUser({
 Forms use `BuildedInput` class with validation:
 
 ```typescript
-interface BuildedInput<T> {
+class BuildedInput<T> {
   value: T;           // Current value ($state)
   display: T;         // Display value ($state)
   required: boolean;  // Is field required
   placeholder: T;     // Placeholder/example value
+  readonly kind: 'builded';
   validator?: (v: T) => string | null; // Validation function
   validate(): string | null; // Run validation
 }
+
+// Check if all form fields are valid
+import { isFormValid } from "$reflector/reflector.svelte";
+
+if (isFormValid(userModule.forms.createUser)) {
+  await userModule.createUser();
+}
 ```
 
-## 🔧 TypeScript Configuration
+## TypeScript Configuration
 
 Add path aliases to your `tsconfig.json`:
 
@@ -235,7 +269,7 @@ export default defineConfig({
 });
 ```
 
-## 🔄 Workflow
+## Workflow
 
 ### Development Mode
 
@@ -251,7 +285,7 @@ In `ENVIRONMENT=PROD`:
 - Fresh types from latest OpenAPI spec
 - Fallback to `backup.json` if backend is unavailable
 
-## 🛠️ Advanced Usage
+## Advanced Usage
 
 ### Custom Validators
 
@@ -300,7 +334,7 @@ export function validateEmail(value: string): string | null {
   return emailRegex.test(value) ? null : "Invalid email format";
 }
 
-// Brazilian phone validation
+// Phone validation
 export function validatePhone(value: string): string | null {
   if (!value) return null;
   const phoneRegex = /^(\+?55\s?)?(\(?\d{2}\)?\s?)?(\d{4,5}-?\d{4})$/;
@@ -311,7 +345,7 @@ export function validatePhone(value: string): string | null {
 export function validateDocument(value: string): string | null {
   if (!value) return null;
   const cleaned = value.replace(/\D/g, '');
-  
+
   if (cleaned.length === 11) {
     return validateCPF(cleaned) ? null : "Invalid CPF";
   } else if (cleaned.length === 14) {
@@ -322,13 +356,13 @@ export function validateDocument(value: string): string | null {
 
 function validateCPF(cpf: string): boolean {
   if (/^(\d)\1{10}$/.test(cpf)) return false;
-  
+
   let sum = 0;
   for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
   let rev = 11 - (sum % 11);
   if (rev === 10 || rev === 11) rev = 0;
   if (rev !== parseInt(cpf[9])) return false;
-  
+
   sum = 0;
   for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
   rev = 11 - (sum % 11);
@@ -338,15 +372,15 @@ function validateCPF(cpf: string): boolean {
 
 function validateCNPJ(cnpj: string): boolean {
   if (/^(\d)\1{13}$/.test(cnpj)) return false;
-  
+
   const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  
+
   let sum = 0;
   for (let i = 0; i < 12; i++) sum += parseInt(cnpj[i]) * weights1[i];
   let rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
   if (rev !== parseInt(cnpj[12])) return false;
-  
+
   sum = 0;
   for (let i = 0; i < 13; i++) sum += parseInt(cnpj[i]) * weights2[i];
   rev = sum % 11 < 2 ? 0 : 11 - (sum % 11);
@@ -435,7 +469,20 @@ const user = new User({ name: "John", email: "john@example.com" });
 const data = user.bundle(); // { name: "John", email: "john@example.com" }
 ```
 
-## 🐛 Troubleshooting
+### Batch Query Updates
+
+```typescript
+import { setQueryGroup } from "$reflector/reflector.svelte";
+
+// Update multiple query params at once
+setQueryGroup([
+  { key: "page", value: 1 },
+  { key: "status", value: "active" },
+  { key: "roles", value: ["admin", "editor"] }, // Array params supported
+]);
+```
+
+## Troubleshooting
 
 ### "BACKEND_URL vazio" Error
 
@@ -451,15 +498,15 @@ In DEV mode, run `npx reflect` manually. Check that your backend's OpenAPI spec 
 2. Check path aliases in `tsconfig.json`
 3. Ensure `$reflector/*` alias is configured
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 🔗 Links
+## Links
 
 - [npm](https://www.npmjs.com/package/svelte-reflector)
 - [GitHub](https://github.com/aleleppy/reflector)
@@ -468,4 +515,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-Built with 🦍 by the Pináculo Digital team.
+Built with by the Pináculo Digital team.

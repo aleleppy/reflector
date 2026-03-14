@@ -1,8 +1,7 @@
-import type { ApiType } from "../../types/types.js";
+import type { ApiType, ReflectorRequestType } from "../../types/types.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
 import type { ArrayProp } from "../../props/array.property.js";
 import type { EnumProp } from "../../props/enum.property.js";
-import type { ReflectorRequestType } from "../../request.js";
 
 export type AttributeProp = PrimitiveProp | ArrayProp | EnumProp;
 

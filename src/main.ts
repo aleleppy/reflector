@@ -9,7 +9,6 @@ import { Module } from "./module.js";
 
 import { baseDir, generatedDir } from "./vars.global.js";
 import { ReflectorFile } from "./reflector.js";
-// import { Module } from "./module.js";
 
 export const enumTypes = new Map<string, string>();
 export const mockedParams = new Set<string>();
@@ -34,6 +33,11 @@ export class Reflector {
 
   constructor(params: { components: ComponentsObject; paths: PathsObject; validators: FieldValidators }) {
     const { components, paths, validators } = params;
+
+    // Limpa estado global entre execuções
+    enumTypes.clear();
+    mockedParams.clear();
+
     this.clearSrc();
 
     this.components = components;
@@ -124,7 +128,7 @@ export class Reflector {
     return modules;
   }
 
-  build() {
+  async build() {
     const treatedSchemas = this.schemas.map((s) => {
       return `
         ${s.interface};
@@ -143,12 +147,9 @@ export class Reflector {
         ...treatedSchemas,
       ].join("\n"),
     );
-    this.schemaFile.save();
 
     const buildFunctions = new ReflectorFile().fileContent;
-
     this.typesSrc.changeData(buildFunctions);
-    this.typesSrc.save();
 
     this.fieldsFile.changeData(`
       export const FIELD_NAMES = [
@@ -157,13 +158,6 @@ export class Reflector {
       export type FieldName = (typeof FIELD_NAMES)[number]
     `);
 
-    this.fieldsFile.save();
-
-    for (const module of this.modules) {
-      if (module.methods.length === 0) continue;
-      module.src.save();
-    }
-
     const enumss = Array.from(enumTypes)
       .map(([types, key]) => {
         return `export const ${key} = [ ${types} ] as const; export type ${key} = typeof ${key}[number] `;
@@ -171,7 +165,6 @@ export class Reflector {
       .join(";");
 
     this.enumFile.changeData(enumss);
-    this.enumFile.save();
 
     const mockedParamss = Array.from(mockedParams)
       .map((paramName) => {
@@ -189,14 +182,25 @@ export class Reflector {
     `;
 
     this.mockedParamsFile.changeData(mockedFile);
-    this.mockedParamsFile.save();
+
+    // Salva todos os arquivos em paralelo, aguardando conclusão
+    await Promise.all([
+      this.schemaFile.save(),
+      this.typesSrc.save(),
+      this.fieldsFile.save(),
+      this.enumFile.save(),
+      this.mockedParamsFile.save(),
+      ...this.modules
+        .filter((m) => m.methods.length > 0)
+        .map((m) => m.src.save()),
+    ]);
 
     return {};
   }
 
-  localSave(data: OpenAPIObject) {
+  async localSave(data: OpenAPIObject) {
     this.localDoc.data = JSON.stringify(data);
-    this.localDoc.save();
+    await this.localDoc.save();
   }
 
   private clearSrc() {

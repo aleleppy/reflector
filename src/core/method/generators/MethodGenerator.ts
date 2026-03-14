@@ -38,7 +38,12 @@ export class MethodGenerator {
 
           return ${methodReturn};
         } catch (e) {
-          const parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
+          let parsedError: ApiErrorResponse;
+          try {
+            parsedError = JSON.parse((e as Error).message) as ApiErrorResponse;
+          } catch {
+            parsedError = { error: 'unknown', message: (e as Error).message ?? String(e) };
+          }
           return await onError?.(parsedError);
         } finally {
           this.loading = false;

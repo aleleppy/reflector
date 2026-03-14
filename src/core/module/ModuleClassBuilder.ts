@@ -69,7 +69,7 @@ export class ModuleClassBuilder {
 
       const constructorBuild = `
         constructor() {
-          setQueryGroupAndReturnQueryBuilders([
+          setQueryGroup([
             ${queryGroupValues.join(",\n            ")}
           ]);
         }

@@ -2,6 +2,13 @@ import type { SchemaObject } from "../types/open-api-spec.interface.js";
 
 const trashWords = new Set(["Get", "Res", "Default", "Dto", "Public", "Response", "Self"]);
 
+export function toKebabCase(str: string): string {
+  return str
+    .replaceAll(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replaceAll(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+}
+
 export function toCamelCase(str: string) {
   return str
     .split("-")
