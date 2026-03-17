@@ -26,6 +26,22 @@ export class ModuleMethodProcessor {
     this.imports = params.imports;
   }
 
+  private shouldSkipMethod(method: Method): boolean {
+    const { bodyType, responseType, attributeType } = method.request;
+
+    if (bodyType === "string") {
+      createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
+      return true;
+    }
+
+    if ((attributeType === "entity" || attributeType === "list") && !responseType) {
+      createDangerMessage(`Metodo ${method.name} foi ignorado por possuir uma resposta nula.`);
+      return true;
+    }
+
+    return false;
+  }
+
   process(params: { methods: Method[] }): ProcessedMethods {
     const { methods } = params;
 
@@ -52,10 +68,7 @@ export class ModuleMethodProcessor {
       paths.forEach((p) => pathMap.set(p.name, p));
       querys.forEach((q) => queryMap.set(q.name, q));
 
-      if (method.request.bodyType === "string") {
-        createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
-        continue;
-      }
+      if (this.shouldSkipMethod(method)) continue;
 
       if (attributeType === "form" && bodyType) {
         const name = method.name;

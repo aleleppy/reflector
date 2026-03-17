@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/Ale/Desktop/Projetos/LIBS/reflector -type f \\\\\\(-name *.spec.ts -o -name *.test.ts -o -name *.spec.js \\\\\\))"
     ]
   }
 }
