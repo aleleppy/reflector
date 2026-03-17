@@ -34,7 +34,8 @@ export class ModuleMethodProcessor {
       return true;
     }
 
-    if ((attributeType === "entity" || attributeType === "list") && !responseType) {
+    const isNullResponse = !responseType || responseType === "null";
+    if ((attributeType === "entity" || attributeType === "list") && isNullResponse) {
       createDangerMessage(`Metodo ${method.name} foi ignorado por possuir uma resposta nula.`);
       return true;
     }

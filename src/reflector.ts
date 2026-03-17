@@ -70,7 +70,7 @@ export class ReflectorFile {
     }`,
     `
       export class EnumQueryBuilder<T> {
-        private readonly key: string = '';
+        readonly key: string = '';
         values = $derived(page.url.searchParams.getAll(this.key)) as T[];
         selected = $state<T | null>(null);
 
