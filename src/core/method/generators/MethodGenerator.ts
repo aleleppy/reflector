@@ -89,23 +89,23 @@ export class MethodGenerator {
     return `new ${responseType}({ data: response })`;
   }
 
-  private buildAdditionalMethod(method: Method): string {
-    const { attributeType } = method.analyzers.request;
+  // private buildAdditionalMethod(method: Method): string {
+  //   const { attributeType } = method.analyzers.request;
 
-    if (attributeType !== "form") {
-      return "";
-    }
+  //   if (attributeType !== "form") {
+  //     return "";
+  //   }
 
-    return `
-      async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
-        const data = await this.${method.name}({behavior})
+  //   return `
+  //     async ${method.name}AndClear(behavior: Behavior = new Behavior()) {
+  //       const data = await this.${method.name}({behavior})
 
-        if (data) {
-          this.clearForms()
-        }
+  //       if (data) {
+  //         this.clearForms()
+  //       }
 
-        return data
-      }
-    `;
-  }
+  //       return data
+  //     }
+  //   `;
+  // }
 }

@@ -155,7 +155,7 @@ export class ReflectorFile {
       value: string | number | null | StringOrNumber[];
     };`,
     `export class QueryBuilder {
-      private readonly key: string = '';
+      readonly key: string = '';
       value = $state<string | null>(null);
       readonly kind = 'query';
 

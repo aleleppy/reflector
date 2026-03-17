@@ -40,15 +40,21 @@ export class MethodApiCallBuilder {
   }
 
   private buildEntityCall(method: Method, responseType: string): { inside: string; outside: string } {
+    const rType = method.analyzers.request.responseType;
     const querys = this.buildQuerys(method.analyzers.props.querys);
-    const entityName = treatByUppercase(method.analyzers.request.responseType ?? "");
+    const entityName = treatByUppercase(rType ?? "");
+
+    const buildedThisResponseType = rType
+      ? `this.${entityName} = new ${method.analyzers.request.responseType}({ data: response })`
+      : "";
 
     const inside = `
       const response = await api.get<${responseType}, unknown>({
         endpoint,
         ${querys}
       })
-      this.${entityName} = new ${method.analyzers.request.responseType}({ data: response })
+
+      ${buildedThisResponseType}
     `;
     return { inside, outside: "" };
   }
