@@ -3,6 +3,7 @@ export class ReflectorFile {
     'import toast from "$lib/utils/toast.svelte"',
     'import { goto } from "$app/navigation"',
     'import { page } from "$app/state"',
+    'import { browser } from "$app/environment"',
   ].join(";");
 
   private readonly types = [
@@ -175,6 +176,8 @@ export class ReflectorFile {
       }
     }`,
     `export function setQueryGroup(group: QuerySeiLa[]) {
+      if (!browser) return;
+
       const url = new URL(page.url);
 
       for (const p of group) {
@@ -186,8 +189,7 @@ export class ReflectorFile {
           continue;
         }
 
-        const updatedValue = url.searchParams.get(key) ?? value;
-        url.searchParams.set(key, String(updatedValue));
+        url.searchParams.set(key, String(value));
       }
 
       goto(url, { replaceState: true, keepFocus: false });
