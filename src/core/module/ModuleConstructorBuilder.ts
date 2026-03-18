@@ -9,7 +9,9 @@ export class ModuleConstructorBuilder {
 
     return `
       constructor(params?: { empty: boolean }) {
-        const isEmpty = PUBLIC_ENVIRONMENT !== 'DEV' || !!params?.empty;
+        const isEmpty = params?.empty !== undefined
+          ? params.empty
+          : PUBLIC_ENVIRONMENT !== 'DEV';
         this.forms = this.buildForms(isEmpty);
       }
 
@@ -17,9 +19,11 @@ export class ModuleConstructorBuilder {
         if(!isEmpty) return this.forms
 
         return {
-          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(",\n")}
+          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(",
+")}
         }
       }
     `;
   }
 }
+
