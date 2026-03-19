@@ -40,6 +40,20 @@ export class ModuleMethodProcessor {
       return true;
     }
 
+    // Verifica se todos os path params do endpoint estão declarados como parâmetros
+    const endpointParams = [...method.endpoint.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).filter(Boolean);
+    if (endpointParams.length > 0) {
+      const declaredPaths = new Set(method.paths.map((p) => p.name));
+      const undeclared = endpointParams.filter((p) => !declaredPaths.has(p));
+
+      if (undeclared.length > 0) {
+        createDangerMessage(
+          `Metodo ${method.name} foi ignorado por possuir path params não declarados: ${undeclared.join(", ")}`,
+        );
+        return true;
+      }
+    }
+
     return false;
   }
 
