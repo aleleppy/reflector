@@ -22,7 +22,7 @@ export class Reflector {
 
   readonly src = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/controllers`) });
   readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/reflector.svelte.ts`) });
-  readonly schemaFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/schemas.svelte.ts`) });
+  private readonly schemaMap = new Map<string, Schema>();
   readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`) });
   readonly enumFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/enums.ts`) });
   readonly mockedParamsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/mocked-params.svelte.ts`) });
@@ -78,6 +78,11 @@ export class Reflector {
       schemas.push(new Schema({ ...schema, isEmpty: false, validators }));
     }
 
+    // Build schema lookup map for per-module splitting
+    for (const schema of schemas) {
+      this.schemaMap.set(schema.name, schema);
+    }
+
     console.log(`${schemas.length} schemas gerados com sucesso.`);
     return { schemas, propertiesNames };
   }
@@ -129,24 +134,19 @@ export class Reflector {
   }
 
   async build() {
-    const treatedSchemas = this.schemas.map((s) => {
-      return `
-        ${s.interface};
+    // Generate per-module schema files
+    const moduleSchemaFiles: Source[] = [];
 
-        ${s.schema};
-      `;
-    });
+    for (const module of this.modules) {
+      if (module.methods.length === 0 || module.schemaClassNames.length === 0) continue;
 
-    this.schemaFile.changeData(
-      [
-        'import { build, BuildedInput } from "$reflector/reflector.svelte";',
-        'import { validateInputs } from "$lib/sanitizers/validateFormats";',
-        `import type {${Array.from(enumTypes.values())}} from "$reflector/enums"`,
-        "import { PUBLIC_ENVIRONMENT } from '$env/static/public';",
-        "const isEmpty = PUBLIC_ENVIRONMENT !== 'DEV';",
-        ...treatedSchemas,
-      ].join("\n"),
-    );
+      const neededSchemas = this.resolveTransitiveDeps(module.schemaClassNames);
+      if (neededSchemas.length === 0) continue;
+
+      const schemaFileContent = this.buildSchemaFileContent(neededSchemas);
+      const schemaFilePath = module.src.path.replace(".module.svelte.ts", ".schema.svelte.ts");
+      moduleSchemaFiles.push(new Source({ path: schemaFilePath, data: schemaFileContent }));
+    }
 
     const buildFunctions = new ReflectorFile().fileContent;
     this.typesSrc.changeData(buildFunctions);
@@ -185,7 +185,7 @@ export class Reflector {
 
     // Salva todos os arquivos em paralelo, aguardando conclusão
     await Promise.all([
-      this.schemaFile.save(),
+      ...moduleSchemaFiles.map((f) => f.save()),
       this.typesSrc.save(),
       this.fieldsFile.save(),
       this.enumFile.save(),
@@ -201,6 +201,56 @@ export class Reflector {
   async localSave(data: OpenAPIObject) {
     this.localDoc.data = JSON.stringify(data);
     await this.localDoc.save();
+  }
+
+  /** Resolve transitive schema dependencies from a list of schema class names */
+  private resolveTransitiveDeps(names: string[]): Schema[] {
+    const resolved = new Set<string>();
+    const stack = [...names];
+
+    while (stack.length > 0) {
+      const name = stack.pop()!;
+      if (resolved.has(name)) continue;
+
+      const schema = this.schemaMap.get(name);
+      if (!schema) continue;
+
+      resolved.add(name);
+      for (const dep of schema.schemaDeps) {
+        if (!resolved.has(dep)) {
+          stack.push(dep);
+        }
+      }
+    }
+
+    return [...resolved].map((n) => this.schemaMap.get(n)!).filter(Boolean);
+  }
+
+  /** Build the content of a per-module schema file containing only the needed schemas */
+  private buildSchemaFileContent(schemas: Schema[]): string {
+    // Collect enum deps from all schemas in this file
+    const enumDeps = new Set<string>();
+    for (const s of schemas) {
+      for (const e of s.enumDeps) {
+        enumDeps.add(e);
+      }
+    }
+
+    const treatedSchemas = schemas.map((s) => `${s.interface};\n${s.schema};`);
+
+    const imports: string[] = [
+      'import { build, BuildedInput } from "$reflector/reflector.svelte";',
+      'import { validateInputs } from "$lib/sanitizers/validateFormats";',
+    ];
+
+    if (enumDeps.size > 0) {
+      imports.push(`import type { ${[...enumDeps].join(", ")} } from "$reflector/enums"`);
+    }
+
+    imports.push("import { PUBLIC_ENVIRONMENT } from '$env/static/public';");
+    imports.push("const isEmpty = PUBLIC_ENVIRONMENT !== 'DEV';");
+
+    return imports.join("\n") + "\n" + treatedSchemas.join("\n");
   }
 
   private clearSrc() {

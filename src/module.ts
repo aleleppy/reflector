@@ -23,6 +23,9 @@ export class Module {
   readonly src: Source;
   readonly methods: Method[];
 
+  /** Schema class names directly used by this module (for per-module schema generation) */
+  readonly schemaClassNames: string[];
+
   private readonly imports: ModuleImports;
   private readonly methodProcessor: ModuleMethodProcessor;
   private readonly classBuilder: ModuleClassBuilder;
@@ -62,6 +65,10 @@ export class Module {
       cookies: processedMethods.cookies,
     });
 
+    // Extract schema class names for per-module schema generation
+    this.schemaClassNames = Array.from(processedMethods.entries)
+      .filter((e) => e !== "type any" && !e.startsWith("type "));
+
     // Monta o resultado final
     const allBuilded = this.buildModuleData(processedMethods, processedParams);
     const moduleConstructor = this.constructorBuilder.build(allBuilded.form);
@@ -97,7 +104,8 @@ export class Module {
 
     // Monta os imports de classes
     const cleanEntries = Array.from(entries).filter((x) => x != "type any");
-    const classImports = cleanEntries.length > 0 ? `import { ${cleanEntries.join(", ")} } from '$reflector/schemas.svelte';` : "";
+    const kebabName = toKebabCase(this.name);
+    const classImports = cleanEntries.length > 0 ? `import { ${cleanEntries.join(", ")} } from './${kebabName}.schema.svelte';` : "";
 
     // Adiciona suporte a forms
     if (formSet.size > 0) {

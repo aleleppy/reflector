@@ -7,7 +7,11 @@ export class ArrayProp {
   type: string;
   isRequired: boolean;
   isParam: boolean;
-  private isPrimitiveType: boolean = false;
+  private _isPrimitiveType: boolean = false;
+
+  get isSchemaRef(): boolean {
+    return !this._isPrimitiveType && !this.isEnum;
+  }
   readonly isEnum: boolean;
 
   constructor(params: {
@@ -45,7 +49,7 @@ export class ArrayProp {
     if (!items) return schemaName;
 
     if (items && !("$ref" in items) && items.enum) {
-      this.isPrimitiveType = true;
+      this._isPrimitiveType = true;
       const enumType = new EnumProp({
         enums: items.enum ?? schemaObject.enum,
         name: this.name,
@@ -61,34 +65,34 @@ export class ArrayProp {
       return theType as string;
     }
 
-    this.isPrimitiveType = true;
+    this._isPrimitiveType = true;
 
     return "string";
   }
 
   constructorBuild() {
-    const result = this.isPrimitiveType ? "" : `.map((param) => new ${this.type}({ data: param }))`;
+    const result = this._isPrimitiveType ? "" : `.map((param) => new ${this.type}({ data: param }))`;
 
     return `this.${this.name} = params?.data?.${this.name}${result} ?? []`;
   }
 
   classBuild() {
     const required = this.isRequired ? "" : "?";
-    const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}`;
+    const sanitizedType = this._isPrimitiveType ? this.type : `${this.type}`;
 
     return `${this.name}${required} = $state<${sanitizedType}[]>([])`;
   }
 
   interfaceBuild() {
     const required = this.isRequired ? "" : "?";
-    const sanitizedType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
+    const sanitizedType = this._isPrimitiveType ? this.type : `${this.type}Interface`;
 
     return `${this.name}${required}: ${sanitizedType}[]`;
   }
 
   bundleBuild() {
     const result = () => {
-      if (this.isPrimitiveType || this.isEnum) return "";
+      if (this._isPrimitiveType || this.isEnum) return "";
       return ".map((obj) => obj.bundle())";
     };
 
@@ -108,8 +112,8 @@ export class ArrayProp {
   }
 
   staticBuild() {
-    const result = this.isPrimitiveType ? "obj" : `new ${this.type}({ data: obj })`;
-    const aType = this.isPrimitiveType ? this.type : `${this.type}Interface`;
+    const result = this._isPrimitiveType ? "obj" : `new ${this.type}({ data: obj })`;
+    const aType = this._isPrimitiveType ? this.type : `${this.type}Interface`;
 
     return `
       static from(data: ${aType}[]) {

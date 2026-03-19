@@ -15,6 +15,11 @@ export class Schema {
   objectProps: ObjectProp[] = [];
   enumProps: EnumProp[] = [];
 
+  /** Other schema class names this schema depends on (via ObjectProp/$ref arrays) */
+  readonly schemaDeps: string[];
+  /** Enum type names used by this schema */
+  readonly enumDeps: string[];
+
   schema: string;
   interface: string;
 
@@ -30,6 +35,27 @@ export class Schema {
     this.name = `${isEmpty ? "Empty" : ""}${name}`;
 
     this.processEntities(params);
+
+    // Derive dependencies for per-module schema splitting
+    const schemaDepsSet = new Set<string>();
+    for (const prop of this.objectProps) {
+      schemaDepsSet.add(prop.type);
+    }
+    for (const prop of this.arrayProps) {
+      if (prop.isSchemaRef) {
+        schemaDepsSet.add(prop.type);
+      }
+    }
+    this.schemaDeps = [...schemaDepsSet];
+
+    const enumDepsSet = new Set<string>();
+    for (const prop of this.enumProps) {
+      if (prop.enumName) enumDepsSet.add(prop.enumName);
+    }
+    for (const prop of this.arrayProps) {
+      if (prop.isEnum && prop.type) enumDepsSet.add(prop.type);
+    }
+    this.enumDeps = [...enumDepsSet];
 
     const reflectorInterface = new ReflectorInterface({
       name: this.name,
