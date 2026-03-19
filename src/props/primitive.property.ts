@@ -29,7 +29,7 @@ export class PrimitiveProp {
 
     const type = (rawType as ReflectorParamType) ?? "string";
 
-    const { emptyExample, example } = this.getExampleAndFallback({ schemaObject, type });
+    const { emptyExample, example } = this.getExampleAndFallback({ schemaObject, type, name });
 
     this.example = example;
     this.fallbackExample = emptyExample;
@@ -57,10 +57,11 @@ export class PrimitiveProp {
     return newName;
   }
 
-  private getEmptyExample(params: { type: ReflectorParamType; schemaObject: SchemaObject }) {
-    const { schemaObject, type } = params;
+  private getEmptyExample(params: { type: ReflectorParamType; schemaObject: SchemaObject; name?: string | undefined }) {
+    const { schemaObject, type, name } = params;
 
     if (type === "number") {
+      if (name === "limit") return 10;
       return 1;
     } else if (type === "boolean") {
       return false;
@@ -71,11 +72,11 @@ export class PrimitiveProp {
     }
   }
 
-  private getExampleAndFallback(params: { schemaObject: SchemaObject; type: ReflectorParamType }) {
-    const { schemaObject, type } = params;
+  private getExampleAndFallback(params: { schemaObject: SchemaObject; type: ReflectorParamType; name?: string | undefined }) {
+    const { schemaObject, type, name } = params;
 
     const example: AbstractType = schemaObject.example ?? schemaObject.default;
-    const emptyExample = this.getEmptyExample({ type, schemaObject });
+    const emptyExample = this.getEmptyExample({ type, schemaObject, name });
 
     if (!example)
       return {
