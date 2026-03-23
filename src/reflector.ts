@@ -4,6 +4,7 @@ export class ReflectorFile {
     'import { goto } from "$app/navigation"',
     'import { page } from "$app/state"',
     'import { browser } from "$app/environment"',
+    'import { SvelteURL } from "svelte/reactivity"',
   ].join(";");
 
   private readonly types = [
@@ -135,8 +136,8 @@ export class ReflectorFile {
     }`,
     `export function genericArrayBundler<T>(data: T[]): BundleResult<T>[] {
       return data.map((item) => {
-        if (typeof (item as any)?.bundle === 'function') {
-          return (item as any).bundle();
+        if (typeof (item as Record<string, unknown>)?.bundle === 'function') {
+          return (item as Record<string, () => BundleResult<T>>).bundle();
         }
         return item;
       });
@@ -144,7 +145,7 @@ export class ReflectorFile {
     `
     export function changeParam({ event, key }: QueryContract) {
       const newValue = event;
-      const url = new URL(page.url);
+      const url = new SvelteURL(page.url);
       url.searchParams.set(key, String(newValue));
       goto(url, { replaceState: true, keepFocus: true });
     }
@@ -178,7 +179,7 @@ export class ReflectorFile {
     `export function setQueryGroup(group: QuerySeiLa[]) {
       if (!browser) return;
 
-      const url = new URL(page.url);
+      const url = new SvelteURL(page.url);
 
       for (const p of group) {
         const { key, value } = p;
@@ -201,7 +202,7 @@ export class ReflectorFile {
       values: string[];
       key: string;
     }) {
-      const url = new URL(page.url);
+      const url = new SvelteURL(page.url);
       url.searchParams.delete(key);
       values.forEach((value) => url.searchParams.append(key, value));
       goto(url, { replaceState: true, keepFocus: true });
