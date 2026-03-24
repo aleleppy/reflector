@@ -31,8 +31,11 @@ export class Reflector {
   schemas: Schema[];
   modules: Module[];
 
-  constructor(params: { components: ComponentsObject; paths: PathsObject; validators: FieldValidators }) {
-    const { components, paths, validators } = params;
+  readonly apiImport: string;
+
+  constructor(params: { components: ComponentsObject; paths: PathsObject; validators: FieldValidators; apiImport: string }) {
+    const { components, paths, validators, apiImport } = params;
+    this.apiImport = apiImport;
 
     // Limpa estado global entre execuções
     enumTypes.clear();
@@ -127,6 +130,7 @@ export class Reflector {
       return new Module({
         name,
         ...info,
+        apiImport: this.apiImport,
       });
     });
 

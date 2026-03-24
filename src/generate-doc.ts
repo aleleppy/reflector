@@ -83,6 +83,18 @@ export async function reflector(manual = false) {
     console.warn("[reflector] Não consegui ler/parsear reflector.config.ts", e);
   }
 
+  // Lê reflector.json do projeto consumidor (opcional)
+  let apiImport = '$repository/api';
+  try {
+    const reflectorJsonPath = path.resolve(process.cwd(), "reflector.json");
+    const reflectorJson = JSON.parse(fs.readFileSync(reflectorJsonPath, "utf8"));
+    if (reflectorJson.api) {
+      apiImport = reflectorJson.api;
+    }
+  } catch {
+    // reflector.json não encontrado ou inválido — usa o padrão
+  }
+
   const { components, paths } = data;
 
   if (!components) {
@@ -90,7 +102,7 @@ export async function reflector(manual = false) {
     return breakReflector();
   }
 
-  const r = new Reflector({ components, paths, validators });
+  const r = new Reflector({ components, paths, validators, apiImport });
   await r.build();
   await r.localSave(data);
 

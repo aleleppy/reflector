@@ -33,15 +33,15 @@ export class Module {
   private readonly constructorBuilder: ModuleConstructorBuilder;
   private readonly fileBuilder: ModuleFileBuilder;
 
-  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string }) {
-    const { name, operations, moduleName, path: modulePath } = params;
+  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; apiImport: string }) {
+    const { name, operations, moduleName, path: modulePath, apiImport } = params;
 
     this.moduleName = moduleName;
     this.name = capitalizeFirstLetter(name);
     this.path = modulePath;
 
     // Inicializa os gerenciadores
-    this.imports = new ModuleImports();
+    this.imports = new ModuleImports(apiImport);
     this.classBuilder = new ModuleClassBuilder({ imports: this.imports });
     this.paramProcessor = new ModuleParamProcessor({
       imports: this.imports,
