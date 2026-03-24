@@ -155,7 +155,7 @@ export class ReflectorFile {
     `,
     `type StringOrNumber = string | number;
 
-    type QuerySeiLa = {
+    type QueryWithArrayType = {
       key: string;
       value: string | number | null | StringOrNumber[];
     };`,
@@ -173,13 +173,12 @@ export class ReflectorFile {
       }
 
       update(event: string | number | null) {
-        if (!event) return;
-        const newValue = event;
-        this.value = String(newValue);
+        if (event === null || event === undefined) return;
+        this.value = String(event);
         return changeParam({ key: this.key, event: this.value });
       }
     }`,
-    `export function setQueryGroup(group: QuerySeiLa[]) {
+    `export function setQueryGroup(group: QueryWithArrayType[]) {
       if (!browser) return;
 
       const url = new SvelteURL(page.url);
