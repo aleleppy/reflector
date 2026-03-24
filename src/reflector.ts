@@ -134,13 +134,10 @@ export class ReflectorFile {
 
       return isValid;
     }`,
-    `export function genericArrayBundler<T>(data: T[]): BundleResult<T>[] {
-      return data.map((item) => {
-        if (typeof (item as Record<string, unknown>)?.bundle === 'function') {
-          return (item as Record<string, () => BundleResult<T>>).bundle();
-        }
-        return item;
-      });
+    `export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>(
+      data: T[]
+    ): BundleResult<T>[] {
+      return data.map((item) => item.bundle());
     }`,
     `
     export function changeParam({ event, key }: QueryContract) {
