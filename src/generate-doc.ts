@@ -25,8 +25,7 @@ function withTrailingSlash(u: string | undefined): string | undefined {
 
 function getParams(): { BACKEND_URL: string; ENVIRONMENT: string } {
   const BACKEND_URL_RAW = pickEnv("BACKEND_URL", "PUBLIC_BACKEND");
-  const ENVIRONMENT_RAW =
-    pickEnv("ENVIRONMENT", "VITE_ENVIRONMENT", "VITE_ENVIROMENT", "NODE_ENV") ?? "PROD";
+  const ENVIRONMENT_RAW = pickEnv("ENVIRONMENT", "VITE_ENVIRONMENT", "VITE_ENVIROMENT", "NODE_ENV") ?? "PROD";
 
   if (!BACKEND_URL_RAW) throw new Error("BACKEND_URL vazio");
 
@@ -34,13 +33,10 @@ function getParams(): { BACKEND_URL: string; ENVIRONMENT: string } {
   const BACKEND_URL = withTrailingSlash(BACKEND_URL_RAW)!;
 
   if (!BACKEND_URL) {
-    console.warn(
-      "[reflector] BACKEND_URL não definido (nem em params nem na .env: BACKEND_URL/PUBLIC_BACKEND).",
-    );
+    console.warn("[reflector] BACKEND_URL não definido (nem em params nem na .env: BACKEND_URL/PUBLIC_BACKEND).");
   }
 
-  if (ENVIRONMENT === "PROD")
-    console.warn("[reflector] Ambiente não-DEV: os schemas serão atualizados automaticamente.");
+  if (ENVIRONMENT === "PROD") console.warn("[reflector] Ambiente não-DEV: os schemas serão atualizados automaticamente.");
 
   return { BACKEND_URL, ENVIRONMENT };
 }
@@ -63,9 +59,7 @@ export async function reflector(manual = false) {
     const backup = new Source({ path: "src/backup.json", data: JSON.stringify(data) });
     await backup.save();
   } catch (e) {
-    console.warn(
-      `[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`,
-    );
+    console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);
     const backupPath = path.resolve(process.cwd(), "src/reflector/backup.json");
     data = JSON.parse(fs.readFileSync(backupPath, "utf8")) as OpenAPIObject;
   }
@@ -84,7 +78,7 @@ export async function reflector(manual = false) {
   }
 
   // Lê reflector.json do projeto consumidor (opcional)
-  let apiImport = '$repository/api';
+  let apiImport = "$lib/api";
   try {
     const reflectorJsonPath = path.resolve(process.cwd(), "reflector.json");
     const reflectorJson = JSON.parse(fs.readFileSync(reflectorJsonPath, "utf8"));
