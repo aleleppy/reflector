@@ -134,11 +134,17 @@ export class ReflectorFile {
 
       return isValid;
     }`,
-    `export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>(
-      data: T[]
-    ): BundleResult<T>[] {
-      return data.map((item) => item.bundle());
-    }`,
+    `export function genericArrayBundler(data: string[]): string[];
+      export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>(
+        data: T[]
+      ): BundleResult<T>[];
+      export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>(
+        data: T[] | string[]
+      ) {
+        if (data.length === 0) return [];
+        if (typeof data[0] === 'string') return data;
+        return (data as T[]).map((item) => item.bundle());
+      }`,
     `
     export function changeParam({ event, key }: QueryContract) {
       const newValue = event;
