@@ -7,7 +7,7 @@ import { Source } from "./file.js";
 import { parseValidatorFieldsFromConfig } from "./helpers/generate-doc.helper.js";
 import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators } from "./types/types.js";
-
+//
 /** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
 function pickEnv(...keys: string[]): string | undefined {
   for (const k of keys) {
