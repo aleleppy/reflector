@@ -169,7 +169,7 @@ export class ReflectorFile {
         this.key = key;
 
         const urlValue = page.url.searchParams.get(key);
-        this.value = String(urlValue);
+        this.value = urlValue !== null ? urlValue : null;
       }
 
       update(event: string | number | null) {
