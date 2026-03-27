@@ -1,4 +1,4 @@
-import type { SchemaObject } from "../types/open-api-spec.interface.js";
+import type { ReferenceObject, SchemaObject } from "../types/open-api-spec.interface.js";
 
 const trashWords = new Set(["Get", "Res", "Default", "Dto", "Public", "Response", "Self"]);
 
@@ -115,8 +115,12 @@ export function getFullEndpoint(rawEndpoint: string) {
 export function isEnumSchema(schema: SchemaObject): boolean {
   if (schema.enum) return true;
   if (schema.items) {
-    if ("$ref" in schema.items) return false;
+    if (isReferenceObject(schema.items)) return false;
     if (schema.items.enum) return true;
   }
   return false;
+}
+
+export function isReferenceObject(obj: unknown): obj is ReferenceObject {
+  return typeof obj === "object" && obj !== null && "$ref" in obj;
 }

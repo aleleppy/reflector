@@ -6,6 +6,7 @@ import { PrimitiveProp } from "./props/primitive.property.js";
 
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
 import type { FieldValidators, ReflectorParamType } from "./types/types.js";
+import { isReferenceObject } from "./helpers/helpers.js";
 
 export class Schema {
   name: string;
@@ -123,10 +124,10 @@ export class Schema {
       const isRequired = !!value.nullable;
       const nullable = !!value.nullable;
 
-      if (ref && "$ref" in ref) {
+      if (ref && isReferenceObject(ref)) {
         this.objectProps.push(new ObjectProp({ name: key, referenceObject: ref, isRequired, isNullable: nullable }));
       }
-    } else if ("$ref" in value) {
+    } else if (isReferenceObject(value)) {
       this.objectProps.push(new ObjectProp({ name: key, referenceObject: value }));
     }
   }
@@ -139,7 +140,7 @@ export class Schema {
     const { properties, requireds, validators } = params;
 
     for (const [key, value] of Object.entries(properties)) {
-      if ("$ref" in value || !value?.type) {
+      if (isReferenceObject(value) || !value?.type) {
         this.processObject({ key, value });
         continue;
       }
@@ -151,7 +152,7 @@ export class Schema {
       const required = requireds.includes(key);
       const items = value.items;
 
-      if (items && !("$ref" in items) && items.enum) {
+      if (items && !isReferenceObject(items) && items.enum) {
         this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject, isParam: undefined, isEnum: true }));
         continue;
       } else if (value.enum) {

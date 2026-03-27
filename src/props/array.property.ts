@@ -1,4 +1,4 @@
-import { isEnumSchema } from "../helpers/helpers.js";
+import { isEnumSchema, isReferenceObject } from "../helpers/helpers.js";
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import { EnumProp } from "./enum.property.js";
 
@@ -48,7 +48,7 @@ export class ArrayProp {
     const items = schemaObject.items;
     if (!items) return schemaName;
 
-    if (items && !("$ref" in items) && items.enum) {
+    if (items && !isReferenceObject(items) && items.enum) {
       this._isPrimitiveType = true;
       const enumType = new EnumProp({
         enums: items.enum ?? schemaObject.enum,
@@ -60,7 +60,7 @@ export class ArrayProp {
       return enumType;
     }
 
-    if ("$ref" in items) {
+    if (isReferenceObject(items)) {
       const theType = items.$ref.split("/").at(-1);
       return theType as string;
     }

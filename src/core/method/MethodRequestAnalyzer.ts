@@ -4,6 +4,7 @@ import type { PrimitiveProp } from "../../props/primitive.property.js";
 import { PrimitiveProp as PrimitivePropClass } from "../../props/primitive.property.js";
 import { ArrayProp as ArrayPropClass } from "../../props/array.property.js";
 import { EnumProp as EnumPropClass } from "../../props/enum.property.js";
+import { isReferenceObject } from "../../helpers/helpers.js";
 
 export class MethodRequestAnalyzer {
   paths: PrimitiveProp[] = [];
@@ -15,12 +16,12 @@ export class MethodRequestAnalyzer {
     if (!operation.parameters || operation.parameters.length === 0) return;
 
     for (const object of operation.parameters) {
-      if ("$ref" in object) continue;
+      if (isReferenceObject(object)) continue;
       if (!object.schema) continue;
 
       const { required, name, schema, in: inParam } = object;
 
-      if ("$ref" in schema) continue;
+      if (isReferenceObject(schema)) continue;
 
       const isRequired = !!required;
       const baseProps = { name, required: isRequired, schemaObject: schema, validator: undefined, isParam: true };

@@ -214,6 +214,7 @@ export class ReflectorFile {
   ].join(";");
 
   fileContent = `
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     ${this.imports}
 
     ${this.types}
