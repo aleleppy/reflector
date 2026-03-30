@@ -114,7 +114,7 @@ export class ModuleMethodProcessor {
         entries.add(bodyType);
       }
 
-      if (responseType) {
+      if (responseType && responseType !== "response") {
         entries.add(`type ${responseType}Interface`);
         entries.add(responseType);
       }

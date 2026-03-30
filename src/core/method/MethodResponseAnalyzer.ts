@@ -30,7 +30,9 @@ export class MethodResponseAnalyzer {
 
   private componentName(refObj: RefLike): string | undefined {
     const parts = refObj.$ref.split("/");
-    return parts[parts.length - 1];
+    const name = parts[parts.length - 1];
+    if (name?.toLowerCase() === "response") return undefined;
+    return name;
   }
 
   private getFromContent(content: ContentObject | undefined): string | SchemaObject | undefined {
