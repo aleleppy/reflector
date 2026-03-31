@@ -141,7 +141,11 @@ export class Schema {
 
     for (const [key, value] of Object.entries(properties)) {
       if (isReferenceObject(value) || !value?.type) {
-        this.processObject({ key, value });
+        if (!isReferenceObject(value) && value.additionalProperties) {
+          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required: requireds.includes(key), validator: validators.get(key), isParam: undefined }));
+        } else {
+          this.processObject({ key, value });
+        }
         continue;
       }
 
@@ -163,7 +167,12 @@ export class Schema {
       const validator = validators.get(key);
       const type = value.type as ReflectorParamType;
 
-      if (type === "object") continue;
+      if (type === "object") {
+        if (schemaObject.additionalProperties) {
+          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined }));
+        }
+        continue;
+      }
 
       if (type === "array") {
         this.arrayProps.push(new ArrayProp({ schemaObject, schemaName, name, required, isParam: undefined, isEnum: false }));
