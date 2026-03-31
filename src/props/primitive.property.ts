@@ -65,8 +65,6 @@ export class PrimitiveProp {
       return 1;
     } else if (type === "boolean") {
       return false;
-    } else if (type === "object") {
-      return "{}";
     } else if (schemaObject.enum) {
       return `"${schemaObject.enum[0]}"`;
     } else {

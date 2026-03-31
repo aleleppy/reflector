@@ -142,7 +142,8 @@ export class Schema {
     for (const [key, value] of Object.entries(properties)) {
       if (isReferenceObject(value) || !value?.type) {
         if (!isReferenceObject(value) && value.additionalProperties) {
-          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: value, required: requireds.includes(key), validator: validators.get(key), isParam: undefined }));
+          const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
+          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: fakeStringSchema, required: requireds.includes(key), validator: validators.get(key), isParam: undefined }));
         } else {
           this.processObject({ key, value });
         }
@@ -169,7 +170,8 @@ export class Schema {
 
       if (type === "object") {
         if (schemaObject.additionalProperties) {
-          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined }));
+          const fakeStringSchema = { ...schemaObject, type: "string" } as SchemaObject;
+          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject: fakeStringSchema, required, validator, isParam: undefined }));
         }
         continue;
       }
