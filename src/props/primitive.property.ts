@@ -12,6 +12,7 @@ export class PrimitiveProp {
   isParam: boolean;
 
   private readonly required: boolean;
+  private readonly isNullable: boolean;
   readonly rawType: ReflectorParamType;
   private readonly buildedConst: string;
   private readonly example: Example;
@@ -23,10 +24,12 @@ export class PrimitiveProp {
     required: boolean;
     validator: string | undefined;
     isParam: boolean | undefined;
+    isNullable?: boolean | undefined;
   }) {
-    const { name, schemaObject, required, validator, isParam } = params;
+    const { name, schemaObject, required, validator, isParam, isNullable } = params;
     const { type: rawType } = schemaObject;
 
+    this.isNullable = !!isNullable;
     const type = (rawType as ReflectorParamType) ?? "string";
 
     const { emptyExample, example } = this.getExampleAndFallback({ schemaObject, type, name });
@@ -126,9 +129,12 @@ export class PrimitiveProp {
     };
 
     const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
+    const keyExpr = this.isNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
+
+    const typeParam = this.isNullable ? `<${this.rawType} | null>` : "";
 
     return `
-      build({ key: params?.data?.${name}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
+      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
     `;
   }
 
@@ -141,15 +147,17 @@ export class PrimitiveProp {
   }
 
   classBuild() {
-    const req = this.required ? "" : "?";
+    const req = (this.required || this.isNullable) ? "" : "?";
+    const nullable = this.isNullable ? " | null" : "";
 
-    return `${this.name}${req}: ${this.type}`;
+    return `${this.name}${req}: BuildedInput<${this.rawType}${nullable}>`;
   }
 
   interfaceBuild() {
     const req = this.required ? "" : "?";
+    const nullable = this.isNullable ? " | null" : "";
 
-    return `${this.name}${req}: ${this.rawType}`;
+    return `${this.name}${req}: ${this.rawType}${nullable}`;
   }
 
   patchBuild() {

@@ -143,7 +143,7 @@ export class Schema {
       if (isReferenceObject(value) || !value?.type) {
         if (!isReferenceObject(value) && value.additionalProperties) {
           const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
-          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: fakeStringSchema, required: requireds.includes(key), validator: validators.get(key), isParam: undefined }));
+          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: fakeStringSchema, required: requireds.includes(key), validator: validators.get(key), isParam: undefined, isNullable: value.nullable }));
         } else {
           this.processObject({ key, value });
         }
@@ -158,7 +158,7 @@ export class Schema {
       const items = value.items;
 
       if (items && !isReferenceObject(items) && items.enum) {
-        this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject, isParam: undefined, isEnum: true }));
+        this.arrayProps.push(new ArrayProp({ name, required, schemaName, schemaObject, isParam: undefined, isEnum: true, isNullable: schemaObject.nullable }));
         continue;
       } else if (value.enum) {
         this.enumProps.push(new EnumProp({ enums: value.enum, name, required, isParam: undefined, entityName: schemaName }));
@@ -171,17 +171,17 @@ export class Schema {
       if (type === "object") {
         if (schemaObject.additionalProperties) {
           const fakeStringSchema = { ...schemaObject, type: "string" } as SchemaObject;
-          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject: fakeStringSchema, required, validator, isParam: undefined }));
+          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject: fakeStringSchema, required, validator, isParam: undefined, isNullable: schemaObject.nullable }));
         }
         continue;
       }
 
       if (type === "array") {
-        this.arrayProps.push(new ArrayProp({ schemaObject, schemaName, name, required, isParam: undefined, isEnum: false }));
+        this.arrayProps.push(new ArrayProp({ schemaObject, schemaName, name, required, isParam: undefined, isEnum: false, isNullable: schemaObject.nullable }));
         continue;
       }
 
-      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined }));
+      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined, isNullable: schemaObject.nullable }));
     }
   }
 }

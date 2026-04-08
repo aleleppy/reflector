@@ -53,7 +53,7 @@ export class ReflectorFile {
       }) {
         const { example, required, key, validator, placeholder } = params;
 
-        const initial = key ?? example;
+        const initial = key === undefined ? example : key;
 
         this.value = initial;
         this.display = initial;

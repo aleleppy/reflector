@@ -47,6 +47,7 @@ export class MethodRequestAnalyzer {
           schemaName: moduleName,
           isParam: true,
           isEnum: false,
+          isNullable: schema.nullable,
           required: isRequired,
         }),
       );

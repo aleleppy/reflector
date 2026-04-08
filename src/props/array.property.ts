@@ -8,6 +8,7 @@ export class ArrayProp {
   isRequired: boolean;
   isParam: boolean;
   private _isPrimitiveType: boolean = false;
+  private readonly isNullable: boolean;
 
   get isSchemaRef(): boolean {
     return !this._isPrimitiveType && !this.isEnum;
@@ -21,10 +22,12 @@ export class ArrayProp {
     required: boolean;
     isParam: boolean | undefined;
     isEnum: boolean | undefined;
+    isNullable: boolean | undefined;
   }) {
-    const { name, schemaObject, schemaName, required, isParam } = params;
+    const { name, schemaObject, schemaName, required, isParam, isNullable } = params;
 
     this.isEnum = isEnumSchema(schemaObject);
+    this.isNullable = !!isNullable;
 
     this.name = this.treatName(name);
     this.type = this.getType({ schemaObject, schemaName });
@@ -72,22 +75,26 @@ export class ArrayProp {
 
   constructorBuild() {
     const result = this._isPrimitiveType ? "" : `.map((param) => new ${this.type}({ data: param }))`;
+    const nullFallback = this.isNullable ? "null" : "[]";
 
-    return `this.${this.name} = params?.data?.${this.name}${result} ?? []`;
+    return `this.${this.name} = params?.data?.${this.name} != null ? params.data.${this.name}${result} : (params?.data?.${this.name} === null ? ${nullFallback} : [])`;
   }
 
   classBuild() {
     const required = this.isRequired ? "" : "?";
     const sanitizedType = this._isPrimitiveType ? this.type : `${this.type}`;
+    const nullable = this.isNullable ? " | null" : "";
+    const defaultValue = this.isNullable ? "null" : "[]";
 
-    return `${this.name}${required} = $state<${sanitizedType}[]>([])`;
+    return `${this.name}${required} = $state<${sanitizedType}[]${nullable}>(${defaultValue})`;
   }
 
   interfaceBuild() {
     const required = this.isRequired ? "" : "?";
     const sanitizedType = this._isPrimitiveType ? this.type : `${this.type}Interface`;
+    const nullable = this.isNullable ? " | null" : "";
 
-    return `${this.name}${required}: ${sanitizedType}[]`;
+    return `${this.name}${required}: ${sanitizedType}[]${nullable}`;
   }
 
   bundleBuild() {
