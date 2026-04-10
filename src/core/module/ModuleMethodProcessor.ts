@@ -100,14 +100,14 @@ export class ModuleMethodProcessor {
         const entityName = treatByUppercase(method.request.responseType ?? "");
         methodsAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
         methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
-        methodsClear.add(`clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
+        methodsClear.add(`protected clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
         methodsAttributes.add("totalPages = $state<number>(1)");
         methodsAttributes.add(`list = $state<${responseType}['data']>([])`);
         this.imports.addReflectorImport("genericArrayBundler");
         methodsAttributes.add(`bundledList = $derived(genericArrayBundler(this.list))`);
         methodsInit.add("this.clearList()");
-        methodsClear.add(`clearList() { this.list = [] }`);
+        methodsClear.add(`protected clearList() { this.list = [] }`);
       }
 
       if (bodyType) {

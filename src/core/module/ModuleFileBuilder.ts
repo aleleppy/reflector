@@ -66,13 +66,13 @@ export class ModuleFileBuilder {
 
     const reset =
       moduleAttributes.length > 1
-        ? `reset() {
+        ? `protected reset() {
           ${moduleInit.join(";")}
         }`
         : "";
 
     return `
-      export class ${moduleName}Module {
+      export abstract class ${moduleName}Module {
         ${moduleAttributes.join(";")}
 
         ${moduleConstructor}

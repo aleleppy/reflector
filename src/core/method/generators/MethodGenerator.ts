@@ -21,7 +21,7 @@ export class MethodGenerator {
 
     return `
       ${description}
-      async ${method.name}(params?: ${paramsType}) {
+      protected async _${method.name}(params?: ${paramsType}) {
 
         const behavior = params?.behavior ?? new Behavior();
         const { onError, onSuccess } = behavior;

@@ -42,7 +42,7 @@ export class ModuleParamProcessor {
       buildedParamsTypes.push(this.classBuilder.buildClassProps({ props, name: capitalizedName }));
       paramAttributes.add(`${name} = new ${capitalizedName}()`);
       paramInit.add(`this.clear${capitalizeFirstLetter(capitalizedName)}()`);
-      paramClear.add(`clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
+      paramClear.add(`protected clear${capitalizedName}() { this.${name} = new ${capitalizedName}() }`);
     };
 
     const argEntries = [

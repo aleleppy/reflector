@@ -116,7 +116,7 @@ export class Module {
       `);
       moduleInit.add("this.clearForms()");
       moduleClear.add(`
-        clearForms() { this.forms = this.buildForms(true) }
+        protected clearForms() { this.forms = this.buildForms(true) }
       `);
     }
 
