@@ -56,7 +56,7 @@ export async function reflector(manual = false) {
   try {
     const documentation = await axios.get<OpenAPIObject>(DOC_URL, { timeout: 15000 });
     data = documentation.data;
-    const backup = new Source({ path: "src/backup.json", data: JSON.stringify(data) });
+    const backup = new Source({ path: "src/reflector/backup.json", data: JSON.stringify(data) });
     await backup.save();
   } catch (e) {
     console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);

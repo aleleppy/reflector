@@ -7,7 +7,7 @@ import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } fr
 import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
-import { baseDir, generatedDir } from "./vars.global.js";
+import { generatedDir } from "./vars.global.js";
 import { ReflectorFile } from "./reflector.js";
 
 export const enumTypes = new Map<string, string>();
@@ -17,7 +17,7 @@ export class Reflector {
   readonly components: ComponentsObject;
   readonly paths: PathsObject;
 
-  readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${baseDir}/backup.json`) });
+  readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/backup.json`) });
   readonly propertiesNames = new Set<string>();
 
   readonly src = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/controllers`) });
