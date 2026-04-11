@@ -1,6 +1,7 @@
-interface LooseValidatorField {
+interface LooseFieldConfig {
   fields: string[];
-  validator: string;
+  validator?: string;
+  type?: string;
 }
 
 function stripComments(code: string): string {
@@ -8,10 +9,10 @@ function stripComments(code: string): string {
   return code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "");
 }
 
-function extractValidatorsArraySource(code: string): string | null {
-  // tenta achar: export const validators ... = [ ... ];
+function extractFieldConfigsArraySource(code: string): string | null {
+  // tenta achar: export const fieldConfigs ... = [ ... ];
   const cleaned = stripComments(code);
-  const startIdx = cleaned.search(/\bexport\s+const\s+validators\b/);
+  const startIdx = cleaned.search(/\bexport\s+const\s+fieldConfigs\b/);
   if (startIdx < 0) return null;
 
   const fromStart = cleaned.slice(startIdx);
@@ -59,30 +60,81 @@ function extractValidatorsArraySource(code: string): string | null {
   return null;
 }
 
-export function parseValidatorFieldsFromConfig(code: string): LooseValidatorField[] {
-  const arrSrc = extractValidatorsArraySource(code);
+function extractObjectBlocks(arrSrc: string): string[] {
+  const blocks: string[] = [];
+  let depth = 0;
+  let start = -1;
+
+  for (let i = 0; i < arrSrc.length; i++) {
+    const ch = arrSrc[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        blocks.push(arrSrc.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return blocks;
+}
+
+export function parseFieldConfigsFromConfig(code: string): LooseFieldConfig[] {
+  const arrSrc = extractFieldConfigsArraySource(code);
   if (!arrSrc) return [];
 
-  // captura objetos do tipo:
-  // { fields: ['email'], validator: validateInputs.email, }
-  const objRegex = /\{\s*fields\s*:\s*\[([\s\S]*?)\]\s*,\s*validator\s*:\s*([A-Za-z0-9_$.]+)\s*,?\s*\}/g;
-  const results: LooseValidatorField[] = [];
+  const blocks = extractObjectBlocks(arrSrc);
+  const results: LooseFieldConfig[] = [];
 
-  let m: RegExpExecArray | null;
-  while ((m = objRegex.exec(arrSrc))) {
-    const fieldsRaw = m[1] ?? "";
-    const validatorRaw = (m[2] ?? "").trim();
+  for (const block of blocks) {
+    // extrai fields: [...]
+    const fieldsMatch = block.match(/fields\s*:\s*\[([\s\S]*?)\]/);
+    if (!fieldsMatch) continue;
 
-    // pega strings dentro do array de fields (aceita ' " `)
     const fields: string[] = [];
     const strRegex = /['"`]([^'"`]+)['"`]/g;
     let sm: RegExpExecArray | null;
-    while ((sm = strRegex.exec(fieldsRaw))) {
+    while ((sm = strRegex.exec(fieldsMatch[1] ?? ""))) {
       if (sm[1]) fields.push(sm[1]);
     }
 
-    results.push({ fields, validator: validatorRaw });
+    if (fields.length === 0) continue;
+
+    // extrai validator (referência sem aspas, ex: validateInputs.email)
+    const validatorMatch = block.match(/validator\s*:\s*([A-Za-z0-9_$.]+)/);
+    const validator = validatorMatch?.[1]?.trim();
+
+    // extrai type (string literal com aspas, ex: 'IconName')
+    const typeMatch = block.match(/type\s*:\s*['"`]([^'"`]+)['"`]/);
+    const type = typeMatch?.[1]?.trim();
+
+    const config: LooseFieldConfig = { fields };
+    if (validator) config.validator = validator;
+    if (type) config.type = type;
+
+    results.push(config);
   }
 
   return results;
+}
+
+export function parseTypeImportsFromTypesFile(code: string): Map<string, string> {
+  const result = new Map<string, string>();
+  const importRegex = /import\s+type\s*\{([^}]+)\}\s*from\s*['"`]([^'"`]+)['"`]/g;
+
+  let m: RegExpExecArray | null;
+  while ((m = importRegex.exec(code))) {
+    const names = (m[1] ?? "").split(",").map((n) => n.trim()).filter(Boolean);
+    const source = m[2] ?? "";
+    if (!source) continue;
+
+    for (const name of names) {
+      result.set(name, `import type { ${name} } from '${source}'`);
+    }
+  }
+
+  return result;
 }

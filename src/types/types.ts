@@ -18,11 +18,17 @@ export type Info = {
 
 export type Example = string | boolean | number;
 
-export interface ValidatorField {
-  fields: string[];
-  validator: string;
+export interface FieldConfig {
+  validator?: string;
+  type?: string;
 }
 
-export type FieldValidators = Map<string, string>;
+export type FieldConfigs = Map<string, FieldConfig>;
+
+/**
+ * Maps custom type names (e.g. "IconName") to their full import statements
+ * (e.g. "import type { IconName } from '$lib/utils/icons/icons.type.svelte'")
+ */
+export type TypeImports = Map<string, string>;
 export type AttributeProp = PrimitiveProp | ArrayProp | EnumProp;
 export type ParamType = "Paths" | "Querys" | "Headers";

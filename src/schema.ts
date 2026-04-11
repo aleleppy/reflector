@@ -5,7 +5,7 @@ import { ObjectProp } from "./props/object.property.js";
 import { PrimitiveProp } from "./props/primitive.property.js";
 
 import type { SchemaObject, ReferenceObject } from "./types/open-api-spec.interface.js";
-import type { FieldValidators, ReflectorParamType } from "./types/types.js";
+import type { FieldConfigs, ReflectorParamType } from "./types/types.js";
 import { isReferenceObject } from "./helpers/helpers.js";
 
 export class Schema {
@@ -20,6 +20,8 @@ export class Schema {
   readonly schemaDeps: string[];
   /** Enum type names used by this schema */
   readonly enumDeps: string[];
+  /** Custom type names used by this schema (from fieldConfigs) */
+  readonly customTypeDeps: string[];
 
   schema: string;
   interface: string;
@@ -29,7 +31,7 @@ export class Schema {
     name: string;
     requireds: string[];
     isEmpty: boolean;
-    validators: FieldValidators;
+    fieldConfigs: FieldConfigs;
   }) {
     const { name, isEmpty } = params;
 
@@ -57,6 +59,12 @@ export class Schema {
       if (prop.isEnum && prop.type) enumDepsSet.add(prop.type);
     }
     this.enumDeps = [...enumDepsSet];
+
+    const customTypeDepsSet = new Set<string>();
+    for (const prop of this.primitiveProps) {
+      if (prop.customType) customTypeDepsSet.add(prop.customType);
+    }
+    this.customTypeDeps = [...customTypeDepsSet];
 
     const reflectorInterface = new ReflectorInterface({
       name: this.name,
@@ -135,15 +143,16 @@ export class Schema {
   private processEntities(params: {
     properties: Record<string, ReferenceObject | SchemaObject>;
     requireds: string[];
-    validators: FieldValidators;
+    fieldConfigs: FieldConfigs;
   }) {
-    const { properties, requireds, validators } = params;
+    const { properties, requireds, fieldConfigs } = params;
 
     for (const [key, value] of Object.entries(properties)) {
       if (isReferenceObject(value) || !value?.type) {
         if (!isReferenceObject(value) && value.additionalProperties) {
           const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
-          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: fakeStringSchema, required: requireds.includes(key), validator: validators.get(key), isParam: undefined, isNullable: value.nullable }));
+          const config = fieldConfigs.get(key);
+          this.primitiveProps.push(new PrimitiveProp({ name: key, schemaObject: fakeStringSchema, required: requireds.includes(key), validator: config?.validator, customType: config?.type, isParam: undefined, isNullable: value.nullable }));
         } else {
           this.processObject({ key, value });
         }
@@ -165,13 +174,15 @@ export class Schema {
         continue;
       }
 
-      const validator = validators.get(key);
+      const config = fieldConfigs.get(key);
+      const validator = config?.validator;
+      const customType = config?.type;
       const type = value.type as ReflectorParamType;
 
       if (type === "object") {
         if (schemaObject.additionalProperties) {
           const fakeStringSchema = { ...schemaObject, type: "string" } as SchemaObject;
-          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject: fakeStringSchema, required, validator, isParam: undefined, isNullable: schemaObject.nullable }));
+          this.primitiveProps.push(new PrimitiveProp({ name, schemaObject: fakeStringSchema, required, validator, customType, isParam: undefined, isNullable: schemaObject.nullable }));
         }
         continue;
       }
@@ -181,7 +192,7 @@ export class Schema {
         continue;
       }
 
-      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, isParam: undefined, isNullable: schemaObject.nullable }));
+      this.primitiveProps.push(new PrimitiveProp({ name, schemaObject, required, validator, customType, isParam: undefined, isNullable: schemaObject.nullable }));
     }
   }
 }

@@ -14,19 +14,25 @@ export class PrimitiveProp {
   private readonly required: boolean;
   private readonly isNullable: boolean;
   readonly rawType: ReflectorParamType;
+  readonly customType: string | undefined;
   private readonly buildedConst: string;
   private readonly example: Example;
   private readonly fallbackExample: Example;
+
+  private get effectiveType(): string {
+    return this.customType ?? this.rawType;
+  }
 
   constructor(params: {
     name: string;
     schemaObject: SchemaObject;
     required: boolean;
     validator: string | undefined;
+    customType?: string | undefined;
     isParam: boolean | undefined;
     isNullable?: boolean | undefined;
   }) {
-    const { name, schemaObject, required, validator, isParam, isNullable } = params;
+    const { name, schemaObject, required, validator, customType, isParam, isNullable } = params;
     const { type: rawType } = schemaObject;
 
     this.isNullable = !!isNullable;
@@ -37,10 +43,11 @@ export class PrimitiveProp {
     this.example = example;
     this.fallbackExample = emptyExample;
 
-    const buildedType = type;
+    const buildedType = customType ?? type;
 
     this.name = this.treatName(name);
     this.rawType = type ?? "any";
+    this.customType = customType;
     this.type = `BuildedInput<${buildedType}>`;
     this.required = required;
 
@@ -131,7 +138,7 @@ export class PrimitiveProp {
     const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
     const keyExpr = this.isNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
 
-    const typeParam = this.isNullable ? `<${this.rawType} | null>` : "";
+    const typeParam = this.isNullable ? `<${this.effectiveType} | null>` : "";
 
     return `
       build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
@@ -150,14 +157,14 @@ export class PrimitiveProp {
     const req = (this.required || this.isNullable) ? "" : "?";
     const nullable = this.isNullable ? " | null" : "";
 
-    return `${this.name}${req}: BuildedInput<${this.rawType}${nullable}>`;
+    return `${this.name}${req}: BuildedInput<${this.effectiveType}${nullable}>`;
   }
 
   interfaceBuild() {
     const req = this.required ? "" : "?";
     const nullable = this.isNullable ? " | null" : "";
 
-    return `${this.name}${req}: ${this.rawType}${nullable}`;
+    return `${this.name}${req}: ${this.effectiveType}${nullable}`;
   }
 
   patchBuild() {

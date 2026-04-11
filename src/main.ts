@@ -4,7 +4,7 @@ import { Source } from "./file.js";
 import { getEndpoint, isReferenceObject, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
 import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject } from "./types/open-api-spec.interface.js";
-import type { FieldValidators, Info, ReflectorOperation } from "./types/types.js";
+import type { FieldConfigs, TypeImports, Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
 import { generatedDir } from "./vars.global.js";
@@ -23,6 +23,7 @@ export class Reflector {
   readonly src = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/controllers`) });
   readonly typesSrc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/reflector.svelte.ts`) });
   private readonly schemaMap = new Map<string, Schema>();
+  private readonly typeImports: TypeImports;
   readonly fieldsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`) });
   readonly enumFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/enums.ts`) });
   readonly mockedParamsFile = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/mocked-params.svelte.ts`) });
@@ -33,9 +34,10 @@ export class Reflector {
 
   readonly apiImport: string;
 
-  constructor(params: { components: ComponentsObject; paths: PathsObject; validators: FieldValidators; apiImport: string }) {
-    const { components, paths, validators, apiImport } = params;
+  constructor(params: { components: ComponentsObject; paths: PathsObject; fieldConfigs: FieldConfigs; typeImports: TypeImports; apiImport: string }) {
+    const { components, paths, fieldConfigs, typeImports, apiImport } = params;
     this.apiImport = apiImport;
+    this.typeImports = typeImports;
 
     // Limpa estado global entre execuções
     enumTypes.clear();
@@ -48,13 +50,13 @@ export class Reflector {
 
     this.files = [];
     this.modules = this.getModules();
-    const { propertiesNames, schemas } = this.getSchemas({ validators });
+    const { propertiesNames, schemas } = this.getSchemas({ fieldConfigs });
     this.propertiesNames = propertiesNames;
     this.schemas = schemas;
   }
 
-  private getSchemas(params: { validators: FieldValidators }) {
-    const { validators } = params;
+  private getSchemas(params: { fieldConfigs: FieldConfigs }) {
+    const { fieldConfigs } = params;
 
     const componentSchemas = this.components.schemas;
 
@@ -78,7 +80,7 @@ export class Reflector {
         propertiesNames.add(prop);
       });
 
-      schemas.push(new Schema({ ...schema, isEmpty: false, validators }));
+      schemas.push(new Schema({ ...schema, isEmpty: false, fieldConfigs }));
     }
 
     // Build schema lookup map for per-module splitting
@@ -232,9 +234,13 @@ export class Reflector {
   private buildSchemaFileContent(schemas: Schema[]): string {
     // Collect enum deps from all schemas in this file
     const enumDeps = new Set<string>();
+    const customTypeDeps = new Set<string>();
     for (const s of schemas) {
       for (const e of s.enumDeps) {
         enumDeps.add(e);
+      }
+      for (const t of s.customTypeDeps) {
+        customTypeDeps.add(t);
       }
     }
 
@@ -247,6 +253,13 @@ export class Reflector {
 
     if (enumDeps.size > 0) {
       imports.push(`import type { ${[...enumDeps].join(", ")} } from "$reflector/enums"`);
+    }
+
+    for (const typeName of customTypeDeps) {
+      const importStatement = this.typeImports.get(typeName);
+      if (importStatement) {
+        imports.push(importStatement + ";");
+      }
     }
 
     imports.push("import { PUBLIC_ENVIRONMENT } from '$env/static/public';");

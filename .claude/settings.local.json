@@ -5,7 +5,8 @@
       "Bash(npm run:*)",
       "Bash(find /c/Users/Ale/Desktop/Projetos/LIBS/reflector -type f \\\\\\(-name *.spec.ts -o -name *.test.ts -o -name *.spec.js \\\\\\))",
       "Bash(npm whoami:*)",
-      "Bash(find /c/Users/Ale/Desktop/Projetos/LIBS/reflector -name *.module.svelte.ts)"
+      "Bash(find /c/Users/Ale/Desktop/Projetos/LIBS/reflector -name *.module.svelte.ts)",
+      "Bash(grep -r '$reflector' /c/Users/Ale/Desktop/Projetos/LIBS/reflector/src '--include=*.ts')"
     ]
   }
 }

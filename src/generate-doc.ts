@@ -4,9 +4,9 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import { Reflector } from "./main.js";
 import { Source } from "./file.js";
-import { parseValidatorFieldsFromConfig } from "./helpers/generate-doc.helper.js";
+import { parseFieldConfigsFromConfig, parseTypeImportsFromTypesFile } from "./helpers/generate-doc.helper.js";
 import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
-import type { FieldValidators } from "./types/types.js";
+import type { FieldConfigs, TypeImports } from "./types/types.js";
 //
 /** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
 function pickEnv(...keys: string[]): string | undefined {
@@ -51,7 +51,8 @@ export async function reflector(manual = false) {
 
   const DOC_URL = `${BACKEND_URL}openapi.json`;
   let data: OpenAPIObject;
-  let validators: FieldValidators = new Map();
+  let fieldConfigs: FieldConfigs = new Map();
+  let typeImports: TypeImports = new Map();
 
   try {
     const documentation = await axios.get<OpenAPIObject>(DOC_URL, { timeout: 15000 });
@@ -65,16 +66,27 @@ export async function reflector(manual = false) {
   }
 
   try {
-    const fieldsConfig = path.resolve(process.cwd(), "src/reflector.config.ts");
-    const configText = fs.readFileSync(fieldsConfig, "utf8");
-    const parsedRelations = parseValidatorFieldsFromConfig(configText);
-    parsedRelations.forEach((rel) => {
+    const configPath = path.resolve(process.cwd(), "src/reflector.config.ts");
+    const configText = fs.readFileSync(configPath, "utf8");
+    const parsedConfigs = parseFieldConfigsFromConfig(configText);
+    parsedConfigs.forEach((rel) => {
       rel.fields.forEach((field) => {
-        validators.set(field, rel.validator);
+        const config: { validator?: string; type?: string } = {};
+        if (rel.validator) config.validator = rel.validator;
+        if (rel.type) config.type = rel.type;
+        fieldConfigs.set(field, config);
       });
     });
   } catch (e) {
     console.warn("[reflector] Não consegui ler/parsear reflector.config.ts", e);
+  }
+
+  try {
+    const typesPath = path.resolve(process.cwd(), "src/reflector.types.ts");
+    const typesText = fs.readFileSync(typesPath, "utf8");
+    typeImports = parseTypeImportsFromTypesFile(typesText);
+  } catch {
+    // reflector.types.ts não encontrado — tipos customizados não terão imports
   }
 
   // Lê reflector.json do projeto consumidor (opcional)
@@ -96,7 +108,7 @@ export async function reflector(manual = false) {
     return breakReflector();
   }
 
-  const r = new Reflector({ components, paths, validators, apiImport });
+  const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport });
   await r.build();
   await r.localSave(data);
 
