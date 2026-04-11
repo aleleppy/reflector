@@ -1,4 +1,5 @@
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import prettier from "prettier";
 
 export class Source {
@@ -13,6 +14,7 @@ export class Source {
   }
 
   async save() {
+    mkdirSync(dirname(this.path), { recursive: true });
     const options = await prettier.resolveConfig(process.cwd());
     const formatted = await prettier.format(this.data, { ...options, filepath: this.path });
 
@@ -20,6 +22,7 @@ export class Source {
   }
 
   async safeSave() {
+    mkdirSync(dirname(this.path), { recursive: true });
     writeFileSync(this.path, this.data, "utf8");
   }
 
