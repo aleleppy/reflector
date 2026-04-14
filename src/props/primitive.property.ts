@@ -23,6 +23,11 @@ export class PrimitiveProp {
     return this.customType ?? this.rawType;
   }
 
+  /** Non-required fields become nullable (| null) instead of optional (?) */
+  private get isEffectivelyNullable(): boolean {
+    return this.isNullable || !this.required;
+  }
+
   constructor(params: {
     name: string;
     schemaObject: SchemaObject;
@@ -136,9 +141,15 @@ export class PrimitiveProp {
     };
 
     const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
-    const keyExpr = this.isNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
+    const effectivelyNullable = this.isEffectivelyNullable;
+    const keyExpr = effectivelyNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
 
-    const typeParam = this.isNullable ? `<${this.effectiveType} | null>` : "";
+    let typeParam = "";
+    if (effectivelyNullable) {
+      typeParam = `<${this.effectiveType} | null>`;
+    } else if (this.customType) {
+      typeParam = `<${this.effectiveType}>`;
+    }
 
     return `
       build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
@@ -154,15 +165,15 @@ export class PrimitiveProp {
   }
 
   classBuild() {
-    const req = (this.required || this.isNullable) ? "" : "?";
-    const nullable = this.isNullable ? " | null" : "";
+    const req = (this.required || this.isEffectivelyNullable) ? "" : "?";
+    const nullable = this.isEffectivelyNullable ? " | null" : "";
 
     return `${this.name}${req}: BuildedInput<${this.effectiveType}${nullable}>`;
   }
 
   interfaceBuild() {
-    const req = this.required ? "" : "?";
-    const nullable = this.isNullable ? " | null" : "";
+    const req = (this.required || this.isEffectivelyNullable) ? "" : "?";
+    const nullable = this.isEffectivelyNullable ? " | null" : "";
 
     return `${this.name}${req}: ${this.effectiveType}${nullable}`;
   }
