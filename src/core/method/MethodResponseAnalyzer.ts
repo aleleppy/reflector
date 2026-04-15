@@ -8,9 +8,12 @@ import type {
 
 type RefLike = { $ref: string };
 
+const PRIMITIVE_RESPONSE_TYPES = new Set(["string", "number", "boolean", "integer", "any", "object", "array"]);
+
 export class MethodResponseAnalyzer {
   responseType: string | null = null;
   hasEnumResponse: boolean = false;
+  isPrimitiveResponse: boolean = false;
 
   analyze(responses: ResponsesObject): void {
     for (const response of Object.values(responses)) {
@@ -18,10 +21,18 @@ export class MethodResponseAnalyzer {
       const schemaOrType = this.getFromContent(response.content);
       const type = this.typeFromSchemaOrType(schemaOrType);
       if (type !== undefined) {
-        this.responseType = type;
+        this.isPrimitiveResponse = PRIMITIVE_RESPONSE_TYPES.has(type);
+        this.responseType = this.normalizePrimitive(type);
         break;
       }
     }
+  }
+
+  private normalizePrimitive(type: string): string {
+    if (type === "integer") return "number";
+    if (type === "array") return "unknown[]";
+    if (type === "object") return "unknown";
+    return type;
   }
 
   private isRef<T extends object>(v: ResponseObject | ReferenceObject | ContentObject | SchemaObject): v is T & RefLike {
@@ -60,10 +71,12 @@ export class MethodResponseAnalyzer {
       return this.extractEnumType(schema);
     }
 
-    const allOfFirst = schema.allOf?.[0];
-    if (allOfFirst && !this.isRef(allOfFirst)) {
-      const t = this.typeFromProperties(allOfFirst.properties);
-      if (t !== undefined) return t;
+    if (schema.allOf) {
+      for (const entry of schema.allOf) {
+        if (this.isRef(entry)) continue;
+        const t = this.typeFromProperties(entry.properties);
+        if (t !== undefined) return t;
+      }
     }
 
     if (schema.type === "array" && schema.items) {

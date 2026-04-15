@@ -41,7 +41,8 @@ export class PrimitiveProp {
     const { type: rawType } = schemaObject;
 
     this.isNullable = !!isNullable;
-    const type = (rawType as ReflectorParamType) ?? "string";
+    const normalizedRawType = rawType === "integer" ? "number" : rawType;
+    const type = (normalizedRawType as ReflectorParamType) ?? "string";
 
     const { emptyExample, example } = this.getExampleAndFallback({ schemaObject, type, name });
 

@@ -29,11 +29,15 @@ export class MethodBuilder {
         apiType,
         parameters: this.requestAnalyzer.paths,
         hasEnumResponse: this.responseAnalyzer.hasEnumResponse,
+        isPrimitiveResponse: this.responseAnalyzer.isPrimitiveResponse,
       },
       props,
     };
 
-    const responseTypeInterface = this.buildResponseTypeInterface(analyzers.request.responseType);
+    const responseTypeInterface = this.buildResponseTypeInterface(
+      analyzers.request.responseType,
+      analyzers.request.isPrimitiveResponse,
+    );
 
     return new Method({
       name,
@@ -52,7 +56,9 @@ export class MethodBuilder {
     return extracted ?? this.apiTypeAnalyzer.analyze(operation).apiType;
   }
 
-  private buildResponseTypeInterface(responseType: string | null): string {
-    return responseType ? `${responseType}Interface` : "null";
+  private buildResponseTypeInterface(responseType: string | null, isPrimitiveResponse: boolean): string {
+    if (!responseType) return "null";
+    if (isPrimitiveResponse) return responseType;
+    return `${responseType}Interface`;
   }
 }

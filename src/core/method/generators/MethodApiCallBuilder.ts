@@ -41,10 +41,11 @@ export class MethodApiCallBuilder {
 
   private buildEntityCall(method: Method, responseType: string): { inside: string; outside: string } {
     const rType = method.analyzers.request.responseType;
+    const isPrimitive = method.analyzers.request.isPrimitiveResponse;
     const querys = this.buildQuerys(method.analyzers.props.querys);
     const entityName = treatByUppercase(rType ?? "");
 
-    const buildedThisResponseType = rType
+    const buildedThisResponseType = rType && !isPrimitive
       ? `this.${entityName} = new ${method.analyzers.request.responseType}({ data: response })`
       : "";
 

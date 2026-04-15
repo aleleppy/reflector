@@ -79,7 +79,7 @@ export class Module {
       data: this.fileBuilder.build({
         ...allBuilded,
         moduleConstructor,
-        moduleName: this.moduleName,
+        moduleName: this.name,
       }),
     });
   }

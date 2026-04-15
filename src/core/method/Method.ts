@@ -13,6 +13,7 @@ export interface MethodAnalyzers {
     apiType: ApiType;
     parameters: any[];
     hasEnumResponse: boolean;
+    isPrimitiveResponse: boolean;
   };
   props: {
     paths: PrimitiveProp[];

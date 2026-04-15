@@ -30,17 +30,17 @@ export class ModuleMethodProcessor {
     const { bodyType, responseType, attributeType } = method.request;
 
     if (bodyType === "string") {
-      createDangerMessage(`Metodo ${method.name} foi ignorado por possuir um body inválido.`);
+      createDangerMessage(`Method ${method.name} was skipped because it has an invalid body.`);
       return true;
     }
 
     const isNullResponse = !responseType || responseType === "null";
     if ((attributeType === "entity" || attributeType === "list") && isNullResponse) {
-      createDangerMessage(`Metodo ${method.name} foi ignorado por possuir uma resposta nula.`);
+      createDangerMessage(`Method ${method.name} was skipped because it has a null response.`);
       return true;
     }
 
-    // Verifica se todos os path params do endpoint estão declarados como parâmetros
+    // Check that all endpoint path params are declared as parameters
     const endpointParams = [...method.endpoint.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).filter(Boolean);
     if (endpointParams.length > 0) {
       const declaredPaths = new Set(method.paths.map((p) => p.name));
@@ -48,7 +48,7 @@ export class ModuleMethodProcessor {
 
       if (undeclared.length > 0) {
         createDangerMessage(
-          `Metodo ${method.name} foi ignorado por possuir path params não declarados: ${undeclared.join(", ")}`,
+          `Method ${method.name} was skipped because it has undeclared path params: ${undeclared.join(", ")}`,
         );
         return true;
       }
@@ -76,7 +76,7 @@ export class ModuleMethodProcessor {
 
     for (const method of methods) {
       const { request, headers, cookies, paths, querys } = method;
-      const { bodyType, responseType, attributeType } = request;
+      const { bodyType, responseType, attributeType, isPrimitiveResponse } = request;
 
       headers.forEach((h) => headerMap.set(h.name, h));
       cookies.forEach((c) => cookieMap.set(c.name, c));
@@ -96,7 +96,7 @@ export class ModuleMethodProcessor {
 
       buildedMethods.push(method.build());
 
-      if (attributeType === "entity") {
+      if (attributeType === "entity" && !isPrimitiveResponse) {
         const entityName = treatByUppercase(method.request.responseType ?? "");
         methodsAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
         methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
@@ -114,7 +114,7 @@ export class ModuleMethodProcessor {
         entries.add(bodyType);
       }
 
-      if (responseType && responseType !== "response") {
+      if (responseType && responseType !== "response" && !isPrimitiveResponse) {
         entries.add(`type ${responseType}Interface`);
         entries.add(responseType);
       }

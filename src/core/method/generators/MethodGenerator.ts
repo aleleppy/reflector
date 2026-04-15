@@ -72,7 +72,7 @@ export class MethodGenerator {
   }
 
   private buildMethodReturn(method: Method): string {
-    const { attributeType, responseType, hasEnumResponse } = method.analyzers.request;
+    const { attributeType, responseType, hasEnumResponse, isPrimitiveResponse } = method.analyzers.request;
 
     if (attributeType === "list") {
       return "this.list";
@@ -84,6 +84,10 @@ export class MethodGenerator {
 
     if (hasEnumResponse) {
       return "response.data";
+    }
+
+    if (isPrimitiveResponse) {
+      return "response";
     }
 
     return `new ${responseType}({ data: response })`;
