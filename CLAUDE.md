@@ -21,9 +21,32 @@ Used two ways:
 - `npm run typecheck:runtime` — type-checks only the runtime template, which
   has SvelteKit-specific globals (`$state`, `$derived`, `page.params`) and
   needs its own tsconfig.
+- `npm test` — runs vitest once; snapshot tests over the codegen output.
+- `npm run test:watch` — vitest in watch mode.
 
-There are no unit tests. Refactor safety relies on byte-identical output
-against a known consumer project.
+## Tests
+
+Single test file — `test/codegen.test.ts` — runs `Reflector` end-to-end
+against `test/fixtures/minimal/openapi.json` (a hand-crafted OpenAPI doc
+that exercises the main pathways: inline body promotion, response-envelope
+data promotion, refs, enums, arrays of refs/primitives/enums, nullable
+allOf, path and query params, multiple HTTP verbs).
+
+The generated output is compared file-by-file against committed snapshots
+under `test/snapshots/minimal/`. The test chdir's to a temp dir before
+running so `generatedDir` resolves there instead of polluting the repo.
+
+**On intentional codegen change**: re-run with `npx vitest run -u` to
+update the snapshots, then review the diff in `test/snapshots/` carefully
+before committing — the snapshot is the contract, an accidental whitespace
+change is a real regression for consumers.
+
+Known rough edges captured (not bugs to fix while writing tests):
+inline-promoted schemas inherit the `operationId` verbatim, producing
+awkward names like `UserController_listResponse`. Symbols like enum
+classes referenced by a per-module schema file aren't always imported by
+that file. Both are pre-existing and locked into the snapshots; fix
+separately.
 
 ## Pipeline (one run)
 
