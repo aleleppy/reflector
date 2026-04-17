@@ -1,12 +1,14 @@
-import { mockedParams } from "../../main.js";
 import type { AttributeProp, ParamType } from "../../types/types.js";
 import type { ModuleImports } from "./ModuleImports.js";
+import type { CodegenContext } from "../CodegenContext.js";
 
 export class ModuleClassBuilder {
   private readonly imports: ModuleImports;
+  private readonly context: CodegenContext;
 
-  constructor(params: { imports: ModuleImports }) {
+  constructor(params: { imports: ModuleImports; context: CodegenContext }) {
     this.imports = params.imports;
+    this.context = params.context;
   }
 
   buildClassProps(params: { props: AttributeProp[]; name: ParamType; className?: string }): string {
@@ -23,7 +25,7 @@ export class ModuleClassBuilder {
           attributes.push(prop.patchBuild());
         }
 
-        mockedParams.add(prop.name);
+        this.context.mockedParams.add(prop.name);
       });
 
       this.imports.addPageStateImport();

@@ -1,8 +1,10 @@
-import type { Method } from "../../method.js";
-import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "../../helpers/helpers.js";
+import type { Method } from "../method/Method.js";
+import { capitalizeFirstLetter } from "../../helpers/helpers.js";
+import { MethodValidator } from "../method/MethodValidator.js";
 import type { ModuleImports } from "../module/ModuleImports.js";
 import type { ModuleClassBuilder } from "../module/ModuleClassBuilder.js";
-import { ApiMethodGenerator } from "./ApiMethodGenerator.js";
+import { CallMethodGenerator } from "../generators/CallMethodGenerator.js";
+import { ApiCallStrategy } from "../generators/ApiCallStrategy.js";
 import { ApiParamProcessor } from "./ApiParamProcessor.js";
 
 export interface ApiEndpointBlock {
@@ -13,7 +15,8 @@ export interface ApiEndpointBlock {
 
 export class ApiClassBuilder {
   private readonly imports: ModuleImports;
-  private readonly methodGenerator = new ApiMethodGenerator();
+  private readonly methodGenerator = new CallMethodGenerator();
+  private readonly callStrategy = new ApiCallStrategy();
   private readonly paramProcessor: ApiParamProcessor;
 
   constructor(params: { imports: ModuleImports; classBuilder: ModuleClassBuilder }) {
@@ -27,7 +30,7 @@ export class ApiClassBuilder {
   build(params: { method: Method }): ApiEndpointBlock | null {
     const { method } = params;
 
-    if (this.shouldSkipMethod(method)) return null;
+    if (MethodValidator.isSkippable(method)) return null;
 
     const { request, headers, cookies, paths, querys } = method;
     const { bodyType, responseType, attributeType, isPrimitiveResponse } = request;
@@ -45,7 +48,7 @@ export class ApiClassBuilder {
     const stateProps = this.buildStateProperties(method);
 
     // Build the call method
-    const callMethod = this.methodGenerator.generate(method);
+    const callMethod = this.methodGenerator.generate(method, this.callStrategy);
 
     // Build reset method
     const resetLines = this.buildResetLines(method, processedParams.paramReset);
@@ -127,33 +130,4 @@ export class ApiClassBuilder {
     return lines;
   }
 
-  private shouldSkipMethod(method: Method): boolean {
-    const { bodyType, responseType, attributeType } = method.request;
-
-    if (bodyType === "string") {
-      createDangerMessage(`Method ${method.name} was skipped because it has an invalid body.`);
-      return true;
-    }
-
-    const isNullResponse = !responseType || responseType === "null";
-    if ((attributeType === "entity" || attributeType === "list") && isNullResponse) {
-      createDangerMessage(`Method ${method.name} was skipped because it has a null response.`);
-      return true;
-    }
-
-    const endpointParams = [...method.endpoint.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).filter(Boolean);
-    if (endpointParams.length > 0) {
-      const declaredPaths = new Set(method.paths.map((p) => p.name));
-      const undeclared = endpointParams.filter((p) => !declaredPaths.has(p));
-
-      if (undeclared.length > 0) {
-        createDangerMessage(
-          `Method ${method.name} was skipped because it has undeclared path params: ${undeclared.join(", ")}`,
-        );
-        return true;
-      }
-    }
-
-    return false;
-  }
 }

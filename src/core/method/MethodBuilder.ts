@@ -1,4 +1,5 @@
 import type { ReflectorOperation } from "../../types/types.js";
+import type { CodegenContext } from "../CodegenContext.js";
 import { Method, type MethodAnalyzers } from "./Method.js";
 import { MethodRequestAnalyzer } from "./MethodRequestAnalyzer.js";
 import { MethodResponseAnalyzer } from "./MethodResponseAnalyzer.js";
@@ -11,12 +12,12 @@ export class MethodBuilder {
   private readonly apiTypeAnalyzer = new MethodApiTypeAnalyzer();
   private readonly bodyAnalyzer = new MethodBodyAnalyzer();
 
-  build(operation: ReflectorOperation, moduleName: string): Method {
+  build(operation: ReflectorOperation, moduleName: string, context: CodegenContext): Method {
     const name = this.extractName(operation);
     const description = operation.description ?? operation.summary;
     const { apiType, attributeType } = this.apiTypeAnalyzer.analyze(operation);
 
-    this.requestAnalyzer.analyze(operation, moduleName);
+    this.requestAnalyzer.analyze(operation, moduleName, context);
     this.responseAnalyzer.analyze(operation.responses);
     const bodyType = this.bodyAnalyzer.analyze(operation);
 

@@ -1,5 +1,7 @@
 import { isEnumSchema, isReferenceObject } from "../helpers/helpers.js";
+import { treatPropertyName } from "../helpers/prop-name.js";
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
+import type { CodegenContext } from "../core/CodegenContext.js";
 import { EnumProp } from "./enum.property.js";
 
 export class ArrayProp {
@@ -9,6 +11,7 @@ export class ArrayProp {
   isParam: boolean;
   private _isPrimitiveType: boolean = false;
   private readonly isNullable: boolean;
+  private readonly context: CodegenContext;
 
   get isSchemaRef(): boolean {
     return !this._isPrimitiveType && !this.isEnum;
@@ -23,26 +26,18 @@ export class ArrayProp {
     isParam: boolean | undefined;
     isEnum: boolean | undefined;
     isNullable: boolean | undefined;
+    context: CodegenContext;
   }) {
-    const { name, schemaObject, schemaName, required, isParam, isNullable } = params;
+    const { name, schemaObject, schemaName, required, isParam, isNullable, context } = params;
 
+    this.context = context;
     this.isEnum = isEnumSchema(schemaObject);
     this.isNullable = !!isNullable;
 
-    this.name = this.treatName(name);
+    this.name = treatPropertyName(name).name;
     this.type = this.getType({ schemaObject, schemaName });
     this.isRequired = required;
     this.isParam = !!isParam;
-  }
-
-  private treatName(name: string) {
-    let newName = name;
-
-    if (name.split("-").length > 1) {
-      newName = `['${name}']`;
-    }
-
-    return newName;
   }
 
   private getType(params: { schemaObject: SchemaObject; schemaName: string }): string {
@@ -59,6 +54,7 @@ export class ArrayProp {
         required: true,
         isParam: undefined,
         entityName: schemaName,
+        context: this.context,
       }).enumName;
       return enumType;
     }

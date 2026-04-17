@@ -9,8 +9,13 @@ export { ModuleFileBuilder, type FileBuildParams } from "./module/ModuleFileBuil
 // Api-related exports
 export { ApiFileBuilder } from "./api/ApiFileBuilder.js";
 export { ApiClassBuilder, type ApiEndpointBlock } from "./api/ApiClassBuilder.js";
-export { ApiMethodGenerator } from "./api/ApiMethodGenerator.js";
 export { ApiParamProcessor, type ApiProcessedParams } from "./api/ApiParamProcessor.js";
+
+// Shared generators
+export { CallMethodGenerator } from "./generators/CallMethodGenerator.js";
+export { ApiCallStrategy } from "./generators/ApiCallStrategy.js";
+export { ModuleCallStrategy } from "./generators/ModuleCallStrategy.js";
+export type { CallStrategy } from "./generators/CallStrategy.js";
 
 // Method-related exports
 export { Method } from "./method/Method.js";

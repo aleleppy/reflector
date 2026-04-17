@@ -1,5 +1,6 @@
 import type { ReflectorOperation, AttributeProp } from "../../types/types.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
+import type { CodegenContext } from "../CodegenContext.js";
 
 import { PrimitiveProp as PrimitivePropClass } from "../../props/primitive.property.js";
 import { ArrayProp as ArrayPropClass } from "../../props/array.property.js";
@@ -12,7 +13,7 @@ export class MethodRequestAnalyzer {
   querys: AttributeProp[] = [];
   cookies: PrimitiveProp[] = [];
 
-  analyze(operation: ReflectorOperation, moduleName: string): void {
+  analyze(operation: ReflectorOperation, moduleName: string, context: CodegenContext): void {
     if (!operation.parameters || operation.parameters.length === 0) return;
 
     for (const object of operation.parameters) {
@@ -27,7 +28,7 @@ export class MethodRequestAnalyzer {
       const baseProps = { name, required: isRequired, schemaObject: schema, validator: undefined, isParam: true };
 
       if (inParam === "query") {
-        this.processQueryParam(name, schema, moduleName, isRequired);
+        this.processQueryParam(name, schema, moduleName, isRequired, context);
       } else if (inParam === "header") {
         this.headers.push(new PrimitivePropClass(baseProps));
       } else if (inParam === "path") {
@@ -38,7 +39,7 @@ export class MethodRequestAnalyzer {
     }
   }
 
-  private processQueryParam(name: string, schema: any, moduleName: string, isRequired: boolean): void {
+  private processQueryParam(name: string, schema: any, moduleName: string, isRequired: boolean, context: CodegenContext): void {
     if (schema.type === "array") {
       this.querys.push(
         new ArrayPropClass({
@@ -49,6 +50,7 @@ export class MethodRequestAnalyzer {
           isEnum: false,
           isNullable: schema.nullable,
           required: isRequired,
+          context,
         }),
       );
       return;
@@ -56,7 +58,7 @@ export class MethodRequestAnalyzer {
 
     if (schema.enum) {
       this.querys.push(
-        new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName }),
+        new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName, context }),
       );
       return;
     }

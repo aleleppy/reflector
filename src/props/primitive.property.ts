@@ -1,5 +1,6 @@
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "../types/types.js";
+import { treatPropertyName } from "../helpers/prop-name.js";
 
 type AbstractType = string | boolean | number | undefined;
 type Example = string | boolean | number;
@@ -51,7 +52,9 @@ export class PrimitiveProp {
 
     const buildedType = customType ?? type;
 
-    this.name = this.treatName(name);
+    const treated = treatPropertyName(name);
+    this.name = treated.name;
+    this.isSpecial = treated.isSpecial;
     this.rawType = type ?? "any";
     this.customType = customType;
     this.type = `BuildedInput<${buildedType}>`;
@@ -60,17 +63,6 @@ export class PrimitiveProp {
     this.isParam = !!isParam;
 
     this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator, emptyExample: this.example });
-  }
-
-  private treatName(name: string) {
-    let newName = name;
-
-    if (name.split("-").length > 1) {
-      this.isSpecial = true;
-      newName = `['${name}']`;
-    }
-
-    return newName;
   }
 
   private getEmptyExample(params: { type: ReflectorParamType; schemaObject: SchemaObject; name?: string | undefined }) {

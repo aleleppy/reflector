@@ -1,6 +1,7 @@
-import type { Method } from "../../method.js";
+import type { Method } from "../method/Method.js";
 import type { AttributeProp } from "../../types/types.js";
-import { capitalizeFirstLetter, createDangerMessage, treatByUppercase } from "../../helpers/helpers.js";
+import { capitalizeFirstLetter, treatByUppercase } from "../../helpers/helpers.js";
+import { MethodValidator } from "../method/MethodValidator.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
 import type { ModuleImports } from "./ModuleImports.js";
 import type { Form } from "./ModuleConstructorBuilder.js";
@@ -24,37 +25,6 @@ export class ModuleMethodProcessor {
 
   constructor(params: { imports: ModuleImports }) {
     this.imports = params.imports;
-  }
-
-  private shouldSkipMethod(method: Method): boolean {
-    const { bodyType, responseType, attributeType } = method.request;
-
-    if (bodyType === "string") {
-      createDangerMessage(`Method ${method.name} was skipped because it has an invalid body.`);
-      return true;
-    }
-
-    const isNullResponse = !responseType || responseType === "null";
-    if ((attributeType === "entity" || attributeType === "list") && isNullResponse) {
-      createDangerMessage(`Method ${method.name} was skipped because it has a null response.`);
-      return true;
-    }
-
-    // Check that all endpoint path params are declared as parameters
-    const endpointParams = [...method.endpoint.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).filter(Boolean);
-    if (endpointParams.length > 0) {
-      const declaredPaths = new Set(method.paths.map((p) => p.name));
-      const undeclared = endpointParams.filter((p) => !declaredPaths.has(p));
-
-      if (undeclared.length > 0) {
-        createDangerMessage(
-          `Method ${method.name} was skipped because it has undeclared path params: ${undeclared.join(", ")}`,
-        );
-        return true;
-      }
-    }
-
-    return false;
   }
 
   process(params: { methods: Method[] }): ProcessedMethods {
@@ -83,7 +53,7 @@ export class ModuleMethodProcessor {
       paths.forEach((p) => pathMap.set(p.name, p));
       querys.forEach((q) => queryMap.set(q.name, q));
 
-      if (this.shouldSkipMethod(method)) continue;
+      if (MethodValidator.isSkippable(method)) continue;
 
       if (attributeType === "form" && bodyType) {
         const name = method.name;

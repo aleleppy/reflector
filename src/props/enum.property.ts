@@ -1,5 +1,5 @@
 import { splitByUppercase, treatByUppercase } from "../helpers/helpers.js";
-import { enumTypes } from "../main.js";
+import type { CodegenContext } from "../core/CodegenContext.js";
 
 export class EnumProp {
   name: string;
@@ -10,8 +10,15 @@ export class EnumProp {
   private readonly isRequired: boolean;
   private readonly example: string;
 
-  constructor(params: { name: string; enums: string[]; required: boolean; isParam: boolean | undefined; entityName: string }) {
-    const { name, required, isParam, enums, entityName } = params;
+  constructor(params: {
+    name: string;
+    enums: string[];
+    required: boolean;
+    isParam: boolean | undefined;
+    entityName: string;
+    context: CodegenContext;
+  }) {
+    const { name, required, isParam, enums, entityName, context } = params;
 
     this.name = name;
     this.isParam = !!isParam;
@@ -19,17 +26,17 @@ export class EnumProp {
 
     this.type = enums.map((e) => `'${e}'`).join(",");
 
-    const types = enumTypes.get(this.type);
+    const existing = context.enumTypes.get(this.type);
 
-    if (!types) {
+    if (!existing) {
       const teste = splitByUppercase(treatByUppercase(entityName)).map((x) => x.toUpperCase());
       const naaa = `ENUM_${teste.join("_")}_${this.name.toUpperCase()}`.split("_");
-      const aaa = [...new Set(naaa)].join("_");
-      enumTypes.set(this.type, aaa);
+      const typeName = [...new Set(naaa)].join("_");
+      context.enumTypes.set(this.type, typeName);
     }
 
     this.example = enums[0] as string;
-    this.enumName = enumTypes.get(this.type) ?? "";
+    this.enumName = context.enumTypes.get(this.type) ?? "";
   }
 
   classBuild() {
