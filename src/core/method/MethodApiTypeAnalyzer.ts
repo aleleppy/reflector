@@ -20,6 +20,10 @@ export class MethodApiTypeAnalyzer {
       return hasPage ? "list" : "entity";
     }
 
+    if (method === "delete" && operation.requestBody) {
+      return "form";
+    }
+
     return "other";
   }
 }

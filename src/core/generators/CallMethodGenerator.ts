@@ -77,7 +77,7 @@ export class CallMethodGenerator {
       return this.buildFormCall(method, responseTypeStr, bodyType, strategy);
     }
     if (apiType === "delete") {
-      return this.buildDeleteCall(responseTypeStr);
+      return this.buildDeleteCall(method, responseTypeStr, bodyType, strategy);
     }
     return { inside: "", outside: "" };
   }
@@ -144,13 +144,22 @@ export class CallMethodGenerator {
     return { inside, outside: outside.join("\n") };
   }
 
-  private buildDeleteCall(responseType: string): { inside: string; outside: string } {
+  private buildDeleteCall(
+    method: CallMethodInput,
+    responseType: string,
+    bodyType: string | undefined,
+    strategy: CallStrategy,
+  ): { inside: string; outside: string } {
+    const hasData = !!bodyType;
+    const outside = hasData ? `const data = ${strategy.formStateAccess(method)}.bundle()` : "";
+
     const inside = `
       const response = await api.delete<${responseType}, unknown>({
         endpoint,
+        ${hasData ? "data," : ""}
       })
     `;
-    return { inside, outside: "" };
+    return { inside, outside };
   }
 
   private buildMethodReturn(method: CallMethodInput, strategy: CallStrategy): string {
