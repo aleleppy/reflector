@@ -1,14 +1,9 @@
 import "dotenv/config";
-import axios from "axios";
-import * as path from "node:path";
-import * as fs from "node:fs";
-import { Reflector } from "./main.js";
-import { Source } from "./file.js";
-import { parseFieldConfigsFromConfig, parseTypeImportsFromTypesFile } from "./helpers/generate-doc.helper.js";
-import type { OpenAPIObject } from "./types/open-api-spec.interface.js";
-import type { FieldConfigs, TypeImports } from "./types/types.js";
-//
-/** ajuda a pegar a 1ª env definida dentre várias chaves possíveis */
+
+import { Reflector } from "./core/Reflector.js";
+import { OpenAPILoader } from "./loaders/OpenAPILoader.js";
+import { ConfigLoader } from "./loaders/ConfigLoader.js";
+
 function pickEnv(...keys: string[]): string | undefined {
   for (const k of keys) {
     const v = process.env[k];
@@ -17,9 +12,7 @@ function pickEnv(...keys: string[]): string | undefined {
   return undefined;
 }
 
-/** normaliza URL base com / no fim */
-function withTrailingSlash(u: string | undefined): string | undefined {
-  if (!u) return u;
+function withTrailingSlash(u: string): string {
   return u.endsWith("/") ? u : `${u}/`;
 }
 
@@ -30,11 +23,7 @@ function getParams(): { BACKEND_URL: string; ENVIRONMENT: string } {
   if (!BACKEND_URL_RAW) throw new Error("BACKEND_URL vazio");
 
   const ENVIRONMENT = ENVIRONMENT_RAW.toUpperCase();
-  const BACKEND_URL = withTrailingSlash(BACKEND_URL_RAW)!;
-
-  if (!BACKEND_URL) {
-    console.warn("[reflector] BACKEND_URL não definido (nem em params nem na .env: BACKEND_URL/PUBLIC_BACKEND).");
-  }
+  const BACKEND_URL = withTrailingSlash(BACKEND_URL_RAW);
 
   if (ENVIRONMENT === "PROD") console.warn("[reflector] Ambiente não-DEV: os schemas serão atualizados automaticamente.");
 
@@ -49,70 +38,18 @@ export async function reflector(manual = false) {
     return breakReflector();
   }
 
-  const DOC_URL = `${BACKEND_URL}openapi.json`;
-  let data: OpenAPIObject;
-  let fieldConfigs: FieldConfigs = new Map();
-  let typeImports: TypeImports = new Map();
-
-  try {
-    const documentation = await axios.get<OpenAPIObject>(DOC_URL, { timeout: 15000 });
-    data = documentation.data;
-    const backup = new Source({ path: "src/reflector/backup.json", data: JSON.stringify(data) });
-    await backup.save();
-  } catch (e) {
-    console.warn(`[reflector] Não foi possível obter a documentação em ${DOC_URL}. Carregando cópia local...`);
-    const backupPath = path.resolve(process.cwd(), "src/reflector/backup.json");
-    data = JSON.parse(fs.readFileSync(backupPath, "utf8")) as OpenAPIObject;
-  }
-
-  try {
-    const configPath = path.resolve(process.cwd(), "src/reflector.config.ts");
-    const configText = fs.readFileSync(configPath, "utf8");
-    const parsedConfigs = parseFieldConfigsFromConfig(configText);
-    parsedConfigs.forEach((rel) => {
-      rel.fields.forEach((field) => {
-        const config: { validator?: string; type?: string } = {};
-        if (rel.validator) config.validator = rel.validator;
-        if (rel.type) config.type = rel.type;
-        fieldConfigs.set(field, config);
-      });
-    });
-  } catch (e) {
-    console.warn("[reflector] Não consegui ler/parsear reflector.config.ts", e);
-  }
-
-  try {
-    const typesPath = path.resolve(process.cwd(), "src/reflector.types.ts");
-    const typesText = fs.readFileSync(typesPath, "utf8");
-    typeImports = parseTypeImportsFromTypesFile(typesText);
-  } catch {
-    // reflector.types.ts não encontrado — tipos customizados não terão imports
-  }
-
-  // Lê reflector.json do projeto consumidor (opcional)
-  let apiImport = "$lib/api";
-  let experimentalFeatures = false;
-  try {
-    const reflectorJsonPath = path.resolve(process.cwd(), "reflector.json");
-    const reflectorJson = JSON.parse(fs.readFileSync(reflectorJsonPath, "utf8"));
-    if (reflectorJson.api) {
-      apiImport = reflectorJson.api;
-    }
-    if (reflectorJson.experimentalFeatures === true) {
-      experimentalFeatures = true;
-    }
-  } catch {
-    // reflector.json não encontrado ou inválido — usa o padrão
-  }
+  const data = await OpenAPILoader.load(`${BACKEND_URL}openapi.json`);
+  const fieldConfigs = ConfigLoader.loadFieldConfigs();
+  const typeImports = ConfigLoader.loadTypeImports();
+  const { apiImport, experimentalFeatures, config } = ConfigLoader.loadReflectorJson();
 
   const { components, paths } = data;
-
   if (!components) {
     console.warn("[reflector] OpenAPI sem components; abortando.");
     return breakReflector();
   }
 
-  const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport, experimentalFeatures });
+  const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport, experimentalFeatures, config });
   await r.build();
   await r.localSave(data);
 
@@ -120,7 +57,5 @@ export async function reflector(manual = false) {
 }
 
 function breakReflector() {
-  return {
-    name: "vite-plugin-generate-doc",
-  };
+  return { name: "vite-plugin-generate-doc" };
 }
