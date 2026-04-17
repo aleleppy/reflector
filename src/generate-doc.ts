@@ -51,7 +51,6 @@ export async function reflector(manual = false) {
 
   const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport, experimentalFeatures, config });
   await r.build();
-  await r.localSave(data);
 
   return breakReflector();
 }

@@ -14,7 +14,7 @@ import { RuntimeFilesEmitter } from "./emit/RuntimeFilesEmitter.js";
 import { resolveReflectorConfig } from "./config/ReflectorConfig.js";
 import { generatedDir } from "../vars.global.js";
 
-import type { ComponentsObject, OpenAPIObject, PathsObject } from "../types/open-api-spec.interface.js";
+import type { ComponentsObject, PathsObject } from "../types/open-api-spec.interface.js";
 import type { FieldConfigs, TypeImports } from "../types/types.js";
 import type { ReflectorConfig } from "./config/ReflectorConfig.js";
 
@@ -29,7 +29,6 @@ export class Reflector {
   private readonly context = new CodegenContext();
 
   private readonly srcDir = path.resolve(process.cwd(), `${generatedDir}/controllers`);
-  private readonly localDoc = new Source({ path: path.resolve(process.cwd(), `${generatedDir}/backup.json`) });
 
   constructor(params: {
     components: ComponentsObject;
@@ -88,10 +87,5 @@ export class Reflector {
     ]);
 
     return {};
-  }
-
-  async localSave(data: OpenAPIObject) {
-    this.localDoc.data = JSON.stringify(data);
-    await this.localDoc.save();
   }
 }
