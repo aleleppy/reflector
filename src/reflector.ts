@@ -11,6 +11,10 @@ export class ReflectorFile {
     "type ValidatorResult = string | null",
     "type ValidatorFn<T> = (v: T) => ValidatorResult",
     "type BundleResult<T> = T extends { bundle: () => infer R } ? R : T;",
+    `export type ApiCallParams<TResponse, TPaths = void> =
+      TPaths extends void
+        ? { behavior?: Behavior<TResponse, ApiErrorResponse> }
+        : { behavior?: Behavior<TResponse, ApiErrorResponse>; paths?: TPaths }`,
     `type PartialBuildedInput<T> = {
         [K in Exclude<keyof T, 'bundle'>]?: BuildedInput<T[K]>;
       } & {

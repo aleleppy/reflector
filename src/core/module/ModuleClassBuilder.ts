@@ -9,8 +9,9 @@ export class ModuleClassBuilder {
     this.imports = params.imports;
   }
 
-  buildClassProps(params: { props: AttributeProp[]; name: ParamType }): string {
-    const { name, props } = params;
+  buildClassProps(params: { props: AttributeProp[]; name: ParamType; className?: string }): string {
+    const { name, props, className } = params;
+    const outputName = className ?? name;
 
     const bundle: string[] = [];
     const attributes: string[] = [];
@@ -28,7 +29,7 @@ export class ModuleClassBuilder {
       this.imports.addPageStateImport();
 
       return `
-        class ${name} {
+        class ${outputName} {
           ${attributes.join(";")}
         }
       `;
@@ -76,7 +77,7 @@ export class ModuleClassBuilder {
       `;
 
       return `
-        class ${name} {
+        class ${outputName} {
           ${attributes.join(";")}
 
           ${constructorBuild}
@@ -112,7 +113,7 @@ export class ModuleClassBuilder {
         : "";
 
     return `
-      class ${name} {
+      class ${outputName} {
         ${attributes.join(";")}
 
         ${bundleBuild}

@@ -6,6 +6,12 @@ export { ModuleClassBuilder } from "./module/ModuleClassBuilder.js";
 export { ModuleConstructorBuilder, type Form } from "./module/ModuleConstructorBuilder.js";
 export { ModuleFileBuilder, type FileBuildParams } from "./module/ModuleFileBuilder.js";
 
+// Api-related exports
+export { ApiFileBuilder } from "./api/ApiFileBuilder.js";
+export { ApiClassBuilder, type ApiEndpointBlock } from "./api/ApiClassBuilder.js";
+export { ApiMethodGenerator } from "./api/ApiMethodGenerator.js";
+export { ApiParamProcessor, type ApiProcessedParams } from "./api/ApiParamProcessor.js";
+
 // Method-related exports
 export { Method } from "./method/Method.js";
 export { MethodBuilder } from "./method/MethodBuilder.js";

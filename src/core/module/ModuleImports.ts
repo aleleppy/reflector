@@ -65,17 +65,23 @@ export class ModuleImports {
     return Array.from(this.mockedImports);
   }
 
+  private readonly typeOnlyImports = new Set(["ApiCallParams"]);
+
   buildReflectorImportsLine(): string {
     const imports = this.getReflectorImportsArray();
-    const regularImports = imports.filter(i => i !== "setQueryGroup");
+    const regularImports = imports.filter(i => i !== "setQueryGroup" && !this.typeOnlyImports.has(i));
+    const typeImports = imports.filter(i => this.typeOnlyImports.has(i));
     const hasSetQueryGroup = imports.includes("setQueryGroup");
-    
+
     let result = `import { ${regularImports.join(", ")}, type ApiErrorResponse`;
+    for (const t of typeImports) {
+      result += `, type ${t}`;
+    }
     if (hasSetQueryGroup) {
       result += `, setQueryGroup`;
     }
     result += ` } from "$reflector/reflector.svelte";`;
-    
+
     return result;
   }
 

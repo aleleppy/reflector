@@ -91,11 +91,15 @@ export async function reflector(manual = false) {
 
   // Lê reflector.json do projeto consumidor (opcional)
   let apiImport = "$lib/api";
+  let experimentalFeatures = false;
   try {
     const reflectorJsonPath = path.resolve(process.cwd(), "reflector.json");
     const reflectorJson = JSON.parse(fs.readFileSync(reflectorJsonPath, "utf8"));
     if (reflectorJson.api) {
       apiImport = reflectorJson.api;
+    }
+    if (reflectorJson.experimentalFeatures === true) {
+      experimentalFeatures = true;
     }
   } catch {
     // reflector.json não encontrado ou inválido — usa o padrão
@@ -108,7 +112,7 @@ export async function reflector(manual = false) {
     return breakReflector();
   }
 
-  const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport });
+  const r = new Reflector({ components, paths, fieldConfigs, typeImports, apiImport, experimentalFeatures });
   await r.build();
   await r.localSave(data);
 

@@ -12,8 +12,11 @@ import {
   ModuleClassBuilder,
   ModuleConstructorBuilder,
   ModuleFileBuilder,
+  ApiFileBuilder,
+  ApiClassBuilder,
   type ProcessedMethods,
   type ProcessedParams,
+  type ApiEndpointBlock,
 } from "./core/index.js";
 
 export class Module {
@@ -21,6 +24,7 @@ export class Module {
   readonly path: string;
   readonly moduleName: string;
   readonly src: Source;
+  readonly apiSrc: Source | null;
   readonly methods: Method[];
 
   /** Schema class names directly used by this module (for per-module schema generation) */
@@ -33,8 +37,8 @@ export class Module {
   private readonly constructorBuilder: ModuleConstructorBuilder;
   private readonly fileBuilder: ModuleFileBuilder;
 
-  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; apiImport: string }) {
-    const { name, operations, moduleName, path: modulePath, apiImport } = params;
+  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; apiImport: string; experimentalFeatures?: boolean }) {
+    const { name, operations, moduleName, path: modulePath, apiImport, experimentalFeatures } = params;
 
     this.moduleName = moduleName;
     this.name = capitalizeFirstLetter(name);
@@ -82,6 +86,9 @@ export class Module {
         moduleName: this.name,
       }),
     });
+
+    // Cria o arquivo Api (apenas com experimentalFeatures)
+    this.apiSrc = experimentalFeatures ? this.buildApiFile(apiImport) : null;
   }
 
   private buildModuleData(processedMethods: ProcessedMethods, processedParams: ProcessedParams) {
@@ -129,6 +136,42 @@ export class Module {
       classImports,
       buildedMethods,
     };
+  }
+
+  private buildApiFile(apiImport: string): Source {
+    const apiImports = new ModuleImports(apiImport);
+    apiImports.addReflectorImport("ApiCallParams");
+    const apiClassBuilderDep = new ModuleClassBuilder({ imports: apiImports });
+    const apiClassBuilder = new ApiClassBuilder({ imports: apiImports, classBuilder: apiClassBuilderDep });
+    const apiFileBuilder = new ApiFileBuilder({ imports: apiImports });
+
+    const endpointBlocks: ApiEndpointBlock[] = [];
+    const apiSchemaEntries = new Set<string>();
+
+    for (const method of this.methods) {
+      const block = apiClassBuilder.build({ method });
+      if (!block) continue;
+
+      endpointBlocks.push(block);
+      block.schemaEntries.forEach((e) => apiSchemaEntries.add(e));
+    }
+
+    const cleanEntries = Array.from(apiSchemaEntries).filter((x) => x !== "type any");
+    const kebabName = toKebabCase(this.name);
+    const classImports = cleanEntries.length > 0
+      ? `import { ${cleanEntries.join(", ")} } from './${kebabName}.schema.svelte';`
+      : "";
+
+    return new Source({
+      path: this.getApiPath(),
+      data: apiFileBuilder.build({ endpointBlocks, classImports }),
+    });
+  }
+
+  private getApiPath(): string {
+    const kebabName = toKebabCase(this.name);
+    const inPath = path.join(generatedDir, "controllers", kebabName);
+    return path.join(inPath, `${kebabName}.api.svelte.ts`);
   }
 
   private getPath(): string {

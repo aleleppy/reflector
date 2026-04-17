@@ -18,6 +18,14 @@ export class Method {
     return this.method.analyzers.request;
   }
 
+  get analyzers() {
+    return this.method.analyzers;
+  }
+
+  get responseTypeInterface() {
+    return this.method.responseTypeInterface;
+  }
+
   get headers(): PrimitiveProp[] {
     return this.method.analyzers.props.headers;
   }

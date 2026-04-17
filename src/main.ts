@@ -3,12 +3,22 @@ import * as fs from "node:fs";
 import { Source } from "./file.js";
 import { capitalizeFirstLetter, getEndpoint, isReferenceObject, splitByUppercase } from "./helpers/helpers.js";
 import { Schema } from "./schema.js";
-import type { ComponentsObject, PathsObject, OpenAPIObject, OperationObject, SchemaObject, ReferenceObject, ResponseObject, ResponsesObject } from "./types/open-api-spec.interface.js";
+import type {
+  ComponentsObject,
+  PathsObject,
+  OpenAPIObject,
+  OperationObject,
+  SchemaObject,
+  ReferenceObject,
+  ResponseObject,
+  ResponsesObject,
+} from "./types/open-api-spec.interface.js";
 import type { FieldConfigs, TypeImports, Info, ReflectorOperation } from "./types/types.js";
 import { Module } from "./module.js";
 
 import { generatedDir } from "./vars.global.js";
 import { ReflectorFile } from "./reflector.js";
+import * as process from "node:process";
 
 export const enumTypes = new Map<string, string>();
 export const mockedParams = new Set<string>();
@@ -33,6 +43,7 @@ export class Reflector {
   modules: Module[];
 
   readonly apiImport: string;
+  readonly experimentalFeatures: boolean;
 
   constructor(params: {
     components: ComponentsObject;
@@ -40,9 +51,11 @@ export class Reflector {
     fieldConfigs: FieldConfigs;
     typeImports: TypeImports;
     apiImport: string;
+    experimentalFeatures?: boolean;
   }) {
-    const { components, paths, fieldConfigs, typeImports, apiImport } = params;
+    const { components, paths, fieldConfigs, typeImports, apiImport, experimentalFeatures } = params;
     this.apiImport = apiImport;
+    this.experimentalFeatures = experimentalFeatures ?? false;
     this.typeImports = typeImports;
 
     // Clear global state between runs
@@ -182,9 +195,7 @@ export class Reflector {
    * it lives at `schema.properties.data` or inside an `allOf` entry. Returns
    * a handle that lets the caller swap the inline schema for a `$ref`.
    */
-  private findInlineDataHolder(
-    schema: SchemaObject,
-  ): { data: SchemaObject; replace: (ref: ReferenceObject) => void } | null {
+  private findInlineDataHolder(schema: SchemaObject): { data: SchemaObject; replace: (ref: ReferenceObject) => void } | null {
     const holders: { properties?: Record<string, SchemaObject | ReferenceObject> }[] = [];
     if (schema.properties) holders.push(schema as { properties: Record<string, SchemaObject | ReferenceObject> });
     if (schema.allOf) {
@@ -295,6 +306,7 @@ export class Reflector {
         name,
         ...info,
         apiImport: this.apiImport,
+        experimentalFeatures: this.experimentalFeatures,
       });
     });
 
@@ -359,6 +371,7 @@ export class Reflector {
       this.enumFile.save(),
       this.mockedParamsFile.save(),
       ...this.modules.filter((m) => m.methods.length > 0).map((m) => m.src.save()),
+      ...this.modules.filter((m) => m.methods.length > 0 && m.apiSrc).map((m) => m.apiSrc!.save()),
     ]);
 
     return {};
