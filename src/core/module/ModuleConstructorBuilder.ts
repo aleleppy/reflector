@@ -1,3 +1,4 @@
+import { dedent } from "../../helpers/codegen.js";
 import type { ReflectorConfig } from "../config/ReflectorConfig.js";
 
 export interface Form {
@@ -15,7 +16,9 @@ export class ModuleConstructorBuilder {
   build(form: Form[]): string {
     if (form.length === 0) return "";
 
-    return `
+    const formEntries = form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(", ");
+
+    return dedent`
       constructor(params?: { empty: boolean }) {
         const isEmpty = params?.empty ?? ${this.config.environmentFlag} !== 'DEV';
         this.forms = this.buildForms(isEmpty);
@@ -24,9 +27,7 @@ export class ModuleConstructorBuilder {
       private buildForms(isEmpty: boolean) {
         if(!isEmpty) return this.forms
 
-        return {
-          ${form.map((f) => `${f.name}: new ${f.type}({ empty: true })`).join(",\n          ")}
-        }
+        return { ${formEntries} }
       }
     `;
   }

@@ -4,8 +4,13 @@ import * as process from "node:process";
 import { Source } from "../../file.js";
 import { loadReflectorTemplate } from "../../loadTemplate.js";
 import { generatedDir } from "../../vars.global.js";
+import { dedent } from "../../helpers/codegen.js";
 
 import type { CodegenContext } from "../CodegenContext.js";
+
+function generated(relPath: string): string {
+  return path.resolve(process.cwd(), `${generatedDir}/${relPath}`);
+}
 
 /**
  * Emits the shared runtime-support files that sit alongside the generated
@@ -17,47 +22,44 @@ export class RuntimeFilesEmitter {
     const { propertiesNames, context } = params;
 
     const typesSrc = new Source({
-      path: path.resolve(process.cwd(), `${generatedDir}/reflector.svelte.ts`),
+      path: generated("reflector.svelte.ts"),
       data: loadReflectorTemplate(),
     });
 
+    const fieldLiterals = Array.from(propertiesNames).map((p) => `'${p}'`);
     const fieldsFile = new Source({
-      path: path.resolve(process.cwd(), `${generatedDir}/fields.ts`),
-      data: `
-      export const FIELD_NAMES = [
-        ${Array.from(propertiesNames).map((p) => `'${p}'`)}
-      ] as const;
-      export type FieldName = (typeof FIELD_NAMES)[number]
-    `,
+      path: generated("fields.ts"),
+      data: dedent`
+        export const FIELD_NAMES = [
+          ${fieldLiterals}
+        ] as const;
+        export type FieldName = (typeof FIELD_NAMES)[number]
+      `,
     });
 
     const enumss = Array.from(context.enumTypes)
-      .map(([types, key]) => {
-        return `export const ${key} = [ ${types} ] as const; export type ${key} = typeof ${key}[number] `;
-      })
+      .map(([types, key]) => `export const ${key} = [ ${types} ] as const; export type ${key} = typeof ${key}[number] `)
       .join(";");
 
     const enumFile = new Source({
-      path: path.resolve(process.cwd(), `${generatedDir}/enums.ts`),
+      path: generated("enums.ts"),
       data: enumss,
     });
 
-    const mockedParamss = Array.from(context.mockedParams)
-      .map((paramName) => {
-        return `${paramName} = $state<string | null>(null)`;
-      })
+    const mockedFields = Array.from(context.mockedParams)
+      .map((paramName) => `${paramName} = $state<string | null>(null)`)
       .join(";");
 
     const mockedFile = new Source({
-      path: path.resolve(process.cwd(), `${generatedDir}/mocked-params.svelte.ts`),
-      data: `
-      class MockedParams {
-        ${mockedParamss}
-      }
+      path: generated("mocked-params.svelte.ts"),
+      data: dedent`
+        class MockedParams {
+          ${mockedFields}
+        }
 
-      const mockedParams = new MockedParams()
-      export default mockedParams
-    `,
+        const mockedParams = new MockedParams()
+        export default mockedParams
+      `,
     });
 
     return [typesSrc, fieldsFile, enumFile, mockedFile];
