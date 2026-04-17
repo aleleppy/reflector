@@ -1,10 +1,11 @@
 import * as path from "node:path";
-import * as fs from "node:fs";
-import { Source } from "./file.js";
-import { capitalizeFirstLetter, toKebabCase } from "./helpers/helpers.js";
-import { Method } from "./method.js";
-import type { ReflectorOperation } from "./types/types.js";
-import { generatedDir } from "./vars.global.js";
+import { Source } from "../../file.js";
+import { capitalizeFirstLetter, toKebabCase } from "../../helpers/helpers.js";
+import { Method } from "../method/Method.js";
+import type { ReflectorOperation } from "../../types/types.js";
+import type { CodegenContext } from "../CodegenContext.js";
+import type { ReflectorConfig } from "../config/ReflectorConfig.js";
+import { generatedDir } from "../../vars.global.js";
 import {
   ModuleImports,
   ModuleMethodProcessor,
@@ -17,7 +18,7 @@ import {
   type ProcessedMethods,
   type ProcessedParams,
   type ApiEndpointBlock,
-} from "./core/index.js";
+} from "../index.js";
 
 export class Module {
   readonly name: string;
@@ -36,17 +37,22 @@ export class Module {
   private readonly paramProcessor: ModuleParamProcessor;
   private readonly constructorBuilder: ModuleConstructorBuilder;
   private readonly fileBuilder: ModuleFileBuilder;
+  private readonly context: CodegenContext;
 
-  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; apiImport: string; experimentalFeatures?: boolean }) {
-    const { name, operations, moduleName, path: modulePath, apiImport, experimentalFeatures } = params;
+  private readonly config: ReflectorConfig;
+
+  constructor(params: { name: string; moduleName: string; operations: ReflectorOperation[]; path: string; apiImport: string; experimentalFeatures?: boolean; context: CodegenContext; config: ReflectorConfig }) {
+    const { name, operations, moduleName, path: modulePath, apiImport, experimentalFeatures, context, config } = params;
 
     this.moduleName = moduleName;
     this.name = capitalizeFirstLetter(name);
     this.path = modulePath;
+    this.context = context;
+    this.config = config;
 
     // Inicializa os gerenciadores
-    this.imports = new ModuleImports(apiImport);
-    this.classBuilder = new ModuleClassBuilder({ imports: this.imports });
+    this.imports = new ModuleImports(apiImport, config);
+    this.classBuilder = new ModuleClassBuilder({ imports: this.imports, context });
     this.paramProcessor = new ModuleParamProcessor({
       imports: this.imports,
       classBuilder: this.classBuilder,
@@ -54,11 +60,11 @@ export class Module {
     this.methodProcessor = new ModuleMethodProcessor({
       imports: this.imports,
     });
-    this.constructorBuilder = new ModuleConstructorBuilder();
+    this.constructorBuilder = new ModuleConstructorBuilder(config);
     this.fileBuilder = new ModuleFileBuilder({ imports: this.imports });
 
     // Processa os métodos
-    this.methods = operations.map((operation) => new Method({ operation, moduleName: this.name }));
+    this.methods = operations.map((operation) => Method.fromOperation(operation, this.name, context));
     const processedMethods = this.methodProcessor.process({ methods: this.methods });
 
     // Processa os parâmetros
@@ -79,7 +85,7 @@ export class Module {
 
     // Cria o arquivo fonte
     this.src = new Source({
-      path: this.getPath(),
+      path: this.getOutputPath("module"),
       data: this.fileBuilder.build({
         ...allBuilded,
         moduleConstructor,
@@ -139,9 +145,9 @@ export class Module {
   }
 
   private buildApiFile(apiImport: string): Source {
-    const apiImports = new ModuleImports(apiImport);
+    const apiImports = new ModuleImports(apiImport, this.config);
     apiImports.addReflectorImport("ApiCallParams");
-    const apiClassBuilderDep = new ModuleClassBuilder({ imports: apiImports });
+    const apiClassBuilderDep = new ModuleClassBuilder({ imports: apiImports, context: this.context });
     const apiClassBuilder = new ApiClassBuilder({ imports: apiImports, classBuilder: apiClassBuilderDep });
     const apiFileBuilder = new ApiFileBuilder({ imports: apiImports });
 
@@ -163,22 +169,13 @@ export class Module {
       : "";
 
     return new Source({
-      path: this.getApiPath(),
+      path: this.getOutputPath("api"),
       data: apiFileBuilder.build({ endpointBlocks, classImports }),
     });
   }
 
-  private getApiPath(): string {
+  private getOutputPath(suffix: "module" | "api"): string {
     const kebabName = toKebabCase(this.name);
-    const inPath = path.join(generatedDir, "controllers", kebabName);
-    return path.join(inPath, `${kebabName}.api.svelte.ts`);
-  }
-
-  private getPath(): string {
-    const kebabName = toKebabCase(this.name);
-    const inPath = path.join(generatedDir, "controllers", kebabName);
-    const outPath = path.join(inPath, `${kebabName}.module.svelte.ts`);
-    fs.mkdirSync(inPath, { recursive: true });
-    return outPath;
+    return path.join(generatedDir, "controllers", kebabName, `${kebabName}.${suffix}.svelte.ts`);
   }
 }
