@@ -27,7 +27,10 @@ export interface MethodAnalyzers {
 }
 
 export class Method {
-  readonly name: string;
+  name: string;
+  /** Disambiguation suffix appended to the base name when two methods in
+   *  the same module collide (e.g. two `listAll`). Empty when unique. */
+  nameSuffix: string = "";
   readonly endpoint: string;
   readonly apiType: ApiType;
   readonly attributeType: ReflectorRequestType;

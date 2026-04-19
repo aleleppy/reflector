@@ -2,7 +2,9 @@ import { treatByUppercase } from "../../helpers/helpers.js";
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ModuleCallStrategy implements CallStrategy {
-  readonly listStateAccess = "this.list";
+  listStateAccess(method: CallMethodInput): string {
+    return `this.list${method.nameSuffix}`;
+  }
 
   buildSignature(method: CallMethodInput): string {
     const paramsType = this.buildParamsType(method);

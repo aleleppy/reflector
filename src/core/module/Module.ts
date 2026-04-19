@@ -2,6 +2,7 @@ import * as path from "node:path";
 import { Source } from "../../file.js";
 import { capitalizeFirstLetter, toKebabCase } from "../../helpers/helpers.js";
 import { Method } from "../method/Method.js";
+import { MethodNameDisambiguator } from "../method/MethodNameDisambiguator.js";
 import type { ReflectorOperation } from "../../types/types.js";
 import type { CodegenContext } from "../CodegenContext.js";
 import type { ReflectorConfig } from "../config/ReflectorConfig.js";
@@ -65,6 +66,7 @@ export class Module {
 
     // Processa os métodos
     this.methods = operations.map((operation) => Method.fromOperation(operation, this.name, context));
+    MethodNameDisambiguator.apply(this.methods);
     const processedMethods = this.methodProcessor.process({ methods: this.methods });
 
     // Processa os parâmetros

@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reflector colliding-routes fixture", "version": "1.0.0" },
+  "paths": {
+    "/tenant/package": {
+      "get": {
+        "operationId": "PackageTenantController_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Package" } } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/package/{packageId}": {
+      "get": {
+        "operationId": "PackageTenantController_findOne",
+        "parameters": [
+          { "name": "packageId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Package" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/package/{packageId}/controller": {
+      "get": {
+        "operationId": "PackageTenantController_list",
+        "parameters": [
+          { "name": "packageId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ControllerItem" } } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/package/{packageId}/controller/{controllerId}": {
+      "get": {
+        "operationId": "PackageTenantController_findOne",
+        "parameters": [
+          { "name": "packageId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "controllerId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ControllerItem" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "PackageTenantController_update",
+        "parameters": [
+          { "name": "packageId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "controllerId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": { "name": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/ControllerItem" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      },
+      "Package": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "ControllerItem": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      }
+    }
+  }
+}

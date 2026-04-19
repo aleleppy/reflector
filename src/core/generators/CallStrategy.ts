@@ -3,6 +3,8 @@ import type { MethodAnalyzers } from "../method/Method.js";
 /** Structural subset of `Method` that the generator and strategies actually read. */
 export interface CallMethodInput {
   name: string;
+  /** Disambiguation suffix appended to the base name; empty when unique. */
+  nameSuffix: string;
   endpoint: string;
   description: string | undefined;
   responseTypeInterface: string;
@@ -16,8 +18,10 @@ export interface CallMethodInput {
 export interface CallStrategy {
   /** Full method signature incl. params — e.g. `async call(params?: ...)` or `protected async _foo(params?: ...)` */
   buildSignature(method: CallMethodInput): string;
-  /** State field holding list results — e.g. `this.list` (module) or `this.data` (api) */
-  readonly listStateAccess: string;
+  /** State field holding list results — e.g. `this.list` / `this.listControllers` (module) or `this.data` (api).
+   *  Takes `method` so the module strategy can suffix the field when two list
+   *  operations collide in the same controller. */
+  listStateAccess(method: CallMethodInput): string;
   /** State field receiving the fetched entity */
   entityStateAccess(method: CallMethodInput): string;
   /** Form instance accessed to bundle body data */

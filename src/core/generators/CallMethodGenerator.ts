@@ -89,7 +89,7 @@ export class CallMethodGenerator {
         endpoint,
         queryData: { ${querys} }
       })
-      ${strategy.listStateAccess} = ${method.analyzers.request.responseType}.from(response.data);
+      ${strategy.listStateAccess(method)} = ${method.analyzers.request.responseType}.from(response.data);
       this.totalPages = response.totalPages;
     `;
     return { inside, outside: "" };
@@ -165,7 +165,7 @@ export class CallMethodGenerator {
   private buildMethodReturn(method: CallMethodInput, strategy: CallStrategy): string {
     const { attributeType, responseType, hasEnumResponse, isPrimitiveResponse } = method.analyzers.request;
 
-    if (attributeType === "list") return strategy.listStateAccess;
+    if (attributeType === "list") return strategy.listStateAccess(method);
     if (!responseType) return "null";
     if (hasEnumResponse) return "response.data";
     if (isPrimitiveResponse) return "response";

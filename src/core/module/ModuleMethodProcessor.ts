@@ -72,12 +72,15 @@ export class ModuleMethodProcessor {
         methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
         methodsClear.add(`protected clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
+        const listField = `list${method.nameSuffix}`;
+        const bundledField = `bundled${capitalizeFirstLetter(listField)}`;
+        const clearMethod = `clear${capitalizeFirstLetter(listField)}`;
         methodsAttributes.add("totalPages = $state<number>(1)");
-        methodsAttributes.add(`list = $state<${responseType}['data']>([])`);
+        methodsAttributes.add(`${listField} = $state<${responseType}['data']>([])`);
         this.imports.addReflectorImport("genericArrayBundler");
-        methodsAttributes.add(`bundledList = $derived(genericArrayBundler(this.list))`);
-        methodsInit.add("this.clearList()");
-        methodsClear.add(`protected clearList() { this.list = [] }`);
+        methodsAttributes.add(`${bundledField} = $derived(genericArrayBundler(this.${listField}))`);
+        methodsInit.add(`this.${clearMethod}()`);
+        methodsClear.add(`protected ${clearMethod}() { this.${listField} = [] }`);
       }
 
       if (bodyType) {

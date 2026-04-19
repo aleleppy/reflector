@@ -1,7 +1,9 @@
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ApiCallStrategy implements CallStrategy {
-  readonly listStateAccess = "this.data";
+  listStateAccess(_method: CallMethodInput): string {
+    return "this.data";
+  }
 
   buildSignature(method: CallMethodInput): string {
     const paramsType = this.buildParamsType(method);

@@ -8,39 +8,43 @@ import { Reflector } from "../src/core/Reflector.js";
 import type { OpenAPIObject } from "../src/types/open-api-spec.interface.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE_DIR = path.join(here, "fixtures/minimal");
-const SNAPSHOT_DIR = path.join(here, "snapshots/minimal");
 
 interface Output {
   rel: string;
   content: string;
 }
 
+async function runFixture(name: string): Promise<Output[]> {
+  const fixtureDir = path.join(here, "fixtures", name);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `reflector-${name}-`));
+  const originalCwd = process.cwd();
+  process.chdir(tempDir);
+
+  try {
+    const doc = JSON.parse(fs.readFileSync(path.join(fixtureDir, "openapi.json"), "utf8")) as OpenAPIObject;
+
+    const r = new Reflector({
+      components: doc.components!,
+      paths: doc.paths,
+      fieldConfigs: new Map(),
+      typeImports: new Map(),
+      apiImport: "$lib/api",
+    });
+    await r.build();
+
+    const generatedRoot = path.join(tempDir, "src/reflector");
+    return collect(generatedRoot, generatedRoot);
+  } finally {
+    process.chdir(originalCwd);
+  }
+}
+
 describe("codegen — minimal fixture", () => {
   let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/minimal");
 
   beforeAll(async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "reflector-"));
-    const originalCwd = process.cwd();
-    process.chdir(tempDir);
-
-    try {
-      const doc = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, "openapi.json"), "utf8")) as OpenAPIObject;
-
-      const r = new Reflector({
-        components: doc.components!,
-        paths: doc.paths,
-        fieldConfigs: new Map(),
-        typeImports: new Map(),
-        apiImport: "$lib/api",
-      });
-      await r.build();
-
-      const generatedRoot = path.join(tempDir, "src/reflector");
-      outputs = collect(generatedRoot, generatedRoot);
-    } finally {
-      process.chdir(originalCwd);
-    }
+    outputs = await runFixture("minimal");
   });
 
   it("generates the expected set of files", () => {
@@ -49,8 +53,49 @@ describe("codegen — minimal fixture", () => {
 
   it("matches content snapshots for every generated file", async () => {
     for (const { rel, content } of outputs) {
-      await expect(content).toMatchFileSnapshot(path.join(SNAPSHOT_DIR, rel));
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
     }
+  });
+});
+
+describe("codegen — colliding-routes fixture", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/colliding-routes");
+
+  beforeAll(async () => {
+    outputs = await runFixture("colliding-routes");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("produces unique identifiers for colliding HTTP verbs", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("package-tenant.module.svelte.ts"));
+    expect(moduleFile).toBeDefined();
+    const content = moduleFile!.content;
+
+    // Method names for the two `list` operations must be disambiguated
+    expect(content).toMatch(/_listAllPackages\s*\(/);
+    expect(content).toMatch(/_listAllControllers\s*\(/);
+
+    // State fields for the two lists must be unique
+    expect(content).toMatch(/\blistPackages\s*=\s*\$state/);
+    expect(content).toMatch(/\blistControllers\s*=\s*\$state/);
+
+    // _findOne must also be disambiguated between package and controller
+    expect(content).toMatch(/_findOnePackage\s*\(/);
+    expect(content).toMatch(/_findOneController\s*\(/);
+
+    // And there should be no remaining plain `_listAll(` / `_findOne(` definitions
+    expect(content).not.toMatch(/_listAll\s*\(/);
+    expect(content).not.toMatch(/_findOne\s*\(/);
   });
 });
 

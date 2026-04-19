@@ -1,5 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`codegen — colliding-routes fixture > generates the expected set of files 1`] = `
+[
+  "controllers/package-tenant/package-tenant.module.svelte.ts",
+  "controllers/package-tenant/package-tenant.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — minimal fixture > generates the expected set of files 1`] = `
 [
   "controllers/user/user.module.svelte.ts",
