@@ -21,3 +21,14 @@ exports[`codegen — minimal fixture > generates the expected set of files 1`] =
   "reflector.svelte.ts",
 ]
 `;
+
+exports[`codegen — sibling-lists fixture (two list-typed methods, different names) > generates the expected set of files 1`] = `
+[
+  "controllers/ai-chat-tenant/ai-chat-tenant.module.svelte.ts",
+  "controllers/ai-chat-tenant/ai-chat-tenant.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;

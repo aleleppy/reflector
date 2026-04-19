@@ -97,6 +97,62 @@ describe("codegen — colliding-routes fixture", () => {
     expect(content).not.toMatch(/_listAll\s*\(/);
     expect(content).not.toMatch(/_findOne\s*\(/);
   });
+
+  it("declares exactly one loading and paths field in the abstract class", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("package-tenant.module.svelte.ts"));
+    expect(moduleFile).toBeDefined();
+    const content = moduleFile!.content;
+
+    const classBody = content.split("export abstract class")[1] ?? "";
+    const loadingDecls = classBody.match(/\bloading\s*=\s*\$state/g) ?? [];
+    expect(loadingDecls.length).toBe(1);
+  });
+});
+
+describe("codegen — sibling-lists fixture (two list-typed methods, different names)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/sibling-lists");
+
+  beforeAll(async () => {
+    outputs = await runFixture("sibling-lists");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("disambiguates list state fields even when method names differ", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("ai-chat-tenant.module.svelte.ts"));
+    expect(moduleFile).toBeDefined();
+    const content = moduleFile!.content;
+    const classBody = content.split("export abstract class")[1] ?? "";
+
+    // Two distinct list state fields, both within the class body.
+    const listDecls = [...classBody.matchAll(/\blist\w*\s*=\s*\$state</g)].map((m) => m[0]);
+    expect(listDecls.length).toBe(2);
+    // No two list declarations should have the same identifier.
+    const listIdents = listDecls.map((d) => d.match(/\blist\w*/)![0]);
+    expect(new Set(listIdents).size).toBe(2);
+
+    // The method names are already unique, so they MUST NOT be renamed.
+    expect(content).toMatch(/_listAll\s*\(/);
+    expect(content).toMatch(/_getMessages\s*\(/);
+
+    // Two bundled* and two clear* methods must also be unique.
+    const bundledDecls = [...classBody.matchAll(/\bbundled\w+\s*=\s*\$derived/g)].map((m) => m[0]);
+    expect(bundledDecls.length).toBe(2);
+    expect(new Set(bundledDecls.map((d) => d.match(/\bbundled\w+/)![0])).size).toBe(2);
+
+    const clearDecls = [...classBody.matchAll(/protected\s+clearList\w*\s*\(/g)].map((m) => m[0]);
+    expect(clearDecls.length).toBe(2);
+    expect(new Set(clearDecls.map((d) => d.match(/clearList\w*/)![0])).size).toBe(2);
+  });
 });
 
 function collect(root: string, dir: string, out: Output[] = []): Output[] {

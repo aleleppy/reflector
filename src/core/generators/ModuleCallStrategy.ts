@@ -3,7 +3,7 @@ import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ModuleCallStrategy implements CallStrategy {
   listStateAccess(method: CallMethodInput): string {
-    return `this.list${method.nameSuffix}`;
+    return `this.list${method.stateSuffix}`;
   }
 
   buildSignature(method: CallMethodInput): string {

@@ -5,6 +5,9 @@ export interface CallMethodInput {
   name: string;
   /** Disambiguation suffix appended to the base name; empty when unique. */
   nameSuffix: string;
+  /** Disambiguation suffix for the shared list state field; empty when
+   *  the module has at most one list-typed method. */
+  stateSuffix: string;
   endpoint: string;
   description: string | undefined;
   responseTypeInterface: string;

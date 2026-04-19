@@ -72,7 +72,7 @@ export class ModuleMethodProcessor {
         methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
         methodsClear.add(`protected clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
-        const listField = `list${method.nameSuffix}`;
+        const listField = `list${method.stateSuffix}`;
         const bundledField = `bundled${capitalizeFirstLetter(listField)}`;
         const clearMethod = `clear${capitalizeFirstLetter(listField)}`;
         methodsAttributes.add("totalPages = $state<number>(1)");

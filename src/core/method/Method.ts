@@ -31,6 +31,12 @@ export class Method {
   /** Disambiguation suffix appended to the base name when two methods in
    *  the same module collide (e.g. two `listAll`). Empty when unique. */
   nameSuffix: string = "";
+  /** Disambiguation suffix for the shared list state field (`list`,
+   *  `bundledList`, `clearList`). Set when the module has more than one
+   *  `list`-typed method, even if the method names themselves are unique
+   *  (e.g. `listAll` + `getMessages` both producing `list`). Empty when
+   *  the module has at most one list method. */
+  stateSuffix: string = "";
   readonly endpoint: string;
   readonly apiType: ApiType;
   readonly attributeType: ReflectorRequestType;
