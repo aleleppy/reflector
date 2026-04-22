@@ -1,4 +1,4 @@
-import { build, BuildedInput } from "$reflector/reflector.svelte";
+import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -23,7 +23,7 @@ export class AiChat {
   }
 
   bundle() {
-    return { id: this.id?.value };
+    return bundleStrict({ id: this.id?.value });
   }
 }
 
@@ -47,6 +47,6 @@ export class AiChatTenantController_createBody {
   }
 
   bundle() {
-    return { packageId: this.packageId?.value };
+    return bundleStrict({ packageId: this.packageId?.value });
   }
 }

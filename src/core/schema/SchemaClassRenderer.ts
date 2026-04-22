@@ -67,7 +67,7 @@ export class SchemaClassRenderer {
       ${staticMethod}
 
       bundle(){
-        return { ${bundleParams.join(",")} }
+        return bundleStrict({ ${bundleParams.join(",")} })
       }
     };`;
 

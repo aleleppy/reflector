@@ -1,4 +1,4 @@
-import { build, BuildedInput } from "$reflector/reflector.svelte";
+import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import type { ENUM_USER_ENTITY_ROLES } from "$reflector/enums";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -70,7 +70,7 @@ export class User {
   }
 
   bundle() {
-    return {
+    return bundleStrict({
       id: this.id?.value,
       name: this.name?.value,
       email: this.email?.value,
@@ -78,7 +78,7 @@ export class User {
       roles: this.roles,
       status: this.status?.bundle(),
       address: this.address?.bundle() ?? null,
-    };
+    });
   }
 }
 
@@ -110,7 +110,7 @@ export class Address {
   }
 
   bundle() {
-    return { street: this.street?.value, city: this.city?.value };
+    return bundleStrict({ street: this.street?.value, city: this.city?.value });
   }
 }
 
@@ -146,10 +146,10 @@ export class UserController_createBody {
   }
 
   bundle() {
-    return {
+    return bundleStrict({
       name: this.name?.value,
       email: this.email?.value,
       role: this.role?.bundle(),
-    };
+    });
   }
 }

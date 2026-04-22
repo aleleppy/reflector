@@ -1,4 +1,4 @@
-import { build, BuildedInput } from "$reflector/reflector.svelte";
+import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -23,7 +23,7 @@ export class PackageTenantController_updateBody {
   }
 
   bundle() {
-    return { name: this.name?.value };
+    return bundleStrict({ name: this.name?.value });
   }
 }
 
@@ -56,7 +56,7 @@ export class ControllerItem {
   }
 
   bundle() {
-    return { id: this.id?.value, name: this.name?.value };
+    return bundleStrict({ id: this.id?.value, name: this.name?.value });
   }
 }
 
@@ -89,6 +89,6 @@ export class Package {
   }
 
   bundle() {
-    return { id: this.id?.value, name: this.name?.value };
+    return bundleStrict({ id: this.id?.value, name: this.name?.value });
   }
 }

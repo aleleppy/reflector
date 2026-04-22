@@ -78,6 +78,10 @@ export class ModuleClassBuilder {
         }
       `;
 
+      if (bundle.length > 0) {
+        this.imports.addReflectorImport("bundleStrict");
+      }
+
       return `
         class ${outputName} {
           ${attributes.join(";")}
@@ -86,9 +90,9 @@ export class ModuleClassBuilder {
 
           ${bundle.length > 0 ? `
           bundle() {
-            return {
+            return bundleStrict({
               ${bundle.join(",")}
-            }
+            })
           }
           ` : ""}
         }
@@ -103,13 +107,17 @@ export class ModuleClassBuilder {
       });
     }
 
+    if (bundle.length > 0) {
+      this.imports.addReflectorImport("bundleStrict");
+    }
+
     const bundleBuild =
       bundle.length > 0
         ? `
       bundle() {
-        return {
+        return bundleStrict({
           ${bundle.join(",")}
-        }
+        })
       }
     `
         : "";

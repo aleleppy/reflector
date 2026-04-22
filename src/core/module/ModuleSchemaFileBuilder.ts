@@ -25,7 +25,7 @@ export class ModuleSchemaFileBuilder {
     const treatedSchemas = schemas.map((s) => `${s.interface};\n${s.schema};`);
 
     const imports: string[] = [
-      `import { build, BuildedInput } from "${config.reflectorAlias}/reflector.svelte";`,
+      `import { build, BuildedInput, bundleStrict } from "${config.reflectorAlias}/reflector.svelte";`,
       `import { validateInputs } from "${config.validatorsImport}";`,
     ];
 
