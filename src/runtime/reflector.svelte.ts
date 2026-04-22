@@ -211,8 +211,7 @@ export function changeArrayParam({ values, key }: { values: string[]; key: strin
 
 export function bundleStrict<T extends Record<string, unknown>>(
   payload: T,
-): { [K in keyof T]: Exclude<T[K], undefined> extends never ? never : T[K] } {
-  return Object.fromEntries(
-    Object.entries(payload).filter(([, v]) => v !== undefined),
-  ) as typeof payload as { [K in keyof T]: Exclude<T[K], undefined> extends never ? never : T[K] };
+): { [K in keyof T as Exclude<T[K], undefined> extends never ? never : K]: Exclude<T[K], undefined> };
+export function bundleStrict(payload: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined));
 }
