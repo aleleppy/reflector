@@ -7,6 +7,7 @@ import {
   genericArrayBundler,
   isFormValid,
   QueryBuilder,
+  bundleStrict,
   type ApiErrorResponse,
   setQueryGroup,
 } from "$reflector/reflector.svelte";
@@ -36,10 +37,10 @@ class Querys {
   }
 
   bundle() {
-    return {
+    return bundleStrict({
       page: this.page?.value,
       limit: this.limit?.value,
-    };
+    });
   }
 }
 class Paths {

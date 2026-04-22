@@ -214,3 +214,13 @@ export function changeArrayParam({
   values.forEach((value) => url.searchParams.append(key, value));
   goto(url, { replaceState: true, keepFocus: true });
 }
+
+export function bundleStrict<T extends Record<string, unknown>>(
+  payload: T,
+): { [K in keyof T]: Exclude<T[K], undefined> extends never ? never : T[K] } {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, v]) => v !== undefined),
+  ) as typeof payload as {
+    [K in keyof T]: Exclude<T[K], undefined> extends never ? never : T[K];
+  };
+}

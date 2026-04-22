@@ -6,6 +6,7 @@ import {
   Behavior,
   isFormValid,
   QueryBuilder,
+  bundleStrict,
   type ApiErrorResponse,
   setQueryGroup,
 } from "$reflector/reflector.svelte";
@@ -27,9 +28,9 @@ class Querys {
   }
 
   bundle() {
-    return {
+    return bundleStrict({
       limit: this.limit?.value,
-    };
+    });
   }
 }
 class Paths {
