@@ -1,0 +1,64 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Optional array bundle fixture", "version": "1.0.0" },
+  "paths": {
+    "/packages": {
+      "post": {
+        "operationId": "PackageController_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BatchCreatePackageDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/BatchCreatePackageDto" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      },
+      "PackageItem": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" }
+        }
+      },
+      "BatchCreatePackageDto": {
+        "type": "object",
+        "required": ["name", "requiredItems", "nullableItems"],
+        "properties": {
+          "name": { "type": "string" },
+          "requiredItems": { "type": "array", "items": { "$ref": "#/components/schemas/PackageItem" } },
+          "optionalItems": { "type": "array", "items": { "$ref": "#/components/schemas/PackageItem" } },
+          "nullableItems": { "type": "array", "items": { "$ref": "#/components/schemas/PackageItem" }, "nullable": true },
+          "optionalNullableItems": { "type": "array", "items": { "$ref": "#/components/schemas/PackageItem" }, "nullable": true },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

@@ -155,6 +155,51 @@ describe("codegen — sibling-lists fixture (two list-typed methods, different n
   });
 });
 
+describe("codegen — optional-array-bundle fixture (optional/nullable arrays of refs)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/optional-array-bundle");
+
+  beforeAll(async () => {
+    outputs = await runFixture("optional-array-bundle");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("emits null/undefined-safe bundle() for optional and nullable array fields", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith("package.schema.svelte.ts"));
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile!.content;
+
+    // required, non-nullable: plain .map (no guard needed)
+    expect(content).toMatch(/requiredItems:\s*this\.requiredItems\.map\(\(obj\) => obj\.bundle\(\)\)/);
+
+    // optional, non-nullable: ?.map (undefined-safe)
+    expect(content).toMatch(/optionalItems:\s*this\.optionalItems\?\.map\(\(obj\) => obj\.bundle\(\)\)/);
+
+    // required, nullable: == null guard preserves null (prettier may wrap across lines)
+    expect(content).toMatch(
+      /nullableItems:\s*this\.nullableItems\s*==\s*null\s*\?\s*this\.nullableItems\s*:\s*this\.nullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
+    );
+
+    // optional + nullable: == null guard catches both null and undefined
+    expect(content).toMatch(
+      /optionalNullableItems:\s*this\.optionalNullableItems\s*==\s*null\s*\?\s*this\.optionalNullableItems\s*:\s*this\.optionalNullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
+    );
+
+    // primitive arrays unchanged: no .map call in bundle
+    expect(content).toMatch(/tags:\s*this\.tags[,}\s]/);
+    expect(content).not.toMatch(/tags:\s*this\.tags\?\.map/);
+  });
+});
+
 function collect(root: string, dir: string, out: Output[] = []): Output[] {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
