@@ -135,7 +135,9 @@ export class PrimitiveProp {
 
     const buildedExample = this.customType
       ? `${this.example}`
-      : `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
+      : this.rawType === "boolean" && this.fallbackExample === false && this.example === true
+        ? `!(params?.empty || isEmpty)`
+        : `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
     const effectivelyNullable = this.isEffectivelyNullable;
     const keyExpr = effectivelyNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
 

@@ -94,12 +94,19 @@ export class ArrayProp {
   }
 
   bundleBuild() {
-    const result = () => {
-      if (this._isPrimitiveType || this.isEnum) return "";
-      return ".map((obj) => obj.bundle())";
-    };
+    if (this._isPrimitiveType || this.isEnum) {
+      return `${this.name}: this.${this.name}`;
+    }
 
-    return `${this.name}: this.${this.name}${result()}`;
+    if (this.isNullable) {
+      return `${this.name}: this.${this.name} == null ? this.${this.name} : this.${this.name}.map((obj) => obj.bundle())`;
+    }
+
+    if (!this.isRequired) {
+      return `${this.name}: this.${this.name}?.map((obj) => obj.bundle())`;
+    }
+
+    return `${this.name}: this.${this.name}.map((obj) => obj.bundle())`;
   }
 
   queryBundleBuild() {
