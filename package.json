@@ -21,7 +21,8 @@
     "build": "tsc && tsc -p tsconfig.runtime.json && node scripts/copy-runtime.mjs",
     "typecheck:runtime": "tsc -p tsconfig.runtime.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "patch": "npm run build && npm version patch && npm publish"
   },
   "dependencies": {
     "axios": "^1.12.2",
