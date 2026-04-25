@@ -144,8 +144,10 @@ export class PrimitiveProp {
       typeParam = `<${this.effectiveType}>`;
     }
 
+    const nullableParam = this.isNullable ? "nullable: true, " : "";
+
     return `
-      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${buildedValidator()}})
+      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${nullableParam}${buildedValidator()}})
     `;
   }
 

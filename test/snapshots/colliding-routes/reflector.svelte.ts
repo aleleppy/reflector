@@ -43,6 +43,7 @@ export class BuildedInput<T> {
   value = $state<T>(null as any);
   display = $state<T>(null as any);
   required: boolean;
+  nullable: boolean;
   placeholder: T;
   readonly kind = "builded";
   readonly validator?: ValidatorFn<T>;
@@ -51,16 +52,18 @@ export class BuildedInput<T> {
     key?: T | undefined;
     example: T;
     required: boolean;
+    nullable?: boolean;
     placeholder: T;
     validator?: ValidatorFn<T>;
   }) {
-    const { example, required, key, validator, placeholder } = params;
+    const { example, required, nullable, key, validator, placeholder } = params;
 
     const initial = key === undefined ? example : key;
 
     this.value = initial;
     this.display = initial;
     this.required = required;
+    this.nullable = nullable ?? false;
     this.placeholder = placeholder;
 
     if (validator) {
@@ -106,6 +109,7 @@ export function build<T>(params: {
   example: T;
   placeholder: T;
   required: boolean;
+  nullable?: boolean;
   validator?: ValidatorFn<T>;
 }): BuildedInput<T> {
   return new BuildedInput(params);

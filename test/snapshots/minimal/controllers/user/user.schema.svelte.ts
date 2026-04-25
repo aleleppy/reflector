@@ -106,6 +106,7 @@ export class Address {
       placeholder: "",
       example: params?.empty || isEmpty ? "" : "",
       required: false,
+      nullable: true,
     });
   }
 
