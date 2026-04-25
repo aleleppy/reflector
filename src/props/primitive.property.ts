@@ -133,7 +133,9 @@ export class PrimitiveProp {
       return "";
     };
 
-    const buildedExample = `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
+    const buildedExample = this.customType
+      ? `${this.example}`
+      : `params?.empty || isEmpty ? ${this.fallbackExample} : ${this.example}`;
     const effectivelyNullable = this.isEffectivelyNullable;
     const keyExpr = effectivelyNullable ? `params?.data?.${name} ?? null` : `params?.data?.${name}`;
 
