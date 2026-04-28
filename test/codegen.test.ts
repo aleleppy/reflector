@@ -14,7 +14,7 @@ interface Output {
   content: string;
 }
 
-async function runFixture(name: string): Promise<Output[]> {
+async function runFixture(name: string, opts: { experimentalFeatures?: boolean } = {}): Promise<Output[]> {
   const fixtureDir = path.join(here, "fixtures", name);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `reflector-${name}-`));
   const originalCwd = process.cwd();
@@ -29,6 +29,7 @@ async function runFixture(name: string): Promise<Output[]> {
       fieldConfigs: new Map(),
       typeImports: new Map(),
       apiImport: "$lib/api",
+      experimentalFeatures: opts.experimentalFeatures,
     });
     await r.build();
 
@@ -197,6 +198,52 @@ describe("codegen — optional-array-bundle fixture (optional/nullable arrays of
     // primitive arrays unchanged: no .map call in bundle
     expect(content).toMatch(/tags:\s*this\.tags[,}\s]/);
     expect(content).not.toMatch(/tags:\s*this\.tags\?\.map/);
+  });
+});
+
+describe("codegen — experimental Api class (queryOverride generic)", () => {
+  let outputs: Output[] = [];
+
+  beforeAll(async () => {
+    outputs = await runFixture("minimal", { experimentalFeatures: true });
+  });
+
+  it("emits a *.api.svelte.ts file when experimentalFeatures is enabled", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    expect(apiFile, "user.api.svelte.ts should be generated").toBeDefined();
+  });
+
+  it("declares queryOverride as the third generic of ApiCallParams for endpoints with query params", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    const content = apiFile!.content;
+
+    // _listAll has `limit` query (default: 10 in fixture). The Api class
+    // call() must declare a third generic so `params?.queryOverride` in the
+    // shared body is type-safe. Match across whitespace (prettier may wrap).
+    expect(content).toMatch(
+      /ApiCallParams<\s*UserController_listResponseInterface\s*,\s*void\s*,\s*\{\s*limit\?:\s*string\s*\|\s*null;?\s*\}\s*>/,
+    );
+  });
+
+  it("does NOT add a third generic for endpoints without query params", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    const content = apiFile!.content;
+
+    // _create (POST, body only) — `ApiCallParams<UserInterface>` with no
+    // extra generics.
+    expect(content).toMatch(/ApiCallParams<\s*UserInterface\s*>/);
+
+    // _entity (GET path-only, no query) — paths only, no third generic.
+    expect(content).toMatch(/ApiCallParams<\s*UserInterface\s*,\s*\{\s*id:\s*string\s*\}\s*>/);
+  });
+
+  it("body of call() reads from params?.queryOverride for query-bearing endpoints", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    const content = apiFile!.content;
+
+    // Without the third generic on the type, this access would fail
+    // typecheck on the consumer side.
+    expect(content).toMatch(/params\?\.queryOverride\s*\?\?\s*this\.querys\.bundle\(\)/);
   });
 });
 

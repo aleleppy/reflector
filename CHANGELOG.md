@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1]
+
+### Fixed
+- 2.1.0 wired `params?.queryOverride` into the shared `call()` body but the
+  experimental Api class strategy (`*.api.svelte.ts`, emitted when
+  `experimentalFeatures: true`) kept emitting `ApiCallParams<TResponse>` /
+  `ApiCallParams<TResponse, TPaths>` without the third generic. Result: the
+  generated Api class did not typecheck on consumer projects whenever an
+  endpoint had query params (e.g. List operations) — `Property
+  'queryOverride' does not exist on type 'ApiCallParams<...>'`.
+- Now the Api class emits `ApiCallParams<TResponse, TPaths | void, { ... }>`
+  with an inline override shape derived from the operation's query props.
+  Endpoints without query params keep the previous 1- or 2-arg form.
+- Module strategy was already correct (it inlines the entire params type
+  literal); the regression was only in the experimental path.
+
+### Internal
+- Extracted `queryOverrideEntryType` / `queryOverrideTypeLiteral` to
+  `src/core/generators/queryOverride.ts`, shared between Module and Api
+  strategies.
+
 ## [2.1.0]
 
 ### Added
