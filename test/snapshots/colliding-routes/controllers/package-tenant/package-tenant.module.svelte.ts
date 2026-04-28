@@ -78,12 +78,16 @@ export abstract class PackageTenantModule {
       PackageTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    queryOverride?: {
+      page?: string | null;
+      limit?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
-    const { page, limit } = this.querys.bundle();
+    const { page, limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `tenant/package`;
 
     try {
@@ -167,12 +171,15 @@ export abstract class PackageTenantModule {
     paths?: {
       packageId: string;
     };
+    queryOverride?: {
+      page?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
-    const { page } = this.querys.bundle();
+    const { page } = params?.queryOverride ?? this.querys.bundle();
     const { packageId } = params?.paths ?? this.paths;
     const endpoint = `tenant/package/${packageId}/controller`;
 

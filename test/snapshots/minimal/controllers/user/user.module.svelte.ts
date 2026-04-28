@@ -58,12 +58,15 @@ export abstract class UserModule {
   /**  */
   protected async _listAll(params?: {
     behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
+    queryOverride?: {
+      limit?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
-    const { limit } = this.querys.bundle();
+    const { limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `users`;
 
     try {

@@ -265,6 +265,28 @@ The auto-injected `setQueryGroup([...])` constructor on the generated
 `setQueryGroup` manually from `$reflector/reflector.svelte` if you still
 need batch URL writes.
 
+#### Ephemeral pagination (sidebar / widget)
+
+Sometimes a list lives outside the canonical route — a global sidebar, a
+widget, a paginated combobox in a modal — and should NOT mutate the
+current URL. For those cases, every generated `call()` with query params
+accepts an optional `queryOverride`:
+
+```typescript
+const sidebar = new UserService();
+
+// Current URL stays put. Request goes out with ?page=2&limit=10.
+await sidebar.listAll({
+  queryOverride: { page: "2", limit: "10" },
+});
+```
+
+When `queryOverride` is passed, the method skips `this.querys.bundle()`
+entirely and uses the override as `queryData`. Without it, the method
+reads from `QueryBuilder.value` (the URL) as usual — so you can mix and
+match on a per-call basis. Omit a key to drop it from the request; pass
+`null` to send a literal `null`.
+
 ## Configuration
 
 ### Environment Variables

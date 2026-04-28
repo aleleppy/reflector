@@ -51,7 +51,7 @@ export class CallMethodGenerator {
     const lines: string[] = [];
 
     if (querys.length > 0) {
-      lines.push(`const { ${this.joinNames(querys)} } = this.querys.bundle()`);
+      lines.push(`const { ${this.joinNames(querys)} } = params?.queryOverride ?? this.querys.bundle()`);
     }
     if (paths.length > 0) {
       lines.push(`const { ${this.joinNames(paths)} } = params?.paths ?? this.paths`);
