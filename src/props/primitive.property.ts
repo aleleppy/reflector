@@ -19,6 +19,7 @@ export class PrimitiveProp {
   private readonly buildedConst: string;
   private readonly example: Example;
   private readonly fallbackExample: Example;
+  private readonly defaultValue: AbstractType;
 
   private get effectiveType(): string {
     return this.customType ?? this.rawType;
@@ -49,6 +50,7 @@ export class PrimitiveProp {
 
     this.example = example;
     this.fallbackExample = emptyExample;
+    this.defaultValue = schemaObject.default;
 
     const buildedType = customType ?? type;
 
@@ -182,7 +184,14 @@ export class PrimitiveProp {
   }
 
   queryBuild() {
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
+    if (this.defaultValue === undefined || this.defaultValue === null) {
+      return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}' })`;
+    }
+    const literal =
+      typeof this.defaultValue === "string"
+        ? `'${this.defaultValue}'`
+        : String(this.defaultValue);
+    return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}', defaultValue: ${literal} })`;
   }
 
   updateQueryBuild() {
@@ -191,9 +200,5 @@ export class PrimitiveProp {
 
   bundleBuild() {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
-  }
-
-  queryDefaultValue() {
-    return this.fallbackExample;
   }
 }

@@ -56,14 +56,10 @@ export class EnumProp {
   }
 
   queryBuild() {
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
+    return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}' })`;
   }
 
   bundleBuild() {
     return `${this.name}: this.${this.name}?.value`;
-  }
-
-  queryDefaultValue() {
-    return `'${this.example}'`;
   }
 }

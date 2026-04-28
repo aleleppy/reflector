@@ -12,6 +12,7 @@ export class ArrayProp {
   private _isPrimitiveType: boolean = false;
   private readonly isNullable: boolean;
   private readonly context: CodegenContext;
+  private readonly defaultValues: unknown[];
 
   get isSchemaRef(): boolean {
     return !this._isPrimitiveType && !this.isEnum;
@@ -38,6 +39,7 @@ export class ArrayProp {
     this.type = this.getType({ schemaObject, schemaName });
     this.isRequired = required;
     this.isParam = !!isParam;
+    this.defaultValues = Array.isArray(schemaObject.default) ? schemaObject.default : [];
   }
 
   private getType(params: { schemaObject: SchemaObject; schemaName: string }): string {
@@ -115,10 +117,15 @@ export class ArrayProp {
 
   queryBuild(): string {
     if (this.isEnum) {
-      return `readonly ${this.name} = $derived(new EnumQueryBuilder<${this.type}>({ key: '${this.name}' }))`;
+      if (this.defaultValues.length === 0) {
+        return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}' })`;
+      }
+      const literal = `[${this.defaultValues
+        .map((v) => (typeof v === "string" ? `'${v}'` : String(v)))
+        .join(", ")}]`;
+      return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}', defaultValues: ${literal} })`;
     }
-    // Para arrays normais (não enum), usamos QueryBuilder padrão
-    return `readonly ${this.name} = $derived(new QueryBuilder({ key: '${this.name}' }))`;
+    return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}' })`;
   }
 
   staticBuild() {
@@ -132,7 +139,4 @@ export class ArrayProp {
     `;
   }
 
-  queryDefaultValue() {
-    return "[]";
-  }
 }

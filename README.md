@@ -190,20 +190,80 @@ protected clearForms(): void
 
 ### QueryBuilder
 
-Query parameters are wrapped in `QueryBuilder` instances that sync with URL searchParams:
+Query parameters are wrapped in `QueryBuilder` / `EnumQueryBuilder` instances
+that read directly from `page.url.searchParams`. There is no local cached
+state — every read goes through the URL, so multiple instances with the same
+key are always coherent.
 
 ```typescript
 // Single value query parameter
 const querys = module.querys;
-querys.status.update("active"); // Updates URL searchParam and internal state
+
+querys.status.value;          // string | null — read-only getter, always
+                              // reflects the current URL
+querys.status.update("active"); // pushes ?status=active via goto()
 
 // Array enum query parameter
 const enumQuery = module.querys.roles; // EnumQueryBuilder<RoleType>
 enumQuery.selected = "admin";
-enumQuery.add();      // Adds to URL searchParams
-enumQuery.remove(0);  // Removes from URL searchParams
-enumQuery.values;     // $derived from URL - always in sync
+enumQuery.add();      // appends to URL searchParams
+enumQuery.remove(0);  // removes from URL searchParams
+enumQuery.values;     // $derived — always in sync with URL
 ```
+
+#### Defaults
+
+`default` declared in the OpenAPI schema is propagated to the builder
+constructor automatically:
+
+```yaml
+parameters:
+  - name: limit
+    in: query
+    schema: { type: integer, default: 10 }
+  - name: tags
+    in: query
+    schema:
+      type: array
+      items: { type: string, enum: [hot, new, sale] }
+      default: [hot]
+```
+
+generates:
+
+```typescript
+class Querys {
+  readonly limit = new QueryBuilder({ key: 'limit', defaultValue: 10 });
+  readonly tags = new EnumQueryBuilder<'hot' | 'new' | 'sale'>({
+    key: 'tags',
+    defaultValues: ['hot'],
+  });
+}
+```
+
+When the URL has the param, the URL value wins. When the URL has no param,
+the default is returned. The URL stays clean until the user interacts.
+
+#### Migrating from 1.x
+
+`value` is no longer a setter. Two replacements:
+
+```typescript
+// 1.x
+querys.page.value = "1";
+querys.page.value ??= "1"; // seed default
+
+// 2.x — declarative default (preferred, set at codegen via OpenAPI)
+new QueryBuilder({ key: "page", defaultValue: "1" });
+
+// 2.x — imperative update (push to URL)
+querys.page.update("1");
+```
+
+The auto-injected `setQueryGroup([...])` constructor on the generated
+`Querys` class was removed — defaults now live on the builder. Import
+`setQueryGroup` manually from `$reflector/reflector.svelte` if you still
+need batch URL writes.
 
 ## Configuration
 

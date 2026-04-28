@@ -79,13 +79,18 @@ export class BuildedInput<T> {
 
 export class EnumQueryBuilder<T> {
   readonly key: string = "";
-  values = $derived(page.url.searchParams.getAll(this.key)) as T[];
+  private readonly defaultValues: T[] = [];
+
+  values = $derived(
+    page.url.searchParams.has(this.key)
+      ? (page.url.searchParams.getAll(this.key) as T[])
+      : this.defaultValues,
+  );
   selected = $state<T | null>(null);
 
-  constructor(params: { key: string }) {
-    const { key } = params;
-
-    this.key = key;
+  constructor(params: { key: string; defaultValues?: T[] }) {
+    this.key = params.key;
+    this.defaultValues = params.defaultValues ?? [];
   }
 
   add = () => {
@@ -167,22 +172,26 @@ type QueryWithArrayType = {
 };
 
 export class QueryBuilder {
-  readonly key: string = "";
-  value = $state<string | null>(null);
+  readonly key: string;
   readonly kind = "query";
+  private readonly defaultValue: string | null;
 
-  constructor(params: { key: string }) {
-    const { key } = params;
-    this.key = key;
+  constructor(params: { key: string; defaultValue?: string | number | null }) {
+    this.key = params.key;
+    this.defaultValue =
+      params.defaultValue === undefined || params.defaultValue === null
+        ? null
+        : String(params.defaultValue);
+  }
 
-    const urlValue = page.url.searchParams.get(key);
-    this.value = urlValue !== null ? urlValue : null;
+  get value(): string | null {
+    const fromUrl = page.url.searchParams.get(this.key);
+    return fromUrl !== null ? fromUrl : this.defaultValue;
   }
 
   update(event: string | number | null) {
     if (event === null || event === undefined) return;
-    this.value = String(event);
-    return changeParam({ key: this.key, event: this.value });
+    return changeParam({ key: this.key, event: String(event) });
   }
 }
 
