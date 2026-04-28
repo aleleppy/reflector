@@ -69,12 +69,16 @@ export abstract class AiChatTenantModule {
       AiChatTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    queryOverride?: {
+      page?: string | null;
+      limit?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
-    const { page, limit } = this.querys.bundle();
+    const { page, limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `tenant/ai-chat`;
 
     try {
@@ -156,12 +160,15 @@ export abstract class AiChatTenantModule {
     paths?: {
       chatId: string;
     };
+    queryOverride?: {
+      page?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
-    const { page } = this.querys.bundle();
+    const { page } = params?.queryOverride ?? this.querys.bundle();
     const { chatId } = params?.paths ?? this.paths;
     const endpoint = `tenant/ai-chat/${chatId}/messages`;
 

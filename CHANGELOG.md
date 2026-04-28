@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0]
+
+### Added
+- Generated `call()` methods that have query params now accept an optional
+  `queryOverride` argument. When provided, the method skips
+  `this.querys.bundle()` and uses `queryOverride` directly as `queryData`.
+  The URL is not touched. Use case: ephemeral pagination outside the
+  canonical route — sidebars, widgets, modals — that should not pollute
+  the current URL.
+- Without `queryOverride`, behavior is identical to 2.0.0 (reads the URL
+  via `QueryBuilder.value`).
+- `ApiCallParams<TResponse, TPaths, TQuery>` gained an optional third type
+  parameter for the override shape. Existing call sites with one or two
+  type args remain valid.
+
 ## [2.0.0] — BREAKING
 
 ### Changed

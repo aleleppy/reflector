@@ -9,9 +9,10 @@ type ValidatorResult = string | null;
 type ValidatorFn<T> = (v: T) => ValidatorResult;
 type BundleResult<T> = T extends { bundle: () => infer R } ? R : T;
 
-export type ApiCallParams<TResponse, TPaths = void> = TPaths extends void
-  ? { behavior?: Behavior<TResponse, ApiErrorResponse> }
-  : { behavior?: Behavior<TResponse, ApiErrorResponse>; paths?: TPaths };
+export type ApiCallParams<TResponse, TPaths = void, TQuery = void> = {
+  behavior?: Behavior<TResponse, ApiErrorResponse>;
+} & (TPaths extends void ? object : { paths?: TPaths }) &
+  (TQuery extends void ? object : { queryOverride?: TQuery });
 
 type PartialBuildedInput<T> = {
   [K in Exclude<keyof T, "bundle">]?: BuildedInput<T[K]>;
