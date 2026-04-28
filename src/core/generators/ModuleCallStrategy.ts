@@ -1,5 +1,5 @@
 import { treatByUppercase } from "../../helpers/helpers.js";
-import type { AttributeProp } from "../../types/types.js";
+import { queryOverrideEntryType } from "./queryOverride.js";
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ModuleCallStrategy implements CallStrategy {
@@ -54,17 +54,11 @@ export class ModuleCallStrategy implements CallStrategy {
     if (querys.length === 0) return undefined;
 
     const fields = querys
-      .map((q) => `${q.name}?: ${this.queryOverrideType(q)}`)
+      .map((q) => `${q.name}?: ${queryOverrideEntryType(q)}`)
       .join("\n");
 
     return `queryOverride?: {
       ${fields}
     };`;
-  }
-
-  private queryOverrideType(q: AttributeProp): string {
-    if ("isEnum" in q && q.isEnum) return `${q.type}[]`;
-    if (!("rawType" in q) && !("enumName" in q)) return "string[]";
-    return "string | null";
   }
 }

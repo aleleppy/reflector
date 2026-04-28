@@ -1,3 +1,4 @@
+import { queryOverrideTypeLiteral } from "./queryOverride.js";
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ApiCallStrategy implements CallStrategy {
@@ -21,11 +22,15 @@ export class ApiCallStrategy implements CallStrategy {
   private buildParamsType(method: CallMethodInput): string {
     const responseType = method.responseTypeInterface;
     const pathsBlock = this.buildPathsInfo(method);
+    const queryBlock = queryOverrideTypeLiteral(method.analyzers.props.querys);
 
+    if (queryBlock) {
+      const pathsArg = pathsBlock ?? "void";
+      return `ApiCallParams<${responseType}, ${pathsArg}, ${queryBlock}>`;
+    }
     if (pathsBlock) {
       return `ApiCallParams<${responseType}, ${pathsBlock}>`;
     }
-
     return `ApiCallParams<${responseType}>`;
   }
 
