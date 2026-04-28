@@ -36,9 +36,6 @@ export class ModuleClassBuilder {
         }
       `;
     } else if (name === "Querys") {
-      this.imports.addSetQueryGroupImport();
-      const queryGroupValues: string[] = [];
-
       props.forEach((prop) => {
         if ("rawType" in prop) {
           attributes.push(prop.queryBuild());
@@ -47,36 +44,22 @@ export class ModuleClassBuilder {
             this.imports.addReflectorImport("EnumQueryBuilder");
             this.imports.addEnumImport(String(prop.type));
             bundle.push(`${prop.name}: this.${prop.name}?.values`);
-            // Array de enum usa valor padrão []
-            queryGroupValues.push(`{ key: '${prop.name}', value: ${prop.queryDefaultValue()} }`);
           } else {
             bundle.push(prop.bundleBuild());
-            // PrimitiveProp usa seu valor padrão
-            queryGroupValues.push(`{ key: '${prop.name}', value: ${prop.queryDefaultValue()} }`);
           }
         } else if ("enumName" in prop) {
           // EnumProp
           this.imports.addEnumImport(prop.enumName);
           attributes.push(prop.queryBuild());
           bundle.push(prop.bundleBuild());
-          queryGroupValues.push(`{ key: '${prop.name}', value: ${prop.queryDefaultValue()} }`);
         } else {
           // ArrayProp (não-enum)
           attributes.push(prop.queryBuild());
           this.imports.addEnumImport(prop.type);
           bundle.push(prop.queryBundleBuild());
           this.imports.addReflectorImport("EnumQueryBuilder");
-          queryGroupValues.push(`{ key: '${prop.name}', value: ${prop.queryDefaultValue()} }`);
         }
       });
-
-      const constructorBuild = `
-        constructor() {
-          setQueryGroup([
-            ${queryGroupValues.join(",\n            ")}
-          ]);
-        }
-      `;
 
       if (bundle.length > 0) {
         this.imports.addReflectorImport("bundleStrict");
@@ -85,8 +68,6 @@ export class ModuleClassBuilder {
       return `
         class ${outputName} {
           ${attributes.join(";")}
-
-          ${constructorBuild}
 
           ${bundle.length > 0 ? `
           bundle() {

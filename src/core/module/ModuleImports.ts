@@ -34,10 +34,6 @@ export class ModuleImports {
     this.reflectorImports.add(importStr);
   }
 
-  addSetQueryGroupImport(): void {
-    this.reflectorImports.add("setQueryGroup");
-  }
-
   addEnumImport(enumName: string): void {
     this.enumImports.add(enumName);
   }
@@ -74,16 +70,12 @@ export class ModuleImports {
 
   buildReflectorImportsLine(): string {
     const imports = this.getReflectorImportsArray();
-    const regularImports = imports.filter(i => i !== "setQueryGroup" && !this.typeOnlyImports.has(i));
-    const typeImports = imports.filter(i => this.typeOnlyImports.has(i));
-    const hasSetQueryGroup = imports.includes("setQueryGroup");
+    const regularImports = imports.filter((i) => !this.typeOnlyImports.has(i));
+    const typeImports = imports.filter((i) => this.typeOnlyImports.has(i));
 
     let result = `import { ${regularImports.join(", ")}, type ApiErrorResponse`;
     for (const t of typeImports) {
       result += `, type ${t}`;
-    }
-    if (hasSetQueryGroup) {
-      result += `, setQueryGroup`;
     }
     result += ` } from "${this.config.reflectorAlias}/reflector.svelte";`;
 

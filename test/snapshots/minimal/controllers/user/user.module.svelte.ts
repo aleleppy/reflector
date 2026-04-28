@@ -8,7 +8,6 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
-  setQueryGroup,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -21,11 +20,7 @@ import {
 } from "./user.schema.svelte";
 
 class Querys {
-  readonly limit = $derived(new QueryBuilder({ key: "limit" }));
-
-  constructor() {
-    setQueryGroup([{ key: "limit", value: 10 }]);
-  }
+  readonly limit = new QueryBuilder({ key: "limit", defaultValue: 10 });
 
   bundle() {
     return bundleStrict({

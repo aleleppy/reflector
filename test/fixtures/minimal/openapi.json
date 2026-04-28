@@ -7,7 +7,7 @@
         "operationId": "UserController_list",
         "parameters": [
           { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/UserStatus" } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
         ],
         "responses": {
           "200": {
