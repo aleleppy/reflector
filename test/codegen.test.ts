@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { Reflector } from "../src/core/Reflector.js";
 import type { OpenAPIObject } from "../src/types/open-api-spec.interface.js";
+import type { ReflectorConfig } from "../src/core/config/ReflectorConfig.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +15,10 @@ interface Output {
   content: string;
 }
 
-async function runFixture(name: string, opts: { experimentalFeatures?: boolean } = {}): Promise<Output[]> {
+async function runFixture(
+  name: string,
+  opts: { experimentalFeatures?: boolean; config?: Partial<ReflectorConfig> } = {},
+): Promise<Output[]> {
   const fixtureDir = path.join(here, "fixtures", name);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `reflector-${name}-`));
   const originalCwd = process.cwd();
@@ -30,6 +34,7 @@ async function runFixture(name: string, opts: { experimentalFeatures?: boolean }
       typeImports: new Map(),
       apiImport: "$lib/api",
       experimentalFeatures: opts.experimentalFeatures,
+      config: opts.config,
     });
     await r.build();
 
@@ -198,6 +203,24 @@ describe("codegen — optional-array-bundle fixture (optional/nullable arrays of
     // primitive arrays unchanged: no .map call in bundle
     expect(content).toMatch(/tags:\s*this\.tags[,}\s]/);
     expect(content).not.toMatch(/tags:\s*this\.tags\?\.map/);
+  });
+});
+
+describe("codegen — config.toastImport overrides the runtime template's toast path", () => {
+  it("rewrites the toast import in reflector.svelte.ts when overridden", async () => {
+    const outputs = await runFixture("minimal", {
+      config: { toastImport: "$lib/components/notifications/toast.svelte" },
+    });
+    const runtime = outputs.find((o) => o.rel === "reflector.svelte.ts");
+    expect(runtime).toBeDefined();
+    expect(runtime!.content).toContain(`from "$lib/components/notifications/toast.svelte"`);
+    expect(runtime!.content).not.toContain(`from "$lib/utils/toast.svelte"`);
+  });
+
+  it("leaves the default toast import untouched when no override is given", async () => {
+    const outputs = await runFixture("minimal");
+    const runtime = outputs.find((o) => o.rel === "reflector.svelte.ts");
+    expect(runtime!.content).toContain(`from "$lib/utils/toast.svelte"`);
   });
 });
 
