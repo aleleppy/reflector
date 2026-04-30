@@ -5,8 +5,10 @@ import { Source } from "../../file.js";
 import { loadReflectorTemplate } from "../../loadTemplate.js";
 import { generatedDir } from "../../vars.global.js";
 import { dedent } from "../../helpers/codegen.js";
+import { DEFAULT_REFLECTOR_CONFIG } from "../config/ReflectorConfig.js";
 
 import type { CodegenContext } from "../CodegenContext.js";
+import type { ReflectorConfig } from "../config/ReflectorConfig.js";
 
 function generated(relPath: string): string {
   return path.resolve(process.cwd(), `${generatedDir}/${relPath}`);
@@ -18,12 +20,20 @@ function generated(relPath: string): string {
  * enum unions, and the MockedParams class used by path-param stubs.
  */
 export class RuntimeFilesEmitter {
-  static build(params: { propertiesNames: Set<string>; context: CodegenContext }): Source[] {
-    const { propertiesNames, context } = params;
+  static build(params: { propertiesNames: Set<string>; context: CodegenContext; config: ReflectorConfig }): Source[] {
+    const { propertiesNames, context, config } = params;
+
+    let templateData = loadReflectorTemplate();
+    if (config.toastImport !== DEFAULT_REFLECTOR_CONFIG.toastImport) {
+      templateData = templateData.replace(
+        `from "${DEFAULT_REFLECTOR_CONFIG.toastImport}"`,
+        `from "${config.toastImport}"`,
+      );
+    }
 
     const typesSrc = new Source({
       path: generated("reflector.svelte.ts"),
-      data: loadReflectorTemplate(),
+      data: templateData,
     });
 
     const fieldLiterals = Array.from(propertiesNames).map((p) => `'${p}'`);

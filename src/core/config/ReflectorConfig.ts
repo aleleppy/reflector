@@ -12,6 +12,8 @@ export interface ReflectorConfig {
   environmentImport: string;
   /** Name of the exported environment flag — values other than `DEV` are treated as prod. */
   environmentFlag: string;
+  /** Full import path to the toast module (default export must expose `.error({ title, description })`). */
+  toastImport: string;
 }
 
 export const DEFAULT_REFLECTOR_CONFIG: ReflectorConfig = {
@@ -19,6 +21,7 @@ export const DEFAULT_REFLECTOR_CONFIG: ReflectorConfig = {
   validatorsImport: "$lib/sanitizers/validateFormats",
   environmentImport: "$env/static/public",
   environmentFlag: "PUBLIC_ENVIRONMENT",
+  toastImport: "$lib/utils/toast.svelte",
 };
 
 export function resolveReflectorConfig(partial?: Partial<ReflectorConfig>): ReflectorConfig {

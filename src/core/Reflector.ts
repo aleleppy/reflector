@@ -77,6 +77,7 @@ export class Reflector {
     const runtimeFiles = RuntimeFilesEmitter.build({
       propertiesNames: this.propertiesNames,
       context: this.context,
+      config: this.config,
     });
 
     await Promise.all([
