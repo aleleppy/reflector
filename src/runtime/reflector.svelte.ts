@@ -158,10 +158,18 @@ export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>
   return (data as T[]).map((item) => item.bundle());
 }
 
+/**
+ * Atualiza um query param na URL.
+ * - `""` (string vazia) → remove o param.
+ * - qualquer outro valor → `searchParams.set(key, String(event))`.
+ */
 export function changeParam({ event, key }: QueryContract) {
-  const newValue = event;
   const url = new SvelteURL(page.url);
-  url.searchParams.set(key, String(newValue));
+  if (event === "") {
+    url.searchParams.delete(key);
+  } else {
+    url.searchParams.set(key, String(event));
+  }
   goto(url, { replaceState: true, keepFocus: true });
 }
 
@@ -190,12 +198,24 @@ export class QueryBuilder {
     return fromUrl !== null ? fromUrl : this.defaultValue;
   }
 
+  /**
+   * Aplica o valor recebido ao query param.
+   * - `null` / `undefined` → no-op (não chama `goto`).
+   * - `""` (string vazia) → delega pra `changeParam`, que remove o param.
+   * - número / string não-vazia → `set(key, String(event))`.
+   */
   update(event: string | number | null) {
     if (event === null || event === undefined) return;
     return changeParam({ key: this.key, event: String(event) });
   }
 }
 
+/**
+ * Atualiza vários query params de uma vez.
+ * - array → `delete(key)` seguido de `append` para cada item.
+ * - `""` → remove o param.
+ * - outros valores → `set(key, String(value))`.
+ */
 export function setQueryGroup(group: QueryWithArrayType[]) {
   if (!browser) return;
 
@@ -207,6 +227,11 @@ export function setQueryGroup(group: QueryWithArrayType[]) {
     if (Array.isArray(value)) {
       url.searchParams.delete(key);
       value.forEach((v) => url.searchParams.append(key, String(v)));
+      continue;
+    }
+
+    if (value === "") {
+      url.searchParams.delete(key);
       continue;
     }
 
