@@ -206,6 +206,73 @@ describe("codegen — optional-array-bundle fixture (optional/nullable arrays of
   });
 });
 
+describe("codegen — query-array-and-bad-enum fixture", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/query-array-and-bad-enum");
+
+  beforeAll(async () => {
+    outputs = await runFixture("query-array-and-bad-enum");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("string[] query declares EnumQueryBuilder<string>, not QueryBuilder", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    expect(moduleFile).toBeDefined();
+    expect(moduleFile.content).toMatch(
+      /readonly categoriesIds\s*=\s*new EnumQueryBuilder<string>\(/,
+    );
+    expect(moduleFile.content).toMatch(
+      /categoriesIds:\s*this\.categoriesIds\?\.values/,
+    );
+  });
+
+  it("number[] query uses number generic, not string", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    expect(moduleFile.content).toMatch(
+      /readonly pageNumbers\s*=\s*new EnumQueryBuilder<number>\(/,
+    );
+  });
+
+  it("never imports TS primitives (string/number/boolean) as enums from $reflector/enums", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    const enumImport = moduleFile.content.match(
+      /import\s*\{([^}]+)\}\s*from\s*["']\$reflector\/enums["']/,
+    );
+    if (enumImport) {
+      const names = enumImport[1]!.split(",").map((s) => s.trim());
+      for (const n of names) {
+        expect(n).not.toMatch(/^(string|number|integer|boolean)$/);
+      }
+    }
+  });
+
+  it("primitive-enum field falls back to plain QueryBuilder (no fake enum)", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    expect(moduleFile.content).toMatch(/readonly badField\s*=\s*new QueryBuilder\(/);
+
+    const enumsFile = outputs.find((o) => o.rel === "enums.ts")!;
+    // O valor 'string' não pode aparecer como literal de enum gerado
+    expect(enumsFile.content).not.toMatch(/=\s*\[\s*['"]string['"]\s*\]\s*as const/);
+  });
+
+  it("enum array (statuses) still works — uses ENUM_* generic", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    expect(moduleFile.content).toMatch(
+      /readonly statuses\s*=\s*new EnumQueryBuilder<ENUM_\w+>\(/,
+    );
+    expect(moduleFile.content).toMatch(/statuses:\s*this\.statuses\?\.values/);
+  });
+});
+
 describe("codegen — config.toastImport overrides the runtime template's toast path", () => {
   it("rewrites the toast import in reflector.svelte.ts when overridden", async () => {
     const outputs = await runFixture("minimal", {

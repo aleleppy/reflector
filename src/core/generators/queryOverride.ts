@@ -3,12 +3,10 @@ import type { AttributeProp } from "../../types/types.js";
 /** TS type literal for a single query override entry. Mirrors the
  *  shape produced by each Prop's bundle entry:
  *    PrimitiveProp / EnumProp     → `string | null`
- *    ArrayProp (enum)             → `${type}[]`
- *    ArrayProp (non-enum, raro)   → `string[]`
+ *    ArrayProp (enum or primitive) → `${type}[]`
  */
 export function queryOverrideEntryType(q: AttributeProp): string {
-  if ("isEnum" in q && q.isEnum) return `${q.type}[]`;
-  if (!("rawType" in q) && !("enumName" in q)) return "string[]";
+  if (!("rawType" in q) && !("enumName" in q)) return `${q.type}[]`;
   return "string | null";
 }
 

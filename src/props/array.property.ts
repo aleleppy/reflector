@@ -68,6 +68,9 @@ export class ArrayProp {
 
     this._isPrimitiveType = true;
 
+    const itemType = items.type;
+    if (itemType === "integer") return "number";
+    if (itemType === "number" || itemType === "boolean") return itemType;
     return "string";
   }
 
@@ -116,16 +119,13 @@ export class ArrayProp {
   }
 
   queryBuild(): string {
-    if (this.isEnum) {
-      if (this.defaultValues.length === 0) {
-        return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}' })`;
-      }
-      const literal = `[${this.defaultValues
-        .map((v) => (typeof v === "string" ? `'${v}'` : String(v)))
-        .join(", ")}]`;
-      return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}', defaultValues: ${literal} })`;
+    if (this.defaultValues.length === 0) {
+      return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}', defaultValues: [] })`;
     }
-    return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}' })`;
+    const literal = `[${this.defaultValues
+      .map((v) => (typeof v === "string" ? `'${v}'` : String(v)))
+      .join(", ")}]`;
+    return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}', defaultValues: ${literal} })`;
   }
 
   staticBuild() {

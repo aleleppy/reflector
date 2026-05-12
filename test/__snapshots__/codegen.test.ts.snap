@@ -33,6 +33,16 @@ exports[`codegen — optional-array-bundle fixture (optional/nullable arrays of 
 ]
 `;
 
+exports[`codegen — query-array-and-bad-enum fixture > generates the expected set of files 1`] = `
+[
+  "controllers/item/item.module.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — sibling-lists fixture (two list-typed methods, different names) > generates the expected set of files 1`] = `
 [
   "controllers/ai-chat-tenant/ai-chat-tenant.module.svelte.ts",

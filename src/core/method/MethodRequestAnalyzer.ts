@@ -5,7 +5,7 @@ import type { CodegenContext } from "../CodegenContext.js";
 import { PrimitiveProp as PrimitivePropClass } from "../../props/primitive.property.js";
 import { ArrayProp as ArrayPropClass } from "../../props/array.property.js";
 import { EnumProp as EnumPropClass } from "../../props/enum.property.js";
-import { isReferenceObject } from "../../helpers/helpers.js";
+import { isReferenceObject, isPrimitiveEnumValues } from "../../helpers/helpers.js";
 
 export class MethodRequestAnalyzer {
   paths: PrimitiveProp[] = [];
@@ -57,10 +57,16 @@ export class MethodRequestAnalyzer {
     }
 
     if (schema.enum) {
-      this.querys.push(
-        new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName, context }),
-      );
-      return;
+      if (isPrimitiveEnumValues(schema.enum)) {
+        console.warn(
+          `[reflector] Field '${moduleName}.${name}': enum=[${schema.enum.join(",")}] looks like a TS primitive type (string/number/boolean), not a real enum. Ignoring 'enum' and treating as plain primitive. Fix the @ApiProperty/@ApiQuery in the back.`,
+        );
+      } else {
+        this.querys.push(
+          new EnumPropClass({ name, required: isRequired, enums: schema.enum, isParam: true, entityName: moduleName, context }),
+        );
+        return;
+      }
     }
 
     this.querys.push(

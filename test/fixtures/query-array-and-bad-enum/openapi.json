@@ -1,0 +1,52 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reflector fixture — query array + bad enum", "version": "1.0.0" },
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "ItemController_list",
+        "parameters": [
+          { "name": "categoriesIds", "in": "query", "schema": { "type": "array", "items": { "type": "string" } } },
+          { "name": "pageNumbers", "in": "query", "schema": { "type": "array", "items": { "type": "integer" } } },
+          { "name": "statuses", "in": "query", "schema": { "type": "array", "items": { "type": "string", "enum": ["active", "inactive"] } } },
+          { "name": "badField", "in": "query", "schema": { "enum": ["string"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Item" } } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
