@@ -53,9 +53,12 @@ export class ModuleClassBuilder {
           attributes.push(prop.queryBuild());
           bundle.push(prop.bundleBuild());
         } else {
-          // ArrayProp (não-enum)
+          // ArrayProp (não-enum): emits EnumQueryBuilder<primitive>; só importa
+          // enum quando o array é realmente de enum.
           attributes.push(prop.queryBuild());
-          this.imports.addEnumImport(prop.type);
+          if ("isEnum" in prop && prop.isEnum) {
+            this.imports.addEnumImport(prop.type);
+          }
           bundle.push(prop.queryBundleBuild());
           this.imports.addReflectorImport("EnumQueryBuilder");
         }

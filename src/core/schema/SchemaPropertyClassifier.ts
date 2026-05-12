@@ -6,7 +6,7 @@ import { PrimitiveProp } from "../../props/primitive.property.js";
 import type { SchemaObject, ReferenceObject } from "../../types/open-api-spec.interface.js";
 import type { FieldConfigs, ReflectorParamType } from "../../types/types.js";
 import type { CodegenContext } from "../CodegenContext.js";
-import { isReferenceObject } from "../../helpers/helpers.js";
+import { isReferenceObject, isPrimitiveEnumValues } from "../../helpers/helpers.js";
 
 export type ClassifiedProp = PrimitiveProp | ArrayProp | ObjectProp | EnumProp;
 
@@ -55,14 +55,20 @@ export class SchemaPropertyClassifier {
     }
 
     if (value.enum) {
-      return new EnumProp({
-        enums: value.enum,
-        name: key,
-        required,
-        isParam: undefined,
-        entityName: schemaName,
-        context,
-      });
+      if (isPrimitiveEnumValues(value.enum)) {
+        console.warn(
+          `[reflector] Field '${schemaName}.${key}': enum=[${value.enum.join(",")}] looks like a TS primitive type (string/number/boolean), not a real enum. Ignoring 'enum' and treating as plain primitive. Fix the @ApiProperty/@ApiQuery in the back.`,
+        );
+      } else {
+        return new EnumProp({
+          enums: value.enum,
+          name: key,
+          required,
+          isParam: undefined,
+          entityName: schemaName,
+          context,
+        });
+      }
     }
 
     const config = fieldConfigs.get(key);

@@ -112,6 +112,18 @@ export function getFullEndpoint(rawEndpoint: string) {
     .join("/");
 }
 
+const TS_PRIMITIVE_RESERVED = new Set(["string", "number", "integer", "boolean"]);
+
+/** True if every enum value is a TS-reserved primitive type name
+ *  (`"string"`, `"number"`, `"boolean"`) — a sign of misused
+ *  `@ApiProperty({ enum: String })` on the back. */
+export function isPrimitiveEnumValues(enums: unknown[] | undefined): boolean {
+  if (!enums || enums.length === 0) return false;
+  return enums.every(
+    (e) => typeof e === "string" && TS_PRIMITIVE_RESERVED.has(e.toLowerCase()),
+  );
+}
+
 export function isEnumSchema(schema: SchemaObject): boolean {
   if (schema.enum) return true;
   if (schema.items) {
