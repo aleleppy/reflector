@@ -273,6 +273,59 @@ describe("codegen — query-array-and-bad-enum fixture", () => {
   });
 });
 
+describe("codegen — nested-objects fixture (inline objects & arrays-of-object)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/nested-objects");
+
+  beforeAll(async () => {
+    outputs = await runFixture("nested-objects");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("types an inline array-of-object as a generated child class, not string[]", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile.content;
+
+    // The bug: inline array-of-object degraded to string[].
+    expect(content).not.toMatch(/calendario\??\s*=\s*\$state<string\[\]/);
+    // Fixed: typed as a child class array.
+    expect(content).toMatch(/calendario\??\s*=\s*\$state<CalendarController_getResponseCalendario\[\]/);
+    // Child class exists with the object's own fields.
+    expect(content).toMatch(/class CalendarController_getResponseCalendario\b/);
+    expect(content).toMatch(/\bdataIso\b/);
+  });
+
+  it("keeps an inline nested object as an ObjectProp instead of dropping it", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    const content = schemaFile.content;
+
+    // The bug: inline object field silently dropped.
+    expect(content).toMatch(/empresa\??\s*=\s*\$state<CalendarController_getResponseEmpresa/);
+    expect(content).toMatch(/class CalendarController_getResponseEmpresa\b/);
+    expect(content).toMatch(/\bcnpj\b/);
+  });
+
+  it("does not regress arrays of $ref or primitive arrays", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    const content = schemaFile.content;
+
+    // Array of $ref still resolves to the referenced class.
+    expect(content).toMatch(/refItems\??\s*=\s*\$state<RefItem\[\]/);
+    // Primitive array stays string[].
+    expect(content).toMatch(/tags\??\s*=\s*\$state<string\[\]/);
+  });
+});
+
 describe("codegen — config.toastImport overrides the runtime template's toast path", () => {
   it("rewrites the toast import in reflector.svelte.ts when overridden", async () => {
     const outputs = await runFixture("minimal", {

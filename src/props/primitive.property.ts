@@ -96,7 +96,10 @@ export class PrimitiveProp {
 
     if (type === "string")
       return {
-        example: `"${example}"`,
+        // JSON.stringify escapes embedded quotes/backslashes/newlines so a
+        // string example like `{"64":true}` doesn't emit invalid JS. For
+        // plain strings the output is identical to `"${example}"`.
+        example: JSON.stringify(String(example)),
         emptyExample,
       };
 

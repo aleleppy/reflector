@@ -1,0 +1,72 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Nested inline objects fixture", "version": "1.0.0" },
+  "paths": {
+    "/calendar/{id}": {
+      "get": {
+        "operationId": "CalendarController_get",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["success", "message", "data"],
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "object",
+                      "required": ["mes", "calendario", "empresa", "refItems", "tags"],
+                      "properties": {
+                        "mes": { "type": "integer" },
+                        "calendario": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["dia", "tipo", "dataIso"],
+                            "properties": {
+                              "dia": { "type": "string" },
+                              "tipo": { "type": "string" },
+                              "dataIso": { "type": "string" }
+                            }
+                          }
+                        },
+                        "empresa": {
+                          "type": "object",
+                          "required": ["id", "cnpj"],
+                          "properties": {
+                            "id": { "type": "integer" },
+                            "cnpj": { "type": "string" }
+                          }
+                        },
+                        "refItems": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/RefItem" }
+                        },
+                        "tags": { "type": "array", "items": { "type": "string" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RefItem": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } }
+      }
+    }
+  }
+}

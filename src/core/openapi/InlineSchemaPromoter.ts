@@ -1,4 +1,4 @@
-import { capitalizeFirstLetter } from "../../helpers/helpers.js";
+import { capitalizeFirstLetter, isReferenceObject } from "../../helpers/helpers.js";
 import type {
   ComponentsObject,
   OperationObject,
@@ -32,6 +32,95 @@ export class InlineSchemaPromoter {
   static promote(components: ComponentsObject, paths: PathsObject): void {
     InlineSchemaPromoter.promoteBodies(components, paths);
     InlineSchemaPromoter.promoteResponses(components, paths);
+    InlineSchemaPromoter.promoteNestedObjects(components);
+  }
+
+  /**
+   * Recursively promotes inline object and array-of-object schemas nested
+   * inside named component schemas to their own named components, replacing
+   * them with a `$ref`.
+   *
+   * The rest of the pipeline already resolves `$ref` correctly (`ObjectProp`
+   * for object properties, `ArrayProp.getType` for array items), but it
+   * silently DROPS inline objects (`SchemaPropertyClassifier.classify` returns
+   * `null` for `type: "object"` without `$ref`) and DEGRADES inline
+   * arrays-of-object to `string[]` (`array.property.ts` fallback). Promoting
+   * them upfront routes both through the working `$ref` path, producing typed
+   * child classes instead of `string[]` / dropped fields.
+   *
+   * Runs after body/response promotion so it also covers the freshly promoted
+   * envelope schemas. Uses a worklist so newly created child schemas are
+   * themselves scanned for deeper nesting.
+   */
+  private static promoteNestedObjects(components: ComponentsObject): void {
+    const schemas = components.schemas;
+    if (!schemas) return;
+
+    const usedNames = new Set(Object.keys(schemas));
+    const queue = Object.keys(schemas);
+
+    while (queue.length > 0) {
+      const schemaName = queue.shift()!;
+      const schema = schemas[schemaName];
+      if (!schema || "$ref" in schema || !schema.properties) continue;
+
+      for (const [propKey, propValue] of Object.entries(schema.properties)) {
+        if (isReferenceObject(propValue)) continue;
+
+        const inlineObject = InlineSchemaPromoter.extractableInlineObject(propValue);
+        if (inlineObject) {
+          const name = InlineSchemaPromoter.reserveNestedName(usedNames, schemaName, propKey);
+          schemas[name] = inlineObject;
+          queue.push(name);
+          schema.properties[propKey] = InlineSchemaPromoter.refForProperty(name, propValue.nullable);
+          continue;
+        }
+
+        const inlineItems = InlineSchemaPromoter.extractableInlineArrayItems(propValue);
+        if (inlineItems) {
+          const name = InlineSchemaPromoter.reserveNestedName(usedNames, schemaName, propKey);
+          schemas[name] = inlineItems;
+          queue.push(name);
+          propValue.items = { $ref: `#/components/schemas/${name}` };
+        }
+      }
+    }
+  }
+
+  /** Inline object with own `properties` (not a free-form `additionalProperties` map). */
+  private static extractableInlineObject(value: SchemaObject): SchemaObject | null {
+    if (value.type !== "object" || value.additionalProperties || !value.properties) return null;
+    return value;
+  }
+
+  /** `type: array` whose `items` is an inline object with `properties`. */
+  private static extractableInlineArrayItems(value: SchemaObject): SchemaObject | null {
+    if (value.type !== "array" || !value.items || isReferenceObject(value.items)) return null;
+    const items = value.items;
+    if (items.type !== "object" || items.additionalProperties || !items.properties) return null;
+    return items;
+  }
+
+  private static reserveNestedName(usedNames: Set<string>, parent: string, prop: string): string {
+    const base = `${parent}${capitalizeFirstLetter(prop.replaceAll(/[^a-zA-Z0-9]/g, ""))}`;
+    let name = base;
+    let suffix = 2;
+    while (usedNames.has(name)) {
+      name = `${base}${suffix++}`;
+    }
+    usedNames.add(name);
+    return name;
+  }
+
+  /**
+   * OpenAPI 3.0 forbids siblings next to `$ref`, so a nullable object property
+   * must wrap the ref in `allOf` + `nullable` — the form `classifyObject`
+   * already understands. Non-nullable properties use a bare `$ref`.
+   */
+  private static refForProperty(name: string, nullable: boolean | undefined): SchemaObject | ReferenceObject {
+    const ref: ReferenceObject = { $ref: `#/components/schemas/${name}` };
+    if (nullable) return { allOf: [ref], nullable: true };
+    return ref;
   }
 
   private static promoteBodies(components: ComponentsObject, paths: PathsObject) {

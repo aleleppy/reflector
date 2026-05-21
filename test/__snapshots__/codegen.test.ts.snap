@@ -22,6 +22,17 @@ exports[`codegen — minimal fixture > generates the expected set of files 1`] =
 ]
 `;
 
+exports[`codegen — nested-objects fixture (inline objects & arrays-of-object) > generates the expected set of files 1`] = `
+[
+  "controllers/calendar/calendar.module.svelte.ts",
+  "controllers/calendar/calendar.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — optional-array-bundle fixture (optional/nullable arrays of refs) > generates the expected set of files 1`] = `
 [
   "controllers/package/package.module.svelte.ts",
