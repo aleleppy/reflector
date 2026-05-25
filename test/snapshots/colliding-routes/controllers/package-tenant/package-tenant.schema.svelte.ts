@@ -59,6 +59,28 @@ export class ControllerItem {
     return bundleStrict({ id: this.id?.value, name: this.name?.value });
   }
 }
+export type PackageTenantController_listResponse2Interface =
+  ControllerItemInterface[];
+
+export class PackageTenantController_listResponse2 {
+  data = $state<ControllerItem[]>([]);
+
+  constructor(params?: {
+    data?: PackageTenantController_listResponse2Interface | undefined;
+    empty?: boolean;
+  }) {
+    this.data =
+      params?.data?.map((item) => new ControllerItem({ data: item })) ?? [];
+  }
+
+  static from(data: PackageTenantController_listResponse2Interface) {
+    return data.map((item) => new ControllerItem({ data: item }));
+  }
+
+  bundle(): PackageTenantController_listResponse2Interface {
+    return this.data.map((item) => item.bundle());
+  }
+}
 
 export interface PackageInterface {
   id: string;
@@ -90,5 +112,25 @@ export class Package {
 
   bundle() {
     return bundleStrict({ id: this.id?.value, name: this.name?.value });
+  }
+}
+export type PackageTenantController_listResponseInterface = PackageInterface[];
+
+export class PackageTenantController_listResponse {
+  data = $state<Package[]>([]);
+
+  constructor(params?: {
+    data?: PackageTenantController_listResponseInterface | undefined;
+    empty?: boolean;
+  }) {
+    this.data = params?.data?.map((item) => new Package({ data: item })) ?? [];
+  }
+
+  static from(data: PackageTenantController_listResponseInterface) {
+    return data.map((item) => new Package({ data: item }));
+  }
+
+  bundle(): PackageTenantController_listResponseInterface {
+    return this.data.map((item) => item.bundle());
   }
 }

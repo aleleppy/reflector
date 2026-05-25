@@ -154,3 +154,23 @@ export class UserController_createBody {
     });
   }
 }
+export type UserController_listResponseInterface = UserInterface[];
+
+export class UserController_listResponse {
+  data = $state<User[]>([]);
+
+  constructor(params?: {
+    data?: UserController_listResponseInterface | undefined;
+    empty?: boolean;
+  }) {
+    this.data = params?.data?.map((item) => new User({ data: item })) ?? [];
+  }
+
+  static from(data: UserController_listResponseInterface) {
+    return data.map((item) => new User({ data: item }));
+  }
+
+  bundle(): UserController_listResponseInterface {
+    return this.data.map((item) => item.bundle());
+  }
+}
