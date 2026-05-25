@@ -1,5 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`codegen — array-response fixture (array-root response, non-ref item kinds) > generates the expected set of files 1`] = `
+[
+  "controllers/array/array.module.svelte.ts",
+  "controllers/array/array.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — colliding-routes fixture > generates the expected set of files 1`] = `
 [
   "controllers/package-tenant/package-tenant.module.svelte.ts",
@@ -47,6 +58,7 @@ exports[`codegen — optional-array-bundle fixture (optional/nullable arrays of 
 exports[`codegen — query-array-and-bad-enum fixture > generates the expected set of files 1`] = `
 [
   "controllers/item/item.module.svelte.ts",
+  "controllers/item/item.schema.svelte.ts",
   "enums.ts",
   "fields.ts",
   "mocked-params.svelte.ts",

@@ -62,7 +62,23 @@ export class InlineSchemaPromoter {
     while (queue.length > 0) {
       const schemaName = queue.shift()!;
       const schema = schemas[schemaName];
-      if (!schema || "$ref" in schema || !schema.properties) continue;
+      if (!schema || "$ref" in schema) continue;
+
+      // Array-root schema (e.g. a promoted `data: array` response): promote its
+      // inline-object items to a named `${schemaName}Item` so they get a typed
+      // child schema instead of staying inline and degrading to `string[]`.
+      if (!schema.properties && schema.type === "array") {
+        const inlineItems = InlineSchemaPromoter.extractableInlineArrayItems(schema);
+        if (inlineItems) {
+          const name = InlineSchemaPromoter.reserveNestedName(usedNames, schemaName, "item");
+          schemas[name] = inlineItems;
+          queue.push(name);
+          schema.items = { $ref: `#/components/schemas/${name}` };
+        }
+        continue;
+      }
+
+      if (!schema.properties) continue;
 
       for (const [propKey, propValue] of Object.entries(schema.properties)) {
         if (isReferenceObject(propValue)) continue;

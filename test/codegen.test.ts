@@ -326,6 +326,54 @@ describe("codegen — nested-objects fixture (inline objects & arrays-of-object)
   });
 });
 
+describe("codegen — array-response fixture (array-root response, non-ref item kinds)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/array-response");
+
+  beforeAll(async () => {
+    outputs = await runFixture("array-response");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("emits the array-root response schema the module imports (no dangling import)", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith(".module.svelte.ts"))!;
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"));
+    expect(schemaFile, "the per-module schema file must be emitted").toBeDefined();
+
+    // Every XResponse the module imports must be defined in the schema file.
+    const imported = [...moduleFile.content.matchAll(/\b(ArrayController_\w+Response)\b/g)].map((m) => m[1]!);
+    expect(imported.length).toBeGreaterThan(0);
+    for (const name of new Set(imported)) {
+      expect(schemaFile!.content).toMatch(new RegExp(`class ${name}\\b`));
+    }
+  });
+
+  it("types each item kind correctly: primitive string[], enum ENUM_*[], inline child class[], generic Record[]", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    const content = schemaFile.content;
+
+    // primitive: raw string[]
+    expect(content).toMatch(/class ArrayController_primitivesResponse\b[\s\S]*?data = \$state<string\[\]>/);
+    // enum: ENUM_*[] (not string[])
+    expect(content).toMatch(/class ArrayController_enumsResponse\b[\s\S]*?data = \$state<ENUM_\w+\[\]>/);
+    // inline object: promoted to a typed child class, hydrated
+    expect(content).toMatch(/class ArrayController_inlineResponse\b[\s\S]*?new ArrayController_inlineResponseItem\(/);
+    expect(content).toMatch(/class ArrayController_inlineResponseItem\b/);
+    expect(content).toMatch(/\blabel\b/);
+    // generic empty object: Record<string, unknown>[] (NOT degraded to string[])
+    expect(content).toMatch(/class ArrayController_genericResponse\b[\s\S]*?data = \$state<Record<string, unknown>\[\]>/);
+  });
+});
+
 describe("codegen — config.toastImport overrides the runtime template's toast path", () => {
   it("rewrites the toast import in reflector.svelte.ts when overridden", async () => {
     const outputs = await runFixture("minimal", {

@@ -21,7 +21,14 @@ export class SchemaRegistry {
     if (!componentSchemas) return;
 
     for (const [key, object] of Object.entries(componentSchemas)) {
-      if (isReferenceObject(object) || !object.properties) continue;
+      if (isReferenceObject(object)) continue;
+
+      if (object.type === "array" && object.items) {
+        this.schemas.push(Schema.forArrayRoot({ name: key, items: object.items, context }));
+        continue;
+      }
+
+      if (!object.properties) continue;
 
       const properties = object.properties;
 
