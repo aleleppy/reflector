@@ -20,6 +20,7 @@ export class PrimitiveProp {
   private readonly example: Example;
   private readonly fallbackExample: Example;
   private readonly defaultValue: AbstractType;
+  private readonly max: number | undefined;
 
   private get effectiveType(): string {
     return this.customType ?? this.rawType;
@@ -51,6 +52,7 @@ export class PrimitiveProp {
     this.example = example;
     this.fallbackExample = emptyExample;
     this.defaultValue = schemaObject.default;
+    this.max = schemaObject.maximum;
 
     const buildedType = customType ?? type;
 
@@ -154,9 +156,10 @@ export class PrimitiveProp {
     }
 
     const nullableParam = this.isNullable ? "nullable: true, " : "";
+    const maxParam = this.max !== undefined ? `max: ${this.max}, ` : "";
 
     return `
-      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${nullableParam}${buildedValidator()}})
+      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${nullableParam}${maxParam}${buildedValidator()}})
     `;
   }
 
