@@ -30,9 +30,18 @@ export type SvelteEvent = {
   currentTarget: EventTarget & SeiLa;
 };
 
+export interface ValidationErrorItem {
+  field: string;
+  code: string;
+  message: string;
+  received?: string;
+}
+
 export interface ApiErrorResponse {
   error: string;
   message: string;
+  statusCode?: number;
+  errors?: ValidationErrorItem[];
 }
 
 export class Behavior<TSuccess = unknown, TError = unknown> {
@@ -43,6 +52,8 @@ export class Behavior<TSuccess = unknown, TError = unknown> {
 export class BuildedInput<T> {
   value = $state<T>(null as any);
   display = $state<T>(null as any);
+  private serverErrorMessage = $state<string | null>(null);
+  private serverErrorValue = $state.raw<T | null>(null);
   required: boolean;
   nullable: boolean;
   placeholder: T;
@@ -82,6 +93,23 @@ export class BuildedInput<T> {
   validate(): ValidatorResult {
     if (!this.validator) return null;
     return this.validator(this.value);
+  }
+
+  setServerError(message: string) {
+    this.serverErrorMessage = message;
+    this.serverErrorValue = this.value;
+  }
+
+  clearServerError() {
+    this.serverErrorMessage = null;
+    this.serverErrorValue = null;
+  }
+
+  get serverError(): string | null {
+    if (this.serverErrorMessage === null) return null;
+    return this.value === this.serverErrorValue
+      ? this.serverErrorMessage
+      : null;
   }
 }
 
