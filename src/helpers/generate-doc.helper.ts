@@ -1,6 +1,7 @@
 interface LooseFieldConfig {
   fields: string[];
   validator?: string;
+  sanitizer?: string;
   type?: string;
 }
 
@@ -107,12 +108,17 @@ export function parseFieldConfigsFromConfig(code: string): LooseFieldConfig[] {
     const validatorMatch = block.match(/validator\s*:\s*([A-Za-z0-9_$.]+)/);
     const validator = validatorMatch?.[1]?.trim();
 
+    // extrai sanitizer (referência sem aspas, ex: sanitizers.phone)
+    const sanitizerMatch = block.match(/sanitizer\s*:\s*([A-Za-z0-9_$.]+)/);
+    const sanitizer = sanitizerMatch?.[1]?.trim();
+
     // extrai type (string literal com aspas, ex: 'IconName')
     const typeMatch = block.match(/type\s*:\s*['"`]([^'"`]+)['"`]/);
     const type = typeMatch?.[1]?.trim();
 
     const config: LooseFieldConfig = { fields };
     if (validator) config.validator = validator;
+    if (sanitizer) config.sanitizer = sanitizer;
     if (type) config.type = type;
 
     results.push(config);

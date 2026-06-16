@@ -9,6 +9,11 @@ type ValidatorResult = string | null;
 type ValidatorFn<T> = (v: T) => ValidatorResult;
 type BundleResult<T> = T extends { bundle: () => infer R } ? R : T;
 
+export type Sanitizer = {
+  parse: (display: string) => string; // texto exibido -> valor canônico
+  format: (value: string) => string; // valor canônico -> texto exibido (máscara)
+};
+
 export type ApiCallParams<TResponse, TPaths = void, TQuery = void> = {
   behavior?: Behavior<TResponse, ApiErrorResponse>;
 } & (TPaths extends void ? object : { paths?: TPaths }) &
@@ -50,10 +55,15 @@ export class Behavior<TSuccess = unknown, TError = unknown> {
 }
 
 export class BuildedInput<T> {
-  value = $state<T>(null as any);
   display = $state<T>(null as any);
+  // Backing store for `value` — only used WITHOUT a sanitizer, where `value`
+  // and `display` are two independent states (legacy behavior). With a
+  // sanitizer, `display` is the single writable source and `value` derives
+  // from it via the getter, so `_value` is left untouched.
+  private _value = $state<T>(null as any);
   private serverErrorMessage = $state<string | null>(null);
   private serverErrorValue = $state.raw<T | null>(null);
+  sanitizer?: Sanitizer;
   required: boolean;
   nullable: boolean;
   placeholder: T;
@@ -69,14 +79,19 @@ export class BuildedInput<T> {
     placeholder: T;
     max?: number;
     validator?: ValidatorFn<T>;
+    sanitizer?: Sanitizer;
   }) {
-    const { example, required, nullable, key, validator, placeholder, max } =
-      params;
+    const {
+      example,
+      required,
+      nullable,
+      key,
+      validator,
+      placeholder,
+      max,
+      sanitizer,
+    } = params;
 
-    const initial = key === undefined ? example : key;
-
-    this.value = initial;
-    this.display = initial;
     this.required = required;
     this.nullable = nullable ?? false;
     this.placeholder = placeholder;
@@ -88,6 +103,53 @@ export class BuildedInput<T> {
     if (validator) {
       this.validator = validator;
     }
+
+    if (sanitizer) {
+      this.sanitizer = sanitizer;
+    }
+
+    const initial = key === undefined ? example : key;
+
+    if (this.sanitizer) {
+      this.value = initial as T; // setter formata display a partir do valor canônico
+    } else {
+      this._value = initial; // comportamento atual: dois states independentes
+      this.display = initial;
+    }
+  }
+
+  get value(): T {
+    if (!this.sanitizer) return this._value;
+    const parsed = this.sanitizer.parse(
+      (this.display ?? "") as unknown as string,
+    );
+    if (this.nullable && parsed === "") return null as unknown as T;
+    return parsed as unknown as T;
+  }
+
+  set value(v: T) {
+    if (!this.sanitizer) {
+      this._value = v; // back-compat: não toca display
+      return;
+    }
+    if (v === null || v === undefined) {
+      this.display = "" as unknown as T;
+      return;
+    }
+    this.display = this.sanitizer.format(String(v)) as unknown as T;
+  }
+
+  /**
+   * Reaplica a máscara: parse(display) -> format. Usado na hidratação / oninput
+   * pelo componente. No-op sem sanitizer. Reassina `display`, então o caret vai
+   * pro fim — isso é responsabilidade do componente, não do reflector.
+   */
+  reformat(): void {
+    if (!this.sanitizer) return;
+    const parsed = this.sanitizer.parse(
+      (this.display ?? "") as unknown as string,
+    );
+    this.display = this.sanitizer.format(parsed) as unknown as T;
   }
 
   validate(): ValidatorResult {
@@ -153,6 +215,7 @@ export function build<T>(params: {
   nullable?: boolean;
   max?: number;
   validator?: ValidatorFn<T>;
+  sanitizer?: Sanitizer;
 }): BuildedInput<T> {
   return new BuildedInput(params);
 }

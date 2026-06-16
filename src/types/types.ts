@@ -20,6 +20,7 @@ export type Example = string | boolean | number;
 
 export interface FieldConfig {
   validator?: string;
+  sanitizer?: string;
   type?: string;
 }
 

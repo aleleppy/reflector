@@ -27,6 +27,8 @@ export class Schema {
   readonly enumDeps: string[];
   /** Custom type names used by this schema (from fieldConfigs) */
   readonly customTypeDeps: string[];
+  /** Sanitizer refs used by this schema (from fieldConfigs) — gates the `sanitizers` import */
+  readonly sanitizerDeps: string[];
 
   schema: string;
   interface: string;
@@ -55,6 +57,7 @@ export class Schema {
     (schema as { schemaDeps: string[] }).schemaDeps = element.kind === "ref" ? [element.type] : [];
     (schema as { enumDeps: string[] }).enumDeps = element.kind === "enum" ? [element.type] : [];
     (schema as { customTypeDeps: string[] }).customTypeDeps = [];
+    (schema as { sanitizerDeps: string[] }).sanitizerDeps = [];
 
     const rendered = ArraySchemaRenderer.render({
       name,
@@ -141,6 +144,7 @@ export class Schema {
     this.schemaDeps = deps.schemaDeps;
     this.enumDeps = deps.enumDeps;
     this.customTypeDeps = deps.customTypeDeps;
+    this.sanitizerDeps = deps.sanitizerDeps;
 
     const rendered = SchemaClassRenderer.render({
       name: this.name,

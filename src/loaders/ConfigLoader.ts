@@ -31,8 +31,9 @@ export class ConfigLoader {
     const parsedConfigs = parseFieldConfigsFromConfig(configText);
     parsedConfigs.forEach((rel) => {
       rel.fields.forEach((field) => {
-        const config: { validator?: string; type?: string } = {};
+        const config: { validator?: string; sanitizer?: string; type?: string } = {};
         if (rel.validator) config.validator = rel.validator;
+        if (rel.sanitizer) config.sanitizer = rel.sanitizer;
         if (rel.type) config.type = rel.type;
         fieldConfigs.set(field, config);
       });

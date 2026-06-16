@@ -12,7 +12,7 @@ vi.mock("$lib/utils/toast.svelte", () => ({
 }));
 vi.mock("svelte/reactivity", () => ({ SvelteURL: URL }));
 
-import { BuildedInput } from "../../src/runtime/reflector.svelte.js";
+import { BuildedInput, type Sanitizer } from "../../src/runtime/reflector.svelte.js";
 
 const makeInput = (value = "") =>
   new BuildedInput<string>({ example: value, required: false, placeholder: "" });
@@ -71,5 +71,109 @@ describe("BuildedInput — server-side validation error", () => {
 
     input.clearServerError();
     expect(input.serverError).toBeNull();
+  });
+});
+
+// phone-like máscara: parse = só dígitos (canônico); format = (XX) XXXXX-XXXX.
+const phone: Sanitizer = {
+  parse: (d) => d.replace(/\D/g, ""),
+  format: (v) => {
+    const digits = v.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  },
+};
+
+const makeSanitized = (opts: { nullable?: boolean; key?: string } = {}) =>
+  new BuildedInput<string>({
+    example: "",
+    required: false,
+    placeholder: "",
+    sanitizer: phone,
+    ...opts,
+  });
+
+describe("BuildedInput — sanitizer (display é a fonte; value deriva)", () => {
+  it("value derives from display via parse", () => {
+    const input = makeSanitized();
+    input.display = "(11) 99999-8888";
+    expect(input.value).toBe("11999998888");
+  });
+
+  it("set value formats display via format (round-trip)", () => {
+    const input = makeSanitized();
+    input.value = "11999998888";
+    expect(input.display).toBe("(11) 99999-8888");
+    expect(input.value).toBe("11999998888");
+  });
+
+  it("reformat() reapplies the mask to a raw display", () => {
+    const input = makeSanitized();
+    input.display = "11999998888"; // cru, sem máscara
+    input.reformat();
+    expect(input.display).toBe("(11) 99999-8888");
+  });
+
+  it("nullable + empty display yields null value", () => {
+    const input = makeSanitized({ nullable: true });
+    input.display = "";
+    expect(input.value).toBeNull();
+  });
+
+  it("non-nullable + empty display yields empty string (not null)", () => {
+    const input = makeSanitized();
+    input.display = "";
+    expect(input.value).toBe("");
+  });
+
+  it("construction via key starts display formatted", () => {
+    const input = makeSanitized({ key: "11999998888" });
+    expect(input.display).toBe("(11) 99999-8888");
+    expect(input.value).toBe("11999998888");
+  });
+
+  it("setting value to null clears display", () => {
+    const input = makeSanitized({ nullable: true });
+    input.value = "11999998888";
+    expect(input.display).toBe("(11) 99999-8888");
+    input.value = null as unknown as string;
+    expect(input.display).toBe("");
+    expect(input.value).toBeNull();
+  });
+
+  it("validate() reads the parsed canonical value, not the masked display", () => {
+    const input = new BuildedInput<string>({
+      example: "",
+      required: false,
+      placeholder: "",
+      sanitizer: phone,
+      validator: (v) => (v.length === 11 ? null : "telefone inválido"),
+    });
+    input.display = "(11) 99999-8888";
+    expect(input.validate()).toBeNull();
+    input.display = "(11) 9";
+    expect(input.validate()).toBe("telefone inválido");
+  });
+});
+
+describe("BuildedInput — sem sanitizer (back-compat byte-a-byte)", () => {
+  it("value and display are independent and writable", () => {
+    const input = makeInput("");
+    input.value = "canonical";
+    input.display = "shown";
+    // setter sem sanitizer não toca display; e escrever display não muda value
+    expect(input.value).toBe("canonical");
+    expect(input.display).toBe("shown");
+  });
+
+  it("value/display both initialize from key (or example)", () => {
+    const fromKey = new BuildedInput<string>({ key: "x", example: "y", required: false, placeholder: "" });
+    expect(fromKey.value).toBe("x");
+    expect(fromKey.display).toBe("x");
+
+    const fromExample = new BuildedInput<string>({ example: "y", required: false, placeholder: "" });
+    expect(fromExample.value).toBe("y");
+    expect(fromExample.display).toBe("y");
   });
 });

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { Reflector } from "../src/core/Reflector.js";
 import type { OpenAPIObject } from "../src/types/open-api-spec.interface.js";
 import type { ReflectorConfig } from "../src/core/config/ReflectorConfig.js";
+import type { FieldConfigs } from "../src/types/types.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,7 @@ interface Output {
 
 async function runFixture(
   name: string,
-  opts: { experimentalFeatures?: boolean; config?: Partial<ReflectorConfig> } = {},
+  opts: { experimentalFeatures?: boolean; config?: Partial<ReflectorConfig>; fieldConfigs?: FieldConfigs } = {},
 ): Promise<Output[]> {
   const fixtureDir = path.join(here, "fixtures", name);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `reflector-${name}-`));
@@ -30,7 +31,7 @@ async function runFixture(
     const r = new Reflector({
       components: doc.components!,
       paths: doc.paths,
-      fieldConfigs: new Map(),
+      fieldConfigs: opts.fieldConfigs ?? new Map(),
       typeImports: new Map(),
       apiImport: "$lib/api",
       experimentalFeatures: opts.experimentalFeatures,
@@ -435,6 +436,50 @@ describe("codegen — experimental Api class (queryOverride generic)", () => {
     // Without the third generic on the type, this access would fail
     // typecheck on the consumer side.
     expect(content).toMatch(/params\?\.queryOverride\s*\?\?\s*this\.querys\.bundle\(\)/);
+  });
+});
+
+describe("codegen — sanitizer field config", () => {
+  it("emits sanitizer ref + conditional sanitizers import for a matched string field", async () => {
+    const outputs = await runFixture("minimal", {
+      fieldConfigs: new Map([
+        ["email", { validator: "validateInputs.email", sanitizer: "sanitizers.phone" }],
+      ]),
+    });
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"));
+    expect(schema).toBeDefined();
+    const content = schema!.content;
+
+    // ref emitida dentro do build({...})
+    expect(content).toMatch(/sanitizer:\s*sanitizers\.phone/);
+    // validator explícito do config (sobrescreve o default emptyString)
+    expect(content).toMatch(/validator:\s*validateInputs\.email/);
+    // os dois juntos, adjacentes e com vírgula — prova de que o controle de vírgula não quebrou
+    expect(content).toMatch(
+      /validator:\s*validateInputs\.email,\s*sanitizer:\s*sanitizers\.phone/,
+    );
+    // import condicional do objeto sanitizers (default path)
+    expect(content).toMatch(
+      /import\s*\{\s*sanitizers\s*\}\s*from\s*["']\$lib\/sanitizers\/input-sanitizers["']/,
+    );
+  });
+
+  it("honors config.sanitizersImport override", async () => {
+    const outputs = await runFixture("minimal", {
+      fieldConfigs: new Map([["email", { sanitizer: "sanitizers.phone" }]]),
+      config: { sanitizersImport: "$core/utils/sanitizers/input-sanitizers" },
+    });
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
+    expect(schema.content).toContain(
+      `import { sanitizers } from "$core/utils/sanitizers/input-sanitizers"`,
+    );
+  });
+
+  it("emits no sanitizers import when no field is configured (diffless)", async () => {
+    const outputs = await runFixture("minimal");
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
+    expect(schema.content).not.toMatch(/import\s*\{\s*sanitizers\s*\}/);
+    expect(schema.content).not.toMatch(/sanitizer:/);
   });
 });
 
