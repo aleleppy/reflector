@@ -56,7 +56,7 @@ export abstract class UserModule {
   }
 
   /**  */
-  protected async _listAll(params?: {
+  protected async _listAllRun(params?: {
     behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
     queryOverride?: {
       limit?: string | null;
@@ -84,7 +84,10 @@ export abstract class UserModule {
 
       await onSuccess?.(response);
 
-      return new UserController_listResponse({ data: response });
+      return {
+        ok: true,
+        data: new UserController_listResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -95,14 +98,26 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
+  protected async _listAll(params?: {
+    behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
+    queryOverride?: {
+      limit?: string | null;
+    };
+  }) {
+    const res = await this._listAllRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _create(params?: {
+  protected async _createRun(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
   }) {
     const behavior = params?.behavior ?? new Behavior();
@@ -122,7 +137,7 @@ export abstract class UserModule {
 
       await onSuccess?.(response);
 
-      return new User({ data: response });
+      return { ok: true, data: new User({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -133,14 +148,23 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
+  protected async _create(params?: {
+    behavior?: Behavior<UserInterface, ApiErrorResponse>;
+  }) {
+    const res = await this._createRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _entity(params?: {
+  protected async _entityRun(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
     paths?: {
       id: string;
@@ -162,7 +186,7 @@ export abstract class UserModule {
 
       await onSuccess?.(response);
 
-      return new User({ data: response });
+      return { ok: true, data: new User({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -173,14 +197,26 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_entityRun()` — returns a discriminated ApiResult */
+  protected async _entity(params?: {
+    behavior?: Behavior<UserInterface, ApiErrorResponse>;
+    paths?: {
+      id: string;
+    };
+  }) {
+    const res = await this._entityRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _remove(params?: {
+  protected async _removeRun(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
     paths?: {
       id: string;
@@ -200,7 +236,7 @@ export abstract class UserModule {
 
       await onSuccess?.(response);
 
-      return null;
+      return { ok: true, data: null };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -211,10 +247,22 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_removeRun()` — returns a discriminated ApiResult */
+  protected async _remove(params?: {
+    behavior?: Behavior<null, ApiErrorResponse>;
+    paths?: {
+      id: string;
+    };
+  }) {
+    const res = await this._removeRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearUserController_list() {

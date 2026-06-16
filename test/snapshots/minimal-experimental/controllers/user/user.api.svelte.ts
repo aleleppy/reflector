@@ -36,7 +36,7 @@ export class ListAll {
   querys = new ListAllQuerys();
 
   /**  */
-  async call(
+  async run(
     params?: ApiCallParams<
       UserController_listResponseInterface,
       void,
@@ -63,7 +63,10 @@ export class ListAll {
 
       await onSuccess?.(response);
 
-      return new UserController_listResponse({ data: response });
+      return {
+        ok: true,
+        data: new UserController_listResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -74,10 +77,23 @@ export class ListAll {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `run()` — returns a discriminated ApiResult */
+  async call(
+    params?: ApiCallParams<
+      UserController_listResponseInterface,
+      void,
+      { limit?: string | null }
+    >,
+  ) {
+    const res = await this.run(params);
+    return res.ok ? res.data : undefined;
   }
 
   reset() {
@@ -91,7 +107,7 @@ export class Create {
   form = new UserController_createBody();
 
   /**  */
-  async call(params?: ApiCallParams<UserInterface>) {
+  async run(params?: ApiCallParams<UserInterface>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -109,7 +125,7 @@ export class Create {
 
       await onSuccess?.(response);
 
-      return new User({ data: response });
+      return { ok: true, data: new User({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -120,10 +136,17 @@ export class Create {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `run()` — returns a discriminated ApiResult */
+  async call(params?: ApiCallParams<UserInterface>) {
+    const res = await this.run(params);
+    return res.ok ? res.data : undefined;
   }
 
   reset() {
@@ -143,7 +166,7 @@ export class Entity {
   paths = new EntityPaths();
 
   /**  */
-  async call(params?: ApiCallParams<UserInterface, { id: string }>) {
+  async run(params?: ApiCallParams<UserInterface, { id: string }>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -160,7 +183,7 @@ export class Entity {
 
       await onSuccess?.(response);
 
-      return new User({ data: response });
+      return { ok: true, data: new User({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -171,10 +194,17 @@ export class Entity {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `run()` — returns a discriminated ApiResult */
+  async call(params?: ApiCallParams<UserInterface, { id: string }>) {
+    const res = await this.run(params);
+    return res.ok ? res.data : undefined;
   }
 
   reset() {
@@ -195,7 +225,7 @@ export class Remove {
   paths = new RemovePaths();
 
   /**  */
-  async call(params?: ApiCallParams<null, { id: string }>) {
+  async run(params?: ApiCallParams<null, { id: string }>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -210,7 +240,7 @@ export class Remove {
 
       await onSuccess?.(response);
 
-      return null;
+      return { ok: true, data: null };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -221,10 +251,17 @@ export class Remove {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `run()` — returns a discriminated ApiResult */
+  async call(params?: ApiCallParams<null, { id: string }>) {
+    const res = await this.run(params);
+    return res.ok ? res.data : undefined;
   }
 
   reset() {

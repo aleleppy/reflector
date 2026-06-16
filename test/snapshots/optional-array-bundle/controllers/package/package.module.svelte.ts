@@ -31,7 +31,7 @@ export abstract class PackageModule {
   }
 
   /**  */
-  protected async _create(params?: {
+  protected async _createRun(params?: {
     behavior?: Behavior<PackageViewInterface, ApiErrorResponse>;
   }) {
     const behavior = params?.behavior ?? new Behavior();
@@ -51,7 +51,7 @@ export abstract class PackageModule {
 
       await onSuccess?.(response);
 
-      return new PackageView({ data: response });
+      return { ok: true, data: new PackageView({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -62,10 +62,19 @@ export abstract class PackageModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
+  protected async _create(params?: {
+    behavior?: Behavior<PackageViewInterface, ApiErrorResponse>;
+  }) {
+    const res = await this._createRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearForms() {

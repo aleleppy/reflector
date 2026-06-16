@@ -8,7 +8,17 @@ export class ApiCallStrategy implements CallStrategy {
 
   buildSignature(method: CallMethodInput): string {
     const paramsType = this.buildParamsType(method);
-    return `async call(params?: ${paramsType})`;
+    return `async run(params?: ${paramsType})`;
+  }
+
+  buildLegacyWrapper(method: CallMethodInput): string {
+    const paramsType = this.buildParamsType(method);
+    return `
+      /** @deprecated use \`run()\` — returns a discriminated ApiResult */
+      async call(params?: ${paramsType}) {
+        const res = await this.run(params);
+        return res.ok ? res.data : undefined;
+      }`;
   }
 
   entityStateAccess(_method: CallMethodInput): string {

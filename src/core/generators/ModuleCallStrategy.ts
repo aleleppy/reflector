@@ -9,7 +9,17 @@ export class ModuleCallStrategy implements CallStrategy {
 
   buildSignature(method: CallMethodInput): string {
     const paramsType = this.buildParamsType(method);
-    return `protected async _${method.name}(params?: ${paramsType})`;
+    return `protected async _${method.name}Run(params?: ${paramsType})`;
+  }
+
+  buildLegacyWrapper(method: CallMethodInput): string {
+    const paramsType = this.buildParamsType(method);
+    return `
+      /** @deprecated use \`_${method.name}Run()\` — returns a discriminated ApiResult */
+      protected async _${method.name}(params?: ${paramsType}) {
+        const res = await this._${method.name}Run(params);
+        return res.ok ? res.data : undefined;
+      }`;
   }
 
   entityStateAccess(method: CallMethodInput): string {

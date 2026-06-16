@@ -64,7 +64,7 @@ export abstract class AiChatTenantModule {
   }
 
   /**  */
-  protected async _listAll(params?: {
+  protected async _listAllRun(params?: {
     behavior?: Behavior<
       AiChatTenantController_listResponseInterface,
       ApiErrorResponse
@@ -96,7 +96,7 @@ export abstract class AiChatTenantModule {
 
       await onSuccess?.(response);
 
-      return this.listAiChats;
+      return { ok: true, data: this.listAiChats };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -107,14 +107,30 @@ export abstract class AiChatTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
+  protected async _listAll(params?: {
+    behavior?: Behavior<
+      AiChatTenantController_listResponseInterface,
+      ApiErrorResponse
+    >;
+    queryOverride?: {
+      page?: string | null;
+      limit?: string | null;
+    };
+  }) {
+    const res = await this._listAllRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _create(params?: {
+  protected async _createRun(params?: {
     behavior?: Behavior<AiChatInterface, ApiErrorResponse>;
   }) {
     const behavior = params?.behavior ?? new Behavior();
@@ -134,7 +150,7 @@ export abstract class AiChatTenantModule {
 
       await onSuccess?.(response);
 
-      return new AiChat({ data: response });
+      return { ok: true, data: new AiChat({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -145,14 +161,23 @@ export abstract class AiChatTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
+  protected async _create(params?: {
+    behavior?: Behavior<AiChatInterface, ApiErrorResponse>;
+  }) {
+    const res = await this._createRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _getMessages(params?: {
+  protected async _getMessagesRun(params?: {
     behavior?: Behavior<
       AiChatTenantController_getMessagesResponseInterface,
       ApiErrorResponse
@@ -187,7 +212,7 @@ export abstract class AiChatTenantModule {
 
       await onSuccess?.(response);
 
-      return this.listMessages;
+      return { ok: true, data: this.listMessages };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -198,10 +223,28 @@ export abstract class AiChatTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_getMessagesRun()` — returns a discriminated ApiResult */
+  protected async _getMessages(params?: {
+    behavior?: Behavior<
+      AiChatTenantController_getMessagesResponseInterface,
+      ApiErrorResponse
+    >;
+    paths?: {
+      chatId: string;
+    };
+    queryOverride?: {
+      page?: string | null;
+    };
+  }) {
+    const res = await this._getMessagesRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearListAiChats() {

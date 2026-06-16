@@ -55,6 +55,16 @@ export class Behavior<TSuccess = unknown, TError = unknown> {
   onSuccess?: (v: TSuccess) => Promise<void> | void;
 }
 
+/**
+ * Discriminated result of a generated `run()` call. `ok` is the single
+ * discriminator — never branch on `data` being nullish to detect success.
+ * `data` is the raw response class instance (with `.bundle()`) for endpoints
+ * with a body, and `null` for void endpoints.
+ */
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: ApiErrorResponse };
+
 export class BuildedInput<T> {
   display = $state<T>(null as any);
   // Backing store for `value` — only used WITHOUT a sanitizer, where `value`
