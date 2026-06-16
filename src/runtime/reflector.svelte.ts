@@ -129,7 +129,13 @@ export class BuildedInput<T> {
 
   set value(v: T) {
     if (!this.sanitizer) {
-      this._value = v; // back-compat: não toca display
+      // Antes só escrevia `_value`, deixando `display` stale → input de texto
+      // (`bind:value={data.display}`) renderizava vazio quando o consumidor setava
+      // `.value` e esquecia `.display`. Agora mantém os dois em sincronia. `_value`
+      // segue sendo a fonte de leitura do getter, então não quebra quem mantém
+      // value≠display via sanitizer ou mask manual (que seta `display` DEPOIS).
+      this._value = v;
+      this.display = v;
       return;
     }
     if (v === null || v === undefined) {
@@ -333,9 +339,19 @@ export class QueryBuilder {
         : String(params.defaultValue);
   }
 
-  get value(): string | null {
+  /** Snapshot read-only do query param (a URL é a fonte). Escrita só via `.update()`. */
+  get current(): string | null {
     const fromUrl = (pendingUrl ?? page.url).searchParams.get(this.key);
     return fromUrl !== null ? fromUrl : this.defaultValue;
+  }
+
+  /**
+   * @deprecated Use `.current`. `.value` colide de nome com `BuildedInput.value`
+   * (que é gravável) — semântica oposta, fonte de confusão. Será removido num major
+   * futuro; até lá delega pra `.current`.
+   */
+  get value(): string | null {
+    return this.current;
   }
 
   /**
