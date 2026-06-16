@@ -112,6 +112,7 @@
           "status": { "$ref": "#/components/schemas/UserStatus" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "roles": { "type": "array", "items": { "type": "string", "enum": ["admin", "user"] } },
+          "priority": { "type": "string", "enum": ["low", "high"] },
           "address": { "allOf": [{ "$ref": "#/components/schemas/Address" }], "nullable": true }
         }
       },

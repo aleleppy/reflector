@@ -64,6 +64,7 @@ export class EnumProp {
   }
 
   hydrateBuild() {
-    return `if (data.${this.name} !== undefined) this.${this.name}.hydrate(data.${this.name} as never)`;
+    const opt = this.isRequired ? "" : "?";
+    return `if (data.${this.name} !== undefined) this.${this.name}${opt}.hydrate(data.${this.name} as never)`;
   }
 }

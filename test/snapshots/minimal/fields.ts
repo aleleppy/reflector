@@ -7,6 +7,7 @@ export const FIELD_NAMES = [
   "status",
   "tags",
   "roles",
+  "priority",
   "address",
   "success",
   "message",

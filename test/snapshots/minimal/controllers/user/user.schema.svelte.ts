@@ -1,6 +1,9 @@
 import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
-import type { ENUM_USER_ENTITY_ROLES } from "$reflector/enums";
+import type {
+  ENUM_USER_ENTITY_PRIORITY,
+  ENUM_USER_ENTITY_ROLES,
+} from "$reflector/enums";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
 
@@ -12,6 +15,7 @@ export interface UserInterface {
   roles?: ENUM_USER_ENTITY_ROLES[];
   status: UserStatusInterface;
   address: AddressInterface | null;
+  priority?: ENUM_USER_ENTITY_PRIORITY;
 }
 export class User {
   id: BuildedInput<string>;
@@ -21,6 +25,7 @@ export class User {
   roles? = $state<ENUM_USER_ENTITY_ROLES[]>([]);
   status = $state<UserStatus>(new UserStatus());
   address = $state<Address | null>(null);
+  priority?: BuildedInput<ENUM_USER_ENTITY_PRIORITY>;
 
   constructor(params?: { data?: UserInterface | undefined; empty?: boolean }) {
     this.id = build({
@@ -63,6 +68,12 @@ export class User {
         : params?.data?.address === null
           ? null
           : new Address();
+    this.priority = build({
+      key: params?.data?.priority,
+      placeholder: "low",
+      example: "low",
+      required: false,
+    });
   }
 
   static from(data: ENUM_USER_ENTITY_ROLES[]) {
@@ -84,6 +95,8 @@ export class User {
       else if (this.address) this.address.hydrate(data.address as never);
       else this.address = new Address({ data: data.address as never });
     }
+    if (data.priority !== undefined)
+      this.priority?.hydrate(data.priority as never);
   }
 
   reset(): void {
@@ -99,6 +112,7 @@ export class User {
       roles: this.roles,
       status: this.status?.bundle(),
       address: this.address?.bundle() ?? null,
+      priority: this.priority?.value,
     });
   }
 }
