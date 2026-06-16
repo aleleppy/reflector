@@ -62,4 +62,8 @@ export class EnumProp {
   bundleBuild() {
     return `${this.name}: this.${this.name}?.value`;
   }
+
+  hydrateBuild() {
+    return `if (data.${this.name} !== undefined) this.${this.name}.hydrate(data.${this.name} as never)`;
+  }
 }

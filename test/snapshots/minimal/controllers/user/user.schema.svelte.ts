@@ -69,6 +69,27 @@ export class User {
     return data.map((obj) => obj);
   }
 
+  hydrate(data: Partial<UserInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+    if (data.email !== undefined) this.email.hydrate(data.email as never);
+    if (data.tags !== undefined) this.tags = data.tags ?? [];
+    if (data.roles !== undefined) this.roles = data.roles ?? [];
+    if (data.status !== undefined) {
+      if (this.status) this.status.hydrate(data.status as never);
+      else this.status = new UserStatus({ data: data.status as never });
+    }
+    if (data.address !== undefined) {
+      if (data.address === null) this.address = null;
+      else if (this.address) this.address.hydrate(data.address as never);
+      else this.address = new Address({ data: data.address as never });
+    }
+  }
+
+  reset(): void {
+    this.hydrate(new User({ empty: true }).bundle() as Partial<UserInterface>);
+  }
+
   bundle() {
     return bundleStrict({
       id: this.id?.value,
@@ -110,6 +131,17 @@ export class Address {
     });
   }
 
+  hydrate(data: Partial<AddressInterface>): void {
+    if (data.street !== undefined) this.street.hydrate(data.street as never);
+    if (data.city !== undefined) this.city.hydrate(data.city as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new Address({ empty: true }).bundle() as Partial<AddressInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({ street: this.street?.value, city: this.city?.value });
   }
@@ -144,6 +176,23 @@ export class UserController_createBody {
       validator: validateInputs.emptyString,
     });
     this.role = new UserRole({ data: params?.data?.role });
+  }
+
+  hydrate(data: Partial<UserController_createBodyInterface>): void {
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+    if (data.email !== undefined) this.email.hydrate(data.email as never);
+    if (data.role !== undefined) {
+      if (this.role) this.role.hydrate(data.role as never);
+      else this.role = new UserRole({ data: data.role as never });
+    }
+  }
+
+  reset(): void {
+    this.hydrate(
+      new UserController_createBody({
+        empty: true,
+      }).bundle() as Partial<UserController_createBodyInterface>,
+    );
   }
 
   bundle() {

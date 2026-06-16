@@ -54,9 +54,25 @@ export class SchemaClassRenderer {
       bundleParams.push(prop.bundleBuild());
     });
 
-    const constructorCode = `constructor(params?: { data?: ${name}Interface | undefined, empty?: boolean }) { 
+    const constructorCode = `constructor(params?: { data?: ${name}Interface | undefined, empty?: boolean }) {
         ${constructorThis.join(";\n")}
       }`;
+
+    const hydrateLines: string[] = [];
+    primitiveProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    arrayProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    objectProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    enumProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+
+    const hydrateCode = `
+      hydrate(data: Partial<${name}Interface>): void {
+        ${hydrateLines.join(";\n")}
+      }
+
+      reset(): void {
+        this.hydrate(new ${name}({ empty: true }).bundle() as Partial<${name}Interface>);
+      }
+    `;
 
     const schema = `
     export class ${name} {
@@ -65,6 +81,8 @@ export class SchemaClassRenderer {
       ${constructorCode}
 
       ${staticMethod}
+
+      ${hydrateCode}
 
       bundle(){
         return bundleStrict({ ${bundleParams.join(",")} })

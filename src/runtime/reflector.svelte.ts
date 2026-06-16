@@ -3,6 +3,7 @@ import toast from "$lib/utils/toast.svelte";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { browser } from "$app/environment";
+import { untrack } from "svelte";
 import { SvelteURL } from "svelte/reactivity";
 
 type ValidatorResult = string | null;
@@ -137,6 +138,25 @@ export class BuildedInput<T> {
     if (!this.sanitizer) return;
     const parsed = this.sanitizer.parse((this.display ?? "") as unknown as string);
     this.display = this.sanitizer.format(parsed) as unknown as T;
+  }
+
+  /**
+   * Hidrata in-place: seta valor canônico + display formatado, sanitizer-aware,
+   * e limpa server error. Envolto em `untrack` pra poder ser chamado de dentro
+   * de um `$effect` que lê `data` sem criar loop (a leitura de
+   * `display`/`sanitizer` não vira dependência). Substitui o
+   * `hydrateForm`/`clearFormInPlace` que os consumidores escreviam na mão.
+   */
+  hydrate(v: T): void {
+    untrack(() => {
+      if (this.sanitizer) {
+        this.value = v; // setter já formata display a partir do canônico
+      } else {
+        this._value = v;
+        this.display = v;
+      }
+      this.clearServerError();
+    });
   }
 
   validate(): ValidatorResult {

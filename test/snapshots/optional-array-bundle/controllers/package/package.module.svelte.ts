@@ -68,7 +68,7 @@ export abstract class PackageModule {
   }
 
   protected clearForms() {
-    this.forms = this.buildForms(true);
+    this.forms.create.reset();
   }
 
   protected reset() {

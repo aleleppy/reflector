@@ -225,4 +225,8 @@ export class PrimitiveProp {
   bundleBuild() {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
   }
+
+  hydrateBuild() {
+    return `if (data.${this.name} !== undefined) ${this.thisDot()}${this.name}.hydrate(data.${this.name} as never)`;
+  }
 }

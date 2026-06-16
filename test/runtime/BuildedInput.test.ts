@@ -11,6 +11,8 @@ vi.mock("$lib/utils/toast.svelte", () => ({
   default: { error: vi.fn(), success: vi.fn() },
 }));
 vi.mock("svelte/reactivity", () => ({ SvelteURL: URL }));
+// `untrack` só precisa rodar o callback — sem reatividade real no node env.
+vi.mock("svelte", () => ({ untrack: (fn: () => void) => fn() }));
 
 import { BuildedInput, type Sanitizer } from "../../src/runtime/reflector.svelte.js";
 
@@ -154,6 +156,39 @@ describe("BuildedInput — sanitizer (display é a fonte; value deriva)", () => 
     expect(input.validate()).toBeNull();
     input.display = "(11) 9";
     expect(input.validate()).toBe("telefone inválido");
+  });
+});
+
+describe("BuildedInput — hydrate (in-place, sanitizer-aware)", () => {
+  it("sem sanitizer: hydrate seta value e display ao valor cru", () => {
+    const input = makeInput("inicial");
+    input.hydrate("novo");
+    expect(input.value).toBe("novo");
+    expect(input.display).toBe("novo");
+  });
+
+  it("com sanitizer: hydrate formata display e value deriva (cru)", () => {
+    const input = makeSanitized();
+    input.hydrate("11999998888");
+    expect(input.display).toBe("(11) 99999-8888");
+    expect(input.value).toBe("11999998888");
+  });
+
+  it("com sanitizer + nullable: hydrate(null) limpa display e value vira null", () => {
+    const input = makeSanitized({ nullable: true });
+    input.hydrate("11999998888");
+    expect(input.display).toBe("(11) 99999-8888");
+    input.hydrate(null as unknown as string);
+    expect(input.display).toBe("");
+    expect(input.value).toBeNull();
+  });
+
+  it("limpa o server error ao hidratar", () => {
+    const input = makeInput("a");
+    input.setServerError("invalid");
+    expect(input.serverError).toBe("invalid");
+    input.hydrate("a");
+    expect(input.serverError).toBeNull();
   });
 });
 

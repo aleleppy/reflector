@@ -13,6 +13,7 @@ vi.mock("$lib/utils/toast.svelte", () => ({
   default: { error: vi.fn(), success: vi.fn() },
 }));
 vi.mock("svelte/reactivity", () => ({ SvelteURL: URL }));
+vi.mock("svelte", () => ({ untrack: (fn: () => void) => fn() }));
 
 import {
   QueryBuilder,

@@ -44,4 +44,19 @@ export class ObjectProp {
     const nullable = this.isNullable ? "?? null" : "";
     return `${this.name}: this.${this.name}?.bundle() ${nullable}`;
   }
+
+  hydrateBuild() {
+    if (this.isNullable) {
+      return `if (data.${this.name} !== undefined) {
+        if (data.${this.name} === null) this.${this.name} = null;
+        else if (this.${this.name}) this.${this.name}.hydrate(data.${this.name} as never);
+        else this.${this.name} = new ${this.type}({ data: data.${this.name} as never });
+      }`;
+    }
+
+    return `if (data.${this.name} !== undefined) {
+      if (this.${this.name}) this.${this.name}.hydrate(data.${this.name} as never);
+      else this.${this.name} = new ${this.type}({ data: data.${this.name} as never });
+    }`;
+  }
 }

@@ -323,7 +323,7 @@ export abstract class PackageTenantModule {
   }
 
   protected clearForms() {
-    this.forms = this.buildForms(true);
+    this.forms.update.reset();
   }
 
   protected reset() {

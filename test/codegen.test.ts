@@ -437,6 +437,23 @@ describe("codegen — experimental Api class (queryOverride generic)", () => {
     // typecheck on the consumer side.
     expect(content).toMatch(/params\?\.queryOverride\s*\?\?\s*this\.querys\.bundle\(\)/);
   });
+
+  it("form endpoint reset() resets the form in-place (stable reference), never reassigns", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    const content = apiFile!.content;
+
+    // In-place reset preserves `this.form`, so consumers can use $derived.
+    expect(content).toMatch(/reset\(\)\s*\{[\s\S]*?this\.form\.reset\(\)/);
+    // The old instance-swap must be gone.
+    expect(content).not.toMatch(/this\.form\s*=\s*new\s+UserController_createBody\(\)/);
+  });
+
+  it("matches the committed api-file snapshot (locks the experimental Api contract)", async () => {
+    const snapshotDir = path.join(here, "snapshots/minimal-experimental");
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    expect(apiFile).toBeDefined();
+    await expect(apiFile!.content).toMatchFileSnapshot(path.join(snapshotDir, apiFile!.rel));
+  });
 });
 
 describe("codegen — sanitizer field config", () => {

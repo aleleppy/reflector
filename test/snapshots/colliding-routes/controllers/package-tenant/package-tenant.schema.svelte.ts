@@ -22,6 +22,18 @@ export class PackageTenantController_updateBody {
     });
   }
 
+  hydrate(data: Partial<PackageTenantController_updateBodyInterface>): void {
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new PackageTenantController_updateBody({
+        empty: true,
+      }).bundle() as Partial<PackageTenantController_updateBodyInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({ name: this.name?.value });
   }
@@ -53,6 +65,19 @@ export class ControllerItem {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<ControllerItemInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new ControllerItem({
+        empty: true,
+      }).bundle() as Partial<ControllerItemInterface>,
+    );
   }
 
   bundle() {
@@ -108,6 +133,17 @@ export class Package {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<PackageInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new Package({ empty: true }).bundle() as Partial<PackageInterface>,
+    );
   }
 
   bundle() {

@@ -4,10 +4,11 @@ import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import { page } from "$app/state";
 import {
   Behavior,
-  isFormValid,
   QueryBuilder,
   bundleStrict,
+  isFormValid,
   type ApiErrorResponse,
+  type ApiCallParams,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -19,7 +20,7 @@ import {
   User,
 } from "./user.schema.svelte";
 
-class Querys {
+class ListAllQuerys {
   readonly limit = new QueryBuilder({ key: "limit", defaultValue: 10 });
 
   bundle() {
@@ -28,40 +29,20 @@ class Querys {
     });
   }
 }
-class Paths {
-  readonly id = $derived.by(() =>
-    "id" in page.params ? page.params.id : mockedParams.id,
-  ) as string | null;
-}
 
-export abstract class UserModule {
+export class ListAll {
   loading = $state<boolean>(false);
-  userController_list = $state<UserController_listResponse | undefined>();
-  userEntity = $state<User | undefined>();
-  querys = new Querys();
-  paths = new Paths();
-  forms = $state({
-    create: new UserController_createBody(),
-  });
-
-  constructor(params?: { empty: boolean }) {
-    const isEmpty = params?.empty ?? PUBLIC_ENVIRONMENT !== "DEV";
-    this.forms = this.buildForms(isEmpty);
-  }
-
-  private buildForms(isEmpty: boolean) {
-    if (!isEmpty) return this.forms;
-
-    return { create: new UserController_createBody({ empty: true }) };
-  }
+  data = $state<UserController_listResponse | undefined>();
+  querys = new ListAllQuerys();
 
   /**  */
-  protected async _listAll(params?: {
-    behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
-    queryOverride?: {
-      limit?: string | null;
-    };
-  }) {
+  async call(
+    params?: ApiCallParams<
+      UserController_listResponseInterface,
+      void,
+      { limit?: string | null }
+    >,
+  ) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -78,9 +59,7 @@ export abstract class UserModule {
         queryData: { limit },
       });
 
-      this.userController_list = new UserController_listResponse({
-        data: response,
-      });
+      this.data = new UserController_listResponse({ data: response });
 
       await onSuccess?.(response);
 
@@ -101,10 +80,18 @@ export abstract class UserModule {
     }
   }
 
+  reset() {
+    this.data = undefined;
+    this.querys = new ListAllQuerys();
+  }
+}
+
+export class Create {
+  loading = $state<boolean>(false);
+  form = new UserController_createBody();
+
   /**  */
-  protected async _create(params?: {
-    behavior?: Behavior<UserInterface, ApiErrorResponse>;
-  }) {
+  async call(params?: ApiCallParams<UserInterface>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -112,7 +99,7 @@ export abstract class UserModule {
 
     const endpoint = `users`;
 
-    const data = this.forms.create.bundle();
+    const data = this.form.bundle();
 
     try {
       const response = await api.post<UserInterface>({
@@ -139,13 +126,24 @@ export abstract class UserModule {
     }
   }
 
+  reset() {
+    this.form.reset();
+  }
+}
+
+class EntityPaths {
+  readonly id = $derived.by(() =>
+    "id" in page.params ? page.params.id : mockedParams.id,
+  ) as string | null;
+}
+
+export class Entity {
+  loading = $state<boolean>(false);
+  data = $state<User | undefined>();
+  paths = new EntityPaths();
+
   /**  */
-  protected async _entity(params?: {
-    behavior?: Behavior<UserInterface, ApiErrorResponse>;
-    paths?: {
-      id: string;
-    };
-  }) {
+  async call(params?: ApiCallParams<UserInterface, { id: string }>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -158,7 +156,7 @@ export abstract class UserModule {
         endpoint,
       });
 
-      this.userEntity = new User({ data: response });
+      this.data = new User({ data: response });
 
       await onSuccess?.(response);
 
@@ -179,13 +177,25 @@ export abstract class UserModule {
     }
   }
 
+  reset() {
+    this.data = undefined;
+    this.paths = new EntityPaths();
+  }
+}
+
+class RemovePaths {
+  readonly id = $derived.by(() =>
+    "id" in page.params ? page.params.id : mockedParams.id,
+  ) as string | null;
+}
+
+export class Remove {
+  loading = $state<boolean>(false);
+  data = $state<unknown>(undefined);
+  paths = new RemovePaths();
+
   /**  */
-  protected async _remove(params?: {
-    behavior?: Behavior<null, ApiErrorResponse>;
-    paths?: {
-      id: string;
-    };
-  }) {
+  async call(params?: ApiCallParams<null, { id: string }>) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -217,31 +227,8 @@ export abstract class UserModule {
     }
   }
 
-  protected clearUserController_list() {
-    this.userController_list = undefined;
-  }
-
-  protected clearUserEntity() {
-    this.userEntity = undefined;
-  }
-
-  protected clearQuerys() {
-    this.querys = new Querys();
-  }
-
-  protected clearPaths() {
-    this.paths = new Paths();
-  }
-
-  protected clearForms() {
-    this.forms.create.reset();
-  }
-
-  protected reset() {
-    this.clearUserController_list();
-    this.clearUserEntity();
-    this.clearQuerys();
-    this.clearPaths();
-    this.clearForms();
+  reset() {
+    this.data = undefined;
+    this.paths = new RemovePaths();
   }
 }

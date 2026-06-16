@@ -59,6 +59,35 @@ export class CalendarController_getResponse {
     return data.map((obj) => obj);
   }
 
+  hydrate(data: Partial<CalendarController_getResponseInterface>): void {
+    if (data.mes !== undefined) this.mes.hydrate(data.mes as never);
+    if (data.calendario !== undefined)
+      this.calendario = (data.calendario ?? []).map(
+        (i) =>
+          new CalendarController_getResponseCalendario({ data: i as never }),
+      );
+    if (data.refItems !== undefined)
+      this.refItems = (data.refItems ?? []).map(
+        (i) => new RefItem({ data: i as never }),
+      );
+    if (data.tags !== undefined) this.tags = data.tags ?? [];
+    if (data.empresa !== undefined) {
+      if (this.empresa) this.empresa.hydrate(data.empresa as never);
+      else
+        this.empresa = new CalendarController_getResponseEmpresa({
+          data: data.empresa as never,
+        });
+    }
+  }
+
+  reset(): void {
+    this.hydrate(
+      new CalendarController_getResponse({
+        empty: true,
+      }).bundle() as Partial<CalendarController_getResponseInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({
       mes: this.mes?.value,
@@ -87,6 +116,16 @@ export class RefItem {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<RefItemInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new RefItem({ empty: true }).bundle() as Partial<RefItemInterface>,
+    );
   }
 
   bundle() {
@@ -131,6 +170,22 @@ export class CalendarController_getResponseCalendario {
     });
   }
 
+  hydrate(
+    data: Partial<CalendarController_getResponseCalendarioInterface>,
+  ): void {
+    if (data.dia !== undefined) this.dia.hydrate(data.dia as never);
+    if (data.tipo !== undefined) this.tipo.hydrate(data.tipo as never);
+    if (data.dataIso !== undefined) this.dataIso.hydrate(data.dataIso as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new CalendarController_getResponseCalendario({
+        empty: true,
+      }).bundle() as Partial<CalendarController_getResponseCalendarioInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({
       dia: this.dia?.value,
@@ -165,6 +220,19 @@ export class CalendarController_getResponseEmpresa {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<CalendarController_getResponseEmpresaInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.cnpj !== undefined) this.cnpj.hydrate(data.cnpj as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new CalendarController_getResponseEmpresa({
+        empty: true,
+      }).bundle() as Partial<CalendarController_getResponseEmpresaInterface>,
+    );
   }
 
   bundle() {

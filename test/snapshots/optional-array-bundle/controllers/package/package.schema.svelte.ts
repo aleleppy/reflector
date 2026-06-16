@@ -74,6 +74,35 @@ export class BatchCreatePackageDto {
     return data.map((obj) => obj);
   }
 
+  hydrate(data: Partial<BatchCreatePackageDtoInterface>): void {
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+    if (data.requiredItems !== undefined)
+      this.requiredItems = (data.requiredItems ?? []).map(
+        (i) => new PackageItem({ data: i as never }),
+      );
+    if (data.optionalItems !== undefined)
+      this.optionalItems = (data.optionalItems ?? []).map(
+        (i) => new PackageItem({ data: i as never }),
+      );
+    if (data.nullableItems !== undefined)
+      this.nullableItems = (data.nullableItems ?? []).map(
+        (i) => new PackageItem({ data: i as never }),
+      );
+    if (data.optionalNullableItems !== undefined)
+      this.optionalNullableItems = (data.optionalNullableItems ?? []).map(
+        (i) => new PackageItem({ data: i as never }),
+      );
+    if (data.tags !== undefined) this.tags = data.tags ?? [];
+  }
+
+  reset(): void {
+    this.hydrate(
+      new BatchCreatePackageDto({
+        empty: true,
+      }).bundle() as Partial<BatchCreatePackageDtoInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({
       name: this.name?.value,
@@ -109,6 +138,18 @@ export class PackageItem {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<PackageItemInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new PackageItem({
+        empty: true,
+      }).bundle() as Partial<PackageItemInterface>,
+    );
   }
 
   bundle() {
