@@ -21,7 +21,11 @@ import {
   setQueryGroup,
 } from "../../src/runtime/reflector.svelte.js";
 
-beforeEach(() => {
+beforeEach(async () => {
+  // Drena qualquer flush (microtask) vazado de um teste anterior antes de
+  // resetar os mocks — `pendingUrl` é estado de módulo, então um teste que
+  // não aguardou o flush deixaria a URL pendente sangrar pro próximo.
+  await Promise.resolve();
   pageMock.url = new URL("http://localhost/");
   gotoMock.mockReset();
 });
@@ -83,37 +87,59 @@ describe("QueryBuilder", () => {
     expect(gotoMock).not.toHaveBeenCalled();
   });
 
-  it("update(value) calls goto with URL containing the new param", () => {
+  it("update(value) calls goto with URL containing the new param", async () => {
     const qb = new QueryBuilder({ key: "page" });
     qb.update("2");
+    // O goto agora é diferido pra microtask — drena antes de assertar.
+    await Promise.resolve();
     expect(gotoMock).toHaveBeenCalledTimes(1);
     const [target] = gotoMock.mock.calls[0]!;
     expect((target as URL).searchParams.get("page")).toBe("2");
   });
 
-  it("update coerces numbers to string", () => {
+  it("update coerces numbers to string", async () => {
     const qb = new QueryBuilder({ key: "page" });
     qb.update(5);
+    await Promise.resolve();
     const [target] = gotoMock.mock.calls[0]!;
     expect((target as URL).searchParams.get("page")).toBe("5");
   });
 
-  it("update never writes local state — only goto", () => {
+  it("read-after-write: value reflects the pending param before navigation", async () => {
     const qb = new QueryBuilder({ key: "page" });
     qb.update("2");
-    // page.url is not mutated by update — that's the consumer's job (or
-    // whatever bound the URL store). We just verify goto was the writer.
+    // Antes do flush: value lê de `pendingUrl`, então enxerga o valor recém-setado.
+    expect(qb.value).toBe("2");
+    // Após o flush, o goto (mock) não muta `pageMock.url`, então `pendingUrl`
+    // volta a null e value cai pro page.url (sem o param).
+    await Promise.resolve();
     expect(qb.value).toBeNull();
+  });
+
+  it("coalesces two updates in the same tick into a single goto with both params", async () => {
+    const status = new QueryBuilder({ key: "status" });
+    const page = new QueryBuilder({ key: "page" });
+    status.update("paid");
+    page.update("1");
+    // Sem batching, o segundo update partiria de page.url (sem status) e o
+    // clobbaria. Com o acumulador, um único goto carrega os dois.
+    await Promise.resolve();
+    expect(gotoMock).toHaveBeenCalledTimes(1);
+    const [target] = gotoMock.mock.calls[0]!;
+    const url = target as URL;
+    expect(url.searchParams.get("status")).toBe("paid");
+    expect(url.searchParams.get("page")).toBe("1");
   });
 });
 
 describe("setQueryGroup", () => {
-  it("updates URL with all params from the group", () => {
+  it("updates URL with all params from the group", async () => {
     setQueryGroup([
       { key: "page", value: "1" },
       { key: "limit", value: 20 },
     ]);
 
+    await Promise.resolve();
     expect(gotoMock).toHaveBeenCalledTimes(1);
     const [target] = gotoMock.mock.calls[0]!;
     const url = target as URL;
@@ -121,34 +147,37 @@ describe("setQueryGroup", () => {
     expect(url.searchParams.get("limit")).toBe("20");
   });
 
-  it("preserves params outside the group", () => {
+  it("preserves params outside the group", async () => {
     pageMock.url = new URL("http://localhost/?other=keep&page=old");
     setQueryGroup([{ key: "page", value: "new" }]);
 
+    await Promise.resolve();
     const [target] = gotoMock.mock.calls[0]!;
     const url = target as URL;
     expect(url.searchParams.get("other")).toBe("keep");
     expect(url.searchParams.get("page")).toBe("new");
   });
 
-  it("appends array values as repeated params", () => {
+  it("appends array values as repeated params", async () => {
     setQueryGroup([{ key: "tag", value: ["a", "b", "c"] }]);
 
+    await Promise.resolve();
     const [target] = gotoMock.mock.calls[0]!;
     const url = target as URL;
     expect(url.searchParams.getAll("tag")).toEqual(["a", "b", "c"]);
   });
 
-  it("two preexisting QueryBuilder instances reflect URL after setQueryGroup", () => {
+  it("two preexisting QueryBuilder instances reflect URL after setQueryGroup", async () => {
     const page = new QueryBuilder({ key: "page" });
     const limit = new QueryBuilder({ key: "limit" });
 
     // setQueryGroup only calls goto; in real SvelteKit, goto updates page.url.
-    // We simulate that by mutating pageMock.url after the call.
+    // We simulate that by mutating pageMock.url after the (deferred) flush.
     setQueryGroup([
       { key: "page", value: "1" },
       { key: "limit", value: "20" },
     ]);
+    await Promise.resolve();
     pageMock.url = (gotoMock.mock.calls[0]![0] as URL);
 
     expect(page.value).toBe("1");

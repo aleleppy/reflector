@@ -185,8 +185,8 @@ export class EnumQueryBuilder<T> {
   private readonly defaultValues: T[] = [];
 
   values = $derived(
-    page.url.searchParams.has(this.key)
-      ? (page.url.searchParams.getAll(this.key) as T[])
+    (pendingUrl ?? page.url).searchParams.has(this.key)
+      ? ((pendingUrl ?? page.url).searchParams.getAll(this.key) as T[])
       : this.defaultValues,
   );
   selected = $state<T | null>(null);
@@ -263,18 +263,44 @@ export function genericArrayBundler<T extends { bundle: () => BundleResult<T> }>
 }
 
 /**
+ * Acumulador de mutações de query param. N chamadas no mesmo tick mutam a MESMA
+ * `SvelteURL` pendente e coalescem num único `goto` agendado por microtask —
+ * evita clobber (cada `goto` partir da URL antiga) e faz read-after-write
+ * honesto (os getters leem de `pendingUrl ?? page.url`). `$state.raw`: a troca
+ * de referência null↔URL dá a reatividade grossa; a `SvelteURL` já é reativa
+ * nos próprios `searchParams`, então um `$state` profundo proxiaria um objeto
+ * que já é reativo.
+ */
+let pendingUrl = $state.raw<SvelteURL | null>(null);
+
+function stageParamMutation(mutate: (params: URLSearchParams) => void) {
+  if (!browser) return;
+  if (!pendingUrl) {
+    pendingUrl = new SvelteURL(page.url);
+    queueMicrotask(flushPendingUrl);
+  }
+  mutate(pendingUrl.searchParams);
+}
+
+function flushPendingUrl() {
+  const url = pendingUrl;
+  pendingUrl = null;
+  if (url) goto(url, { replaceState: true, keepFocus: true });
+}
+
+/**
  * Atualiza um query param na URL.
  * - `""` (string vazia) → remove o param.
  * - qualquer outro valor → `searchParams.set(key, String(event))`.
  */
 export function changeParam({ event, key }: QueryContract) {
-  const url = new SvelteURL(page.url);
-  if (event === "") {
-    url.searchParams.delete(key);
-  } else {
-    url.searchParams.set(key, String(event));
-  }
-  goto(url, { replaceState: true, keepFocus: true });
+  stageParamMutation((params) => {
+    if (event === "") {
+      params.delete(key);
+    } else {
+      params.set(key, String(event));
+    }
+  });
 }
 
 type StringOrNumber = string | number;
@@ -298,7 +324,7 @@ export class QueryBuilder {
   }
 
   get value(): string | null {
-    const fromUrl = page.url.searchParams.get(this.key);
+    const fromUrl = (pendingUrl ?? page.url).searchParams.get(this.key);
     return fromUrl !== null ? fromUrl : this.defaultValue;
   }
 
@@ -321,35 +347,31 @@ export class QueryBuilder {
  * - outros valores → `set(key, String(value))`.
  */
 export function setQueryGroup(group: QueryWithArrayType[]) {
-  if (!browser) return;
+  stageParamMutation((params) => {
+    for (const p of group) {
+      const { key, value } = p;
 
-  const url = new SvelteURL(page.url);
+      if (Array.isArray(value)) {
+        params.delete(key);
+        value.forEach((v) => params.append(key, String(v)));
+        continue;
+      }
 
-  for (const p of group) {
-    const { key, value } = p;
+      if (value === "") {
+        params.delete(key);
+        continue;
+      }
 
-    if (Array.isArray(value)) {
-      url.searchParams.delete(key);
-      value.forEach((v) => url.searchParams.append(key, String(v)));
-      continue;
+      params.set(key, String(value));
     }
-
-    if (value === "") {
-      url.searchParams.delete(key);
-      continue;
-    }
-
-    url.searchParams.set(key, String(value));
-  }
-
-  goto(url, { replaceState: true, keepFocus: false });
+  });
 }
 
 export function changeArrayParam({ values, key }: { values: string[]; key: string }) {
-  const url = new SvelteURL(page.url);
-  url.searchParams.delete(key);
-  values.forEach((value) => url.searchParams.append(key, value));
-  goto(url, { replaceState: true, keepFocus: true });
+  stageParamMutation((params) => {
+    params.delete(key);
+    values.forEach((value) => params.append(key, value));
+  });
 }
 
 export function bundleStrict<T extends Record<string, unknown>>(
