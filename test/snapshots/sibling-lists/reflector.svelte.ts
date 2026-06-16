@@ -432,7 +432,31 @@ function isBuildedInput(v: unknown): v is BuildedInput<unknown> {
  *
  * Trata cada entry: `undefined` → omite; `BuildedInput` → value (com coerção nullable);
  * array → `genericArrayBundler`; DTO aninhado (`.bundle()`) → recursa; plain → passthrough.
+ *
+ * O overload tipado espelha o `bundleStrict`: strip do wrapper `BuildedInput<V> → V`,
+ * array → `BundleResult`, DTO aninhado → retorno do seu `bundle`, e dropa as keys
+ * puramente `undefined`. Sem ele o request `bundle()` regredia pra `Record<string,unknown>`
+ * e estourava svelte-check em todo consumidor que lê campo tipado do payload.
  */
+type BundledValue<V> =
+  V extends BuildedInput<infer U>
+    ? U
+    : V extends readonly (infer E)[]
+      ? BundleResult<E>[]
+      : V extends { bundle: () => infer R }
+        ? R
+        : V;
+
+export function bundleInputs<T extends Record<string, unknown>>(
+  inputs: T,
+): {
+  [K in keyof T as Exclude<BundledValue<T[K]>, undefined> extends never
+    ? never
+    : K]: Exclude<BundledValue<T[K]>, undefined>;
+};
+export function bundleInputs(
+  inputs: Record<string, unknown>,
+): Record<string, unknown>;
 export function bundleInputs(
   inputs: Record<string, unknown>,
 ): Record<string, unknown> {
