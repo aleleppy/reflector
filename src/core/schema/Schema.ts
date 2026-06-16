@@ -32,6 +32,12 @@ export class Schema {
 
   schema: string;
   interface: string;
+  /**
+   * Qual helper de runtime o `bundle()` renderizado referencia — controla os imports
+   * do schema file. `'strict'` = response (bundleStrict), `'inputs'` = request
+   * (bundleInputs), `null` = array-root (mapeia `item.bundle()`, não usa nenhum).
+   */
+  bundleHelper: "strict" | "inputs" | null;
 
   /**
    * Builds a Schema for an array-root component (top-level `type: array`), e.g.
@@ -66,6 +72,7 @@ export class Schema {
     });
     schema.interface = rendered.interface;
     schema.schema = rendered.schema;
+    schema.bundleHelper = null;
 
     return schema;
   }
@@ -155,5 +162,27 @@ export class Schema {
     });
     this.interface = rendered.interface;
     this.schema = rendered.schema;
+    this.bundleHelper = rendered.bundleHelper;
+  }
+
+  /**
+   * Re-renderiza este schema como request DTO: `bundle()` passa a serializar a partir
+   * das instâncias `BuildedInput` via `bundleInputs` (em vez de `bundleStrict` sobre os
+   * `.value` extraídos). Idempotente. Schemas array-root não têm props → no-op
+   * (continuam mapeando `item.bundle()`). Chamado pelo `SchemaRegistry` para o fecho
+   * transitivo dos request bodies.
+   */
+  setRequestMode(): void {
+    if (this.bundleHelper !== "strict") return;
+    const rendered = SchemaClassRenderer.render({
+      name: this.name,
+      primitiveProps: this.primitiveProps,
+      arrayProps: this.arrayProps,
+      objectProps: this.objectProps,
+      enumProps: this.enumProps,
+      mode: "request",
+    });
+    this.schema = rendered.schema;
+    this.bundleHelper = rendered.bundleHelper;
   }
 }

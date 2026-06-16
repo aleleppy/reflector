@@ -53,7 +53,9 @@ export class Reflector {
       config: this.config,
     });
 
-    this.registry = new SchemaRegistry({ components, fieldConfigs, context: this.context });
+    const requestBodyNames = new Set(this.modules.flatMap((m) => m.requestBodyNames));
+
+    this.registry = new SchemaRegistry({ components, fieldConfigs, context: this.context, requestBodyNames });
     this.schemas = this.registry.schemas;
     this.propertiesNames = this.registry.propertiesNames;
   }

@@ -26,8 +26,16 @@ export class ModuleSchemaFileBuilder {
 
     const treatedSchemas = schemas.map((s) => `${s.interface};\n${s.schema};`);
 
+    // import preciso: response usa bundleStrict, request usa bundleInputs, array-root
+    // não usa nenhum. Evita import morto (svelte-check/eslint do consumer reclama).
+    const needsStrict = schemas.some((s) => s.bundleHelper === "strict");
+    const needsInputs = schemas.some((s) => s.bundleHelper === "inputs");
+    const reflectorImports = ["build", "BuildedInput"];
+    if (needsStrict) reflectorImports.push("bundleStrict");
+    if (needsInputs) reflectorImports.push("bundleInputs");
+
     const imports: string[] = [
-      `import { build, BuildedInput, bundleStrict } from "${config.reflectorAlias}/reflector.svelte";`,
+      `import { ${reflectorImports.join(", ")} } from "${config.reflectorAlias}/reflector.svelte";`,
       `import { validateInputs } from "${config.validatorsImport}";`,
     ];
 

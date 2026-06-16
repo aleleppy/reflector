@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  bundleInputs,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import type {
   ENUM_USER_ENTITY_PRIORITY,
@@ -210,10 +215,10 @@ export class UserController_createBody {
   }
 
   bundle() {
-    return bundleStrict({
-      name: this.name?.value,
-      email: this.email?.value,
-      role: this.role?.bundle(),
+    return bundleInputs({
+      name: this.name,
+      email: this.email,
+      role: this.role,
     });
   }
 }

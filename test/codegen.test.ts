@@ -180,30 +180,69 @@ describe("codegen — optional-array-bundle fixture (optional/nullable arrays of
     }
   });
 
-  it("emits null/undefined-safe bundle() for optional and nullable array fields", () => {
+  // Recorta o corpo de uma classe gerada (de `export class X {` até a próxima
+  // `export class ` ou o fim) para asserir bundle() request vs response isoladamente.
+  const classBlock = (content: string, name: string): string => {
+    const start = content.indexOf(`export class ${name} {`);
+    expect(start, `class ${name} não encontrada`).toBeGreaterThanOrEqual(0);
+    const next = content.indexOf("export class ", start + 1);
+    return next === -1 ? content.slice(start) : content.slice(start, next);
+  };
+
+  it("response schema: emits null/undefined-safe bundle() for optional and nullable array fields", () => {
     const schemaFile = outputs.find((o) => o.rel.endsWith("package.schema.svelte.ts"));
     expect(schemaFile).toBeDefined();
-    const content = schemaFile!.content;
+    // PackageView é o response DTO → bundle() via bundleStrict, com os guards por campo.
+    const view = classBlock(schemaFile!.content, "PackageView");
 
     // required, non-nullable: plain .map (no guard needed)
-    expect(content).toMatch(/requiredItems:\s*this\.requiredItems\.map\(\(obj\) => obj\.bundle\(\)\)/);
+    expect(view).toMatch(/requiredItems:\s*this\.requiredItems\.map\(\(obj\) => obj\.bundle\(\)\)/);
 
     // optional, non-nullable: ?.map (undefined-safe)
-    expect(content).toMatch(/optionalItems:\s*this\.optionalItems\?\.map\(\(obj\) => obj\.bundle\(\)\)/);
+    expect(view).toMatch(/optionalItems:\s*this\.optionalItems\?\.map\(\(obj\) => obj\.bundle\(\)\)/);
 
     // required, nullable: == null guard preserves null (prettier may wrap across lines)
-    expect(content).toMatch(
+    expect(view).toMatch(
       /nullableItems:\s*this\.nullableItems\s*==\s*null\s*\?\s*this\.nullableItems\s*:\s*this\.nullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
     );
 
     // optional + nullable: == null guard catches both null and undefined
-    expect(content).toMatch(
+    expect(view).toMatch(
       /optionalNullableItems:\s*this\.optionalNullableItems\s*==\s*null\s*\?\s*this\.optionalNullableItems\s*:\s*this\.optionalNullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
     );
 
     // primitive arrays unchanged: no .map call in bundle
-    expect(content).toMatch(/tags:\s*this\.tags[,}\s]/);
-    expect(content).not.toMatch(/tags:\s*this\.tags\?\.map/);
+    expect(view).toMatch(/tags:\s*this\.tags[,}\s]/);
+    expect(view).not.toMatch(/tags:\s*this\.tags\?\.map/);
+  });
+
+  it("request DTO: bundle() serializa via bundleInputs a partir das instâncias (refs cruas)", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith("package.schema.svelte.ts"));
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile!.content;
+    // BatchCreatePackageDto é o request body → request mode → bundleInputs.
+    const dto = classBlock(content, "BatchCreatePackageDto");
+
+    // serializa a partir dos BuildedInput/instâncias, não do .value extraído
+    expect(dto).toMatch(/return bundleInputs\(\{/);
+    expect(dto).not.toMatch(/return bundleStrict\(/);
+
+    // toda prop passa a instância crua — a segurança null/undefined/array é do runtime
+    // (bundleInputs + genericArrayBundler), não mais guards por campo no string gerado
+    expect(dto).toMatch(/requiredItems:\s*this\.requiredItems[,}\s]/);
+    expect(dto).toMatch(/optionalItems:\s*this\.optionalItems[,}\s]/);
+    expect(dto).toMatch(/nullableItems:\s*this\.nullableItems[,}\s]/);
+    expect(dto).toMatch(/optionalNullableItems:\s*this\.optionalNullableItems[,}\s]/);
+    expect(dto).toMatch(/tags:\s*this\.tags[,}\s]/);
+    expect(dto).not.toMatch(/\.map\(\(obj\) => obj\.bundle\(\)\)/);
+
+    // o file importa bundleInputs (request) E bundleStrict (PackageView response)
+    expect(content).toMatch(
+      /import \{[^}]*\bbundleInputs\b[^}]*\} from "\$reflector\/reflector\.svelte"/,
+    );
+    expect(content).toMatch(
+      /import \{[^}]*\bbundleStrict\b[^}]*\} from "\$reflector\/reflector\.svelte"/,
+    );
   });
 });
 

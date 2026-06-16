@@ -358,3 +358,49 @@ export function bundleStrict<T extends Record<string, unknown>>(
 export function bundleStrict(payload: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined));
 }
+
+function isBuildedInput(v: unknown): v is BuildedInput<unknown> {
+  return v != null && typeof v === "object" && (v as { kind?: unknown }).kind === "builded";
+}
+
+/**
+ * Serialização schema-aware de request: recebe as instâncias `BuildedInput` (não o
+ * `.value` já extraído), então enxerga os flags (`required`/`nullable`) que vivem na
+ * instância. Corrige o 400 silencioso do `bundleStrict` cego: campo `nullable` apagado
+ * pra `''` virava `""` no payload (estourava parse de ISO date no back). Aqui `nullable`
+ * com `''` vira `null` de propósito.
+ *
+ * Não faz gate client-side de `required` — consistente com o padrão do projeto
+ * (`bundle()` só serializa; validação é do backend, surface via toast). Quem quiser
+ * gate síncrono usa `isFormValid` antes do `bundle`.
+ *
+ * Trata cada entry: `undefined` → omite; `BuildedInput` → value (com coerção nullable);
+ * array → `genericArrayBundler`; DTO aninhado (`.bundle()`) → recursa; plain → passthrough.
+ */
+export function bundleInputs(inputs: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(inputs)) {
+    if (v === undefined) continue; // opcional nunca construído → omite
+
+    if (isBuildedInput(v)) {
+      let val = v.value as unknown;
+      if (v.nullable && val === "") val = null; // mata o ''→"" que estoura ISO no back
+      if (val === undefined) continue; // omite undefined; NÃO omite null (nullable manda null de propósito)
+      out[key] = val;
+      continue;
+    }
+
+    if (Array.isArray(v)) {
+      out[key] = genericArrayBundler(v);
+      continue;
+    }
+
+    if (v && typeof (v as { bundle?: unknown }).bundle === "function") {
+      out[key] = (v as { bundle: () => unknown }).bundle(); // DTO aninhado → recursa
+      continue;
+    }
+
+    out[key] = v; // plain (v !== undefined já garantido)
+  }
+  return out;
+}

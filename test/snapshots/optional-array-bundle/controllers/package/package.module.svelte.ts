@@ -9,7 +9,8 @@ import {
 
 import {
   BatchCreatePackageDto,
-  type BatchCreatePackageDtoInterface,
+  type PackageViewInterface,
+  PackageView,
 } from "./package.schema.svelte";
 
 export abstract class PackageModule {
@@ -31,7 +32,7 @@ export abstract class PackageModule {
 
   /**  */
   protected async _create(params?: {
-    behavior?: Behavior<BatchCreatePackageDtoInterface, ApiErrorResponse>;
+    behavior?: Behavior<PackageViewInterface, ApiErrorResponse>;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -43,14 +44,14 @@ export abstract class PackageModule {
     const data = this.forms.create.bundle();
 
     try {
-      const response = await api.post<BatchCreatePackageDtoInterface>({
+      const response = await api.post<PackageViewInterface>({
         endpoint,
         data,
       });
 
       await onSuccess?.(response);
 
-      return new BatchCreatePackageDto({ data: response });
+      return new PackageView({ data: response });
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
