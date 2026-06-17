@@ -11,6 +11,12 @@ export const FIELD_NAMES = [
   "address",
   "success",
   "message",
+  "userId",
+  "productId",
+  "quantity",
+  "title",
+  "action",
+  "actionMeta",
   "role",
 ] as const;
 export type FieldName = (typeof FIELD_NAMES)[number];

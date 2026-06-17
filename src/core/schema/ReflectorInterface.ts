@@ -2,6 +2,7 @@ import type { ArrayProp } from "../../props/array.property.js";
 import type { EnumProp } from "../../props/enum.property.js";
 import type { ObjectProp } from "../../props/object.property.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
+import type { UnionProp } from "../../props/union.property.js";
 
 export class ReflectorInterface {
   builded: string;
@@ -12,8 +13,9 @@ export class ReflectorInterface {
     name: string;
     objectProps: ObjectProp[];
     enumProps: EnumProp[];
+    unionProps: UnionProp[];
   }) {
-    const { name, arrayProps, primitiveProps, objectProps, enumProps } = params;
+    const { name, arrayProps, primitiveProps, objectProps, enumProps, unionProps } = params;
 
     const buildedProps: string[] = [];
 
@@ -30,6 +32,10 @@ export class ReflectorInterface {
     });
 
     enumProps.forEach((prop) => {
+      buildedProps.push(prop.interfaceBuild());
+    });
+
+    unionProps.forEach((prop) => {
       buildedProps.push(prop.interfaceBuild());
     });
 

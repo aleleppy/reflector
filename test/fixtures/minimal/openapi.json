@@ -88,6 +88,26 @@
         ],
         "responses": { "204": { "description": "ok" } }
       }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationController_list",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -122,6 +142,43 @@
         "properties": {
           "success": { "type": "boolean" },
           "message": { "type": "string" }
+        }
+      },
+      "UserMeta": {
+        "type": "object",
+        "required": ["userId"],
+        "properties": { "userId": { "type": "string" } }
+      },
+      "StockMeta": {
+        "type": "object",
+        "required": ["productId", "quantity"],
+        "properties": {
+          "productId": { "type": "string" },
+          "quantity": { "type": "integer" }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "required": ["id", "action", "actionMeta"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string", "nullable": true },
+          "action": { "type": "string", "enum": ["USER_CREATED", "USER_UPDATED", "STOCK_LOW", "STOCK_OUT"] },
+          "actionMeta": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/UserMeta" },
+              { "$ref": "#/components/schemas/StockMeta" }
+            ],
+            "discriminator": {
+              "propertyName": "action",
+              "mapping": {
+                "USER_CREATED": "#/components/schemas/UserMeta",
+                "USER_UPDATED": "#/components/schemas/UserMeta",
+                "STOCK_LOW": "#/components/schemas/StockMeta",
+                "STOCK_OUT": "#/components/schemas/StockMeta"
+              }
+            }
+          }
         }
       }
     }

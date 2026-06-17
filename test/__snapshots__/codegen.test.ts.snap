@@ -24,6 +24,8 @@ exports[`codegen — colliding-routes fixture > generates the expected set of fi
 
 exports[`codegen — minimal fixture > generates the expected set of files 1`] = `
 [
+  "controllers/notification/notification.module.svelte.ts",
+  "controllers/notification/notification.schema.svelte.ts",
   "controllers/user/user.module.svelte.ts",
   "controllers/user/user.schema.svelte.ts",
   "enums.ts",

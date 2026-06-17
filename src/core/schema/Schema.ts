@@ -2,6 +2,7 @@ import { ArrayProp } from "../../props/array.property.js";
 import { EnumProp } from "../../props/enum.property.js";
 import { ObjectProp } from "../../props/object.property.js";
 import { PrimitiveProp } from "../../props/primitive.property.js";
+import { UnionProp } from "../../props/union.property.js";
 
 import { isReferenceObject } from "../../helpers/helpers.js";
 import type { SchemaObject, ReferenceObject } from "../../types/open-api-spec.interface.js";
@@ -20,6 +21,7 @@ export class Schema {
   arrayProps: ArrayProp[] = [];
   objectProps: ObjectProp[] = [];
   enumProps: EnumProp[] = [];
+  unionProps: UnionProp[] = [];
 
   /** Other schema class names this schema depends on (via ObjectProp/$ref arrays) */
   readonly schemaDeps: string[];
@@ -60,6 +62,7 @@ export class Schema {
     schema.arrayProps = [];
     schema.objectProps = [];
     schema.enumProps = [];
+    schema.unionProps = [];
     (schema as { schemaDeps: string[] }).schemaDeps = element.kind === "ref" ? [element.type] : [];
     (schema as { enumDeps: string[] }).enumDeps = element.kind === "enum" ? [element.type] : [];
     (schema as { customTypeDeps: string[] }).customTypeDeps = [];
@@ -140,6 +143,7 @@ export class Schema {
       else if (prop instanceof ArrayProp) this.arrayProps.push(prop);
       else if (prop instanceof ObjectProp) this.objectProps.push(prop);
       else if (prop instanceof EnumProp) this.enumProps.push(prop);
+      else if (prop instanceof UnionProp) this.unionProps.push(prop);
     }
 
     const deps = SchemaDependencyCollector.collect({
@@ -147,6 +151,7 @@ export class Schema {
       arrayProps: this.arrayProps,
       objectProps: this.objectProps,
       enumProps: this.enumProps,
+      unionProps: this.unionProps,
     });
     this.schemaDeps = deps.schemaDeps;
     this.enumDeps = deps.enumDeps;
@@ -159,6 +164,7 @@ export class Schema {
       arrayProps: this.arrayProps,
       objectProps: this.objectProps,
       enumProps: this.enumProps,
+      unionProps: this.unionProps,
     });
     this.interface = rendered.interface;
     this.schema = rendered.schema;
@@ -180,6 +186,7 @@ export class Schema {
       arrayProps: this.arrayProps,
       objectProps: this.objectProps,
       enumProps: this.enumProps,
+      unionProps: this.unionProps,
       mode: "request",
     });
     this.schema = rendered.schema;

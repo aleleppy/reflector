@@ -2,13 +2,14 @@ import { ArrayProp } from "../../props/array.property.js";
 import { EnumProp } from "../../props/enum.property.js";
 import { ObjectProp } from "../../props/object.property.js";
 import { PrimitiveProp } from "../../props/primitive.property.js";
+import { UnionProp } from "../../props/union.property.js";
 
 import type { SchemaObject, ReferenceObject } from "../../types/open-api-spec.interface.js";
 import type { FieldConfigs, ReflectorParamType } from "../../types/types.js";
 import type { CodegenContext } from "../CodegenContext.js";
 import { isReferenceObject, isPrimitiveEnumValues } from "../../helpers/helpers.js";
 
-export type ClassifiedProp = PrimitiveProp | ArrayProp | ObjectProp | EnumProp;
+export type ClassifiedProp = PrimitiveProp | ArrayProp | ObjectProp | EnumProp | UnionProp;
 
 export class SchemaPropertyClassifier {
   static classify(params: {
@@ -22,6 +23,15 @@ export class SchemaPropertyClassifier {
     const { key, value, requireds, fieldConfigs, schemaName, context } = params;
 
     if (isReferenceObject(value) || !value?.type) {
+      if (!isReferenceObject(value) && value.oneOf) {
+        return new UnionProp({
+          name: key,
+          oneOf: value.oneOf,
+          discriminator: value.discriminator,
+          isRequired: requireds.includes(key),
+          isNullable: value.nullable,
+        });
+      }
       if (!isReferenceObject(value) && value.additionalProperties) {
         const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
         const config = fieldConfigs.get(key);

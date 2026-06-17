@@ -2,6 +2,7 @@ import type { ArrayProp } from "../../props/array.property.js";
 import type { EnumProp } from "../../props/enum.property.js";
 import type { ObjectProp } from "../../props/object.property.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
+import type { UnionProp } from "../../props/union.property.js";
 
 export interface SchemaDependencies {
   schemaDeps: string[];
@@ -16,8 +17,9 @@ export class SchemaDependencyCollector {
     arrayProps: ArrayProp[];
     objectProps: ObjectProp[];
     enumProps: EnumProp[];
+    unionProps: UnionProp[];
   }): SchemaDependencies {
-    const { primitiveProps, arrayProps, objectProps, enumProps } = props;
+    const { primitiveProps, arrayProps, objectProps, enumProps, unionProps } = props;
 
     const schemaDepsSet = new Set<string>();
     for (const prop of objectProps) {
@@ -26,6 +28,11 @@ export class SchemaDependencyCollector {
     for (const prop of arrayProps) {
       if (prop.isSchemaRef) {
         schemaDepsSet.add(prop.type);
+      }
+    }
+    for (const prop of unionProps) {
+      for (const variant of prop.variantTypes) {
+        schemaDepsSet.add(variant);
       }
     }
 
