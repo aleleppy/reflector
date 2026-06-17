@@ -19,8 +19,13 @@ export interface CallMethodInput {
  * (per-endpoint Api class vs Module `_methodName` protected method).
  */
 export interface CallStrategy {
-  /** Full method signature incl. params — e.g. `async call(params?: ...)` or `protected async _foo(params?: ...)` */
+  /** Full signature of the discriminated `run` method incl. params —
+   *  e.g. `async run(params?: ...)` (api) or `protected async _fooRun(params?: ...)` (module). */
   buildSignature(method: CallMethodInput): string;
+  /** Full `@deprecated` legacy method that delegates to the `run` variant and
+   *  reproduces the old `Res | null | undefined` return shape. Emitted verbatim
+   *  after the run method. Api → `call()`; module → `_foo()`. */
+  buildLegacyWrapper(method: CallMethodInput): string;
   /** State field holding list results — e.g. `this.list` / `this.listControllers` (module) or `this.data` (api).
    *  Takes `method` so the module strategy can suffix the field when two list
    *  operations collide in the same controller. */

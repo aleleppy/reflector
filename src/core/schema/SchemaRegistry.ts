@@ -14,8 +14,10 @@ export class SchemaRegistry {
     components: ComponentsObject;
     fieldConfigs: FieldConfigs;
     context: CodegenContext;
+    /** Nomes-raiz dos request body DTOs — eles e seu fecho transitivo serializam via bundleInputs */
+    requestBodyNames?: Set<string>;
   }) {
-    const { components, fieldConfigs, context } = params;
+    const { components, fieldConfigs, context, requestBodyNames } = params;
     const componentSchemas = components.schemas;
 
     if (!componentSchemas) return;
@@ -47,6 +49,16 @@ export class SchemaRegistry {
 
     for (const schema of this.schemas) {
       this.schemaMap.set(schema.name, schema);
+    }
+
+    // Request body DTOs (e seu fecho transitivo de deps) serializam via bundleInputs:
+    // o bundle() lê os flags do BuildedInput em vez de só o .value extraído. Transitivo
+    // porque um DTO aninhado (ex.: createBody.role → UserRole) também é serializado no
+    // request — marcar só a raiz deixaria o nested em bundleStrict (bug nested).
+    if (requestBodyNames && requestBodyNames.size > 0) {
+      for (const schema of this.resolveTransitiveDeps([...requestBodyNames])) {
+        schema.setRequestMode();
+      }
     }
 
     console.log(`${this.schemas.length} schemas generated successfully.`);

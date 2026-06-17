@@ -30,6 +30,7 @@ export class SchemaPropertyClassifier {
           schemaObject: fakeStringSchema,
           required: requireds.includes(key),
           validator: config?.validator,
+          sanitizer: config?.sanitizer,
           customType: config?.type,
           isParam: undefined,
           isNullable: value.nullable,
@@ -73,6 +74,7 @@ export class SchemaPropertyClassifier {
 
     const config = fieldConfigs.get(key);
     const validator = config?.validator;
+    const sanitizer = config?.sanitizer;
     const customType = config?.type;
     const type = value.type as ReflectorParamType;
 
@@ -84,6 +86,7 @@ export class SchemaPropertyClassifier {
           schemaObject: fakeStringSchema,
           required,
           validator,
+          sanitizer,
           customType,
           isParam: undefined,
           isNullable: value.nullable,
@@ -110,6 +113,7 @@ export class SchemaPropertyClassifier {
       schemaObject: value,
       required,
       validator,
+      sanitizer,
       customType,
       isParam: undefined,
       isNullable: value.nullable,

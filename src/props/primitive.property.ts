@@ -16,6 +16,7 @@ export class PrimitiveProp {
   private readonly isNullable: boolean;
   readonly rawType: ReflectorParamType;
   readonly customType: string | undefined;
+  readonly sanitizer: string | undefined;
   private readonly buildedConst: string;
   private readonly example: Example;
   private readonly fallbackExample: Example;
@@ -36,11 +37,12 @@ export class PrimitiveProp {
     schemaObject: SchemaObject;
     required: boolean;
     validator: string | undefined;
+    sanitizer?: string | undefined;
     customType?: string | undefined;
     isParam: boolean | undefined;
     isNullable?: boolean | undefined;
   }) {
-    const { name, schemaObject, required, validator, customType, isParam, isNullable } = params;
+    const { name, schemaObject, required, validator, sanitizer, customType, isParam, isNullable } = params;
     const { type: rawType } = schemaObject;
 
     this.isNullable = !!isNullable;
@@ -61,12 +63,15 @@ export class PrimitiveProp {
     this.isSpecial = treated.isSpecial;
     this.rawType = type ?? "any";
     this.customType = customType;
+    // sanitizer só vale para campo string — gate aqui garante que emissão e
+    // rastreio de dependência (import) concordam.
+    this.sanitizer = type === "string" ? sanitizer : undefined;
     this.type = `BuildedInput<${buildedType}>`;
     this.required = required;
 
     this.isParam = !!isParam;
 
-    this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator, emptyExample: this.example });
+    this.buildedConst = this.buildConst({ example, name: this.name, required, type, validator, sanitizer: this.sanitizer, emptyExample: this.example });
   }
 
   private getEmptyExample(params: { type: ReflectorParamType; schemaObject: SchemaObject; name?: string | undefined }) {
@@ -118,8 +123,9 @@ export class PrimitiveProp {
     required: boolean;
     type: ReflectorParamType | undefined;
     validator: string | undefined;
+    sanitizer: string | undefined;
   }) {
-    const { name, required, type, validator } = params;
+    const { name, required, type, validator, sanitizer } = params;
 
     const getValidator = (type: ReflectorParamType) => {
       if (type === "string") {
@@ -155,11 +161,23 @@ export class PrimitiveProp {
       typeParam = `<${this.effectiveType}>`;
     }
 
-    const nullableParam = this.isNullable ? "nullable: true, " : "";
-    const maxParam = this.max !== undefined ? `max: ${this.max}, ` : "";
+    // Monta as props num array e junta com vírgula: com dois opcionais
+    // (validator + sanitizer) o controle manual de vírgula quebrava.
+    const props = [
+      `key: ${keyExpr}`,
+      `placeholder: ${this.example}`,
+      `example: ${buildedExample}`,
+      `required: ${required}`,
+      this.isNullable ? "nullable: true" : "",
+      this.max !== undefined ? `max: ${this.max}` : "",
+      buildedValidator(),
+      sanitizer ? `sanitizer: ${sanitizer}` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     return `
-      build${typeParam}({ key: ${keyExpr}, placeholder: ${this.example}, example: ${buildedExample}, required: ${required}, ${nullableParam}${maxParam}${buildedValidator()}})
+      build${typeParam}({ ${props} })
     `;
   }
 
@@ -206,5 +224,9 @@ export class PrimitiveProp {
 
   bundleBuild() {
     return `${this.name}: ${this.thisDot()}${this.name}?.value`;
+  }
+
+  hydrateBuild() {
+    return `if (data.${this.name} !== undefined) ${this.thisDot()}${this.name}.hydrate(data.${this.name} as never)`;
   }
 }

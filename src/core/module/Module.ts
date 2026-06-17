@@ -32,6 +32,9 @@ export class Module {
   /** Schema class names directly used by this module (for per-module schema generation) */
   readonly schemaClassNames: string[];
 
+  /** Nomes-raiz dos request body DTOs deste módulo (para serialização schema-aware) */
+  readonly requestBodyNames: string[];
+
   private readonly imports: ModuleImports;
   private readonly methodProcessor: ModuleMethodProcessor;
   private readonly classBuilder: ModuleClassBuilder;
@@ -80,6 +83,8 @@ export class Module {
     // Extract schema class names for per-module schema generation
     this.schemaClassNames = Array.from(processedMethods.entries)
       .filter((e) => e !== "type any" && !e.startsWith("type "));
+
+    this.requestBodyNames = Array.from(processedMethods.requestBodyNames);
 
     // Monta o resultado final
     const allBuilded = this.buildModuleData(processedMethods, processedParams);
@@ -131,7 +136,7 @@ export class Module {
       `);
       moduleInit.add("this.clearForms()");
       moduleClear.add(`
-        protected clearForms() { this.forms = this.buildForms(true) }
+        protected clearForms() { ${form.map((f) => `this.forms.${f.name}.reset()`).join("; ")} }
       `);
     }
 

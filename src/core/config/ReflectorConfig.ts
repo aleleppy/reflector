@@ -6,8 +6,10 @@
 export interface ReflectorConfig {
   /** Alias that resolves to the generated reflector folder (e.g. `$reflector`). */
   reflectorAlias: string;
-  /** Full import path to the validators/sanitizers module. */
+  /** Full import path to the validators module (exports `validateInputs`). */
   validatorsImport: string;
+  /** Full import path to the sanitizers module (input masks; exports `sanitizers`). */
+  sanitizersImport: string;
   /** Module path for the environment flag (e.g. `$env/static/public`). */
   environmentImport: string;
   /** Name of the exported environment flag — values other than `DEV` are treated as prod. */
@@ -19,6 +21,7 @@ export interface ReflectorConfig {
 export const DEFAULT_REFLECTOR_CONFIG: ReflectorConfig = {
   reflectorAlias: "$reflector",
   validatorsImport: "$lib/sanitizers/validateFormats",
+  sanitizersImport: "$lib/sanitizers/input-sanitizers",
   environmentImport: "$env/static/public",
   environmentFlag: "PUBLIC_ENVIRONMENT",
   toastImport: "$lib/utils/toast.svelte",

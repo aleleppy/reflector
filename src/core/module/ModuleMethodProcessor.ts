@@ -9,6 +9,8 @@ import type { Form } from "./ModuleConstructorBuilder.js";
 export interface ProcessedMethods {
   buildedMethods: string[];
   entries: Set<string>;
+  /** Nomes-raiz dos request body DTOs (para serialização schema-aware via bundleInputs) */
+  requestBodyNames: Set<string>;
   form: Form[];
   formSet: Set<string>;
   methodsAttributes: string[];
@@ -37,6 +39,7 @@ export class ModuleMethodProcessor {
     const form: Form[] = [];
     const formSet = new Set<string>();
     const entries = new Set<string>();
+    const requestBodyNames = new Set<string>();
     const buildedMethods: string[] = [];
 
     const queryMap = new Map<string, AttributeProp>();
@@ -85,6 +88,7 @@ export class ModuleMethodProcessor {
 
       if (bodyType) {
         entries.add(bodyType);
+        requestBodyNames.add(bodyType);
       }
 
       if (responseType && responseType !== "response" && !isPrimitiveResponse) {
@@ -97,6 +101,7 @@ export class ModuleMethodProcessor {
       form,
       formSet,
       entries,
+      requestBodyNames,
       buildedMethods,
       methodsAttributes: Array.from(methodsAttributes),
       methodsInit: Array.from(methodsInit),

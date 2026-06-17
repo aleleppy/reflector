@@ -26,7 +26,7 @@ export abstract class CalendarModule {
   paths = new Paths();
 
   /**  */
-  protected async _get(params?: {
+  protected async _getRun(params?: {
     behavior?: Behavior<
       CalendarController_getResponseInterface,
       ApiErrorResponse
@@ -56,7 +56,10 @@ export abstract class CalendarModule {
 
       await onSuccess?.(response);
 
-      return new CalendarController_getResponse({ data: response });
+      return {
+        ok: true,
+        data: new CalendarController_getResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -67,10 +70,25 @@ export abstract class CalendarModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_getRun()` — returns a discriminated ApiResult */
+  protected async _get(params?: {
+    behavior?: Behavior<
+      CalendarController_getResponseInterface,
+      ApiErrorResponse
+    >;
+    paths?: {
+      id: string;
+    };
+  }) {
+    const res = await this._getRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearCalendarController_get() {

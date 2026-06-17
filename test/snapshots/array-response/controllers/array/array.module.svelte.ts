@@ -26,7 +26,7 @@ export abstract class ArrayModule {
   >();
 
   /**  */
-  protected async _primitives(params?: {
+  protected async _primitivesRun(params?: {
     behavior?: Behavior<
       ArrayController_primitivesResponseInterface,
       ApiErrorResponse
@@ -53,7 +53,10 @@ export abstract class ArrayModule {
 
       await onSuccess?.(response);
 
-      return new ArrayController_primitivesResponse({ data: response });
+      return {
+        ok: true,
+        data: new ArrayController_primitivesResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -64,14 +67,26 @@ export abstract class ArrayModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_primitivesRun()` — returns a discriminated ApiResult */
+  protected async _primitives(params?: {
+    behavior?: Behavior<
+      ArrayController_primitivesResponseInterface,
+      ApiErrorResponse
+    >;
+  }) {
+    const res = await this._primitivesRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _enums(params?: {
+  protected async _enumsRun(params?: {
     behavior?: Behavior<
       ArrayController_enumsResponseInterface,
       ApiErrorResponse
@@ -98,7 +113,10 @@ export abstract class ArrayModule {
 
       await onSuccess?.(response);
 
-      return new ArrayController_enumsResponse({ data: response });
+      return {
+        ok: true,
+        data: new ArrayController_enumsResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -109,14 +127,26 @@ export abstract class ArrayModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_enumsRun()` — returns a discriminated ApiResult */
+  protected async _enums(params?: {
+    behavior?: Behavior<
+      ArrayController_enumsResponseInterface,
+      ApiErrorResponse
+    >;
+  }) {
+    const res = await this._enumsRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _inline(params?: {
+  protected async _inlineRun(params?: {
     behavior?: Behavior<
       ArrayController_inlineResponseInterface,
       ApiErrorResponse
@@ -143,7 +173,10 @@ export abstract class ArrayModule {
 
       await onSuccess?.(response);
 
-      return new ArrayController_inlineResponse({ data: response });
+      return {
+        ok: true,
+        data: new ArrayController_inlineResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -154,14 +187,26 @@ export abstract class ArrayModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_inlineRun()` — returns a discriminated ApiResult */
+  protected async _inline(params?: {
+    behavior?: Behavior<
+      ArrayController_inlineResponseInterface,
+      ApiErrorResponse
+    >;
+  }) {
+    const res = await this._inlineRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _generic(params?: {
+  protected async _genericRun(params?: {
     behavior?: Behavior<
       ArrayController_genericResponseInterface,
       ApiErrorResponse
@@ -188,7 +233,10 @@ export abstract class ArrayModule {
 
       await onSuccess?.(response);
 
-      return new ArrayController_genericResponse({ data: response });
+      return {
+        ok: true,
+        data: new ArrayController_genericResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -199,10 +247,22 @@ export abstract class ArrayModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_genericRun()` — returns a discriminated ApiResult */
+  protected async _generic(params?: {
+    behavior?: Behavior<
+      ArrayController_genericResponseInterface,
+      ApiErrorResponse
+    >;
+  }) {
+    const res = await this._genericRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearArrayController_primitives() {

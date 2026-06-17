@@ -12,8 +12,10 @@ export class SchemaClassRenderer {
     arrayProps: ArrayProp[];
     objectProps: ObjectProp[];
     enumProps: EnumProp[];
-  }): { interface: string; schema: string } {
+    mode?: "request" | "response";
+  }): { interface: string; schema: string; bundleHelper: "strict" | "inputs" } {
     const { name, primitiveProps, arrayProps, objectProps, enumProps } = params;
+    const mode = params.mode ?? "response";
 
     const reflectorInterface = new ReflectorInterface({
       name,
@@ -54,9 +56,36 @@ export class SchemaClassRenderer {
       bundleParams.push(prop.bundleBuild());
     });
 
-    const constructorCode = `constructor(params?: { data?: ${name}Interface | undefined, empty?: boolean }) { 
+    const constructorCode = `constructor(params?: { data?: ${name}Interface | undefined, empty?: boolean }) {
         ${constructorThis.join(";\n")}
       }`;
+
+    const hydrateLines: string[] = [];
+    primitiveProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    arrayProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    objectProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    enumProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+
+    const hydrateCode = `
+      hydrate(data: Partial<${name}Interface>): void {
+        ${hydrateLines.join(";\n")}
+      }
+
+      reset(): void {
+        this.hydrate(new ${name}({ empty: true }).bundle() as Partial<${name}Interface>);
+      }
+    `;
+
+    // Request DTO serializa a partir das instâncias `BuildedInput` (carregam os flags
+    // required/nullable), não do `.value` pré-extraído — bundleInputs faz a coerção
+    // nullable ''→null e cobre array/aninhado. Response fica em bundleStrict (inalterado).
+    const bundleHelper: "strict" | "inputs" = mode === "request" ? "inputs" : "strict";
+    const bundleBody =
+      mode === "request"
+        ? `return bundleInputs({ ${[...primitiveProps, ...arrayProps, ...objectProps, ...enumProps]
+            .map((p) => `${p.name}: this.${p.name}`)
+            .join(",")} })`
+        : `return bundleStrict({ ${bundleParams.join(",")} })`;
 
     const schema = `
     export class ${name} {
@@ -66,11 +95,13 @@ export class SchemaClassRenderer {
 
       ${staticMethod}
 
+      ${hydrateCode}
+
       bundle(){
-        return bundleStrict({ ${bundleParams.join(",")} })
+        ${bundleBody}
       }
     };`;
 
-    return { interface: reflectorInterface.builded, schema };
+    return { interface: reflectorInterface.builded, schema, bundleHelper };
   }
 }

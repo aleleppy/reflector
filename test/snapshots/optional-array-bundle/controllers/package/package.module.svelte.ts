@@ -9,7 +9,8 @@ import {
 
 import {
   BatchCreatePackageDto,
-  type BatchCreatePackageDtoInterface,
+  type PackageViewInterface,
+  PackageView,
 } from "./package.schema.svelte";
 
 export abstract class PackageModule {
@@ -30,8 +31,8 @@ export abstract class PackageModule {
   }
 
   /**  */
-  protected async _create(params?: {
-    behavior?: Behavior<BatchCreatePackageDtoInterface, ApiErrorResponse>;
+  protected async _createRun(params?: {
+    behavior?: Behavior<PackageViewInterface, ApiErrorResponse>;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -43,14 +44,14 @@ export abstract class PackageModule {
     const data = this.forms.create.bundle();
 
     try {
-      const response = await api.post<BatchCreatePackageDtoInterface>({
+      const response = await api.post<PackageViewInterface>({
         endpoint,
         data,
       });
 
       await onSuccess?.(response);
 
-      return new BatchCreatePackageDto({ data: response });
+      return { ok: true, data: new PackageView({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -61,14 +62,23 @@ export abstract class PackageModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
+  protected async _create(params?: {
+    behavior?: Behavior<PackageViewInterface, ApiErrorResponse>;
+  }) {
+    const res = await this._createRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   protected clearForms() {
-    this.forms = this.buildForms(true);
+    this.forms.create.reset();
   }
 
   protected reset() {

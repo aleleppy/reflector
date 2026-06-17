@@ -12,6 +12,7 @@ export class CallMethodGenerator {
     const { inside, outside } = this.buildApiCall(method, strategy);
     const methodReturn = this.buildMethodReturn(method, strategy);
     const signature = strategy.buildSignature(method);
+    const legacyWrapper = strategy.buildLegacyWrapper(method);
 
     return `
       ${description}
@@ -30,7 +31,7 @@ export class CallMethodGenerator {
           ${inside}
           await onSuccess?.(response);
 
-          return ${methodReturn};
+          return { ok: true, data: ${methodReturn} };
         } catch (e) {
           let parsedError: ApiErrorResponse;
           try {
@@ -38,11 +39,14 @@ export class CallMethodGenerator {
           } catch {
             parsedError = { error: 'unknown', message: (e as Error).message ?? String(e) };
           }
-          return await onError?.(parsedError);
+          await onError?.(parsedError);
+          return { ok: false, error: parsedError };
         } finally {
           this.loading = false;
         }
       }
+
+      ${legacyWrapper}
     `;
   }
 

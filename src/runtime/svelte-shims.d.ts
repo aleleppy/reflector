@@ -45,3 +45,7 @@ declare module "$app/environment" {
 declare module "svelte/reactivity" {
   export class SvelteURL extends URL {}
 }
+
+declare module "svelte" {
+  export function untrack<T>(fn: () => T): T;
+}

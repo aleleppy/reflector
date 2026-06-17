@@ -80,6 +80,19 @@ export class ArrayController_inlineResponseItem {
     });
   }
 
+  hydrate(data: Partial<ArrayController_inlineResponseItemInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.label !== undefined) this.label.hydrate(data.label as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new ArrayController_inlineResponseItem({
+        empty: true,
+      }).bundle() as Partial<ArrayController_inlineResponseItemInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({ id: this.id?.value, label: this.label?.value });
   }

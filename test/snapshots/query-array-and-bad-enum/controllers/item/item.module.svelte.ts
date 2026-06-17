@@ -46,7 +46,7 @@ export abstract class ItemModule {
   querys = new Querys();
 
   /**  */
-  protected async _listAll(params?: {
+  protected async _listAllRun(params?: {
     behavior?: Behavior<ItemController_listResponseInterface, ApiErrorResponse>;
     queryOverride?: {
       categoriesIds?: string[];
@@ -78,7 +78,10 @@ export abstract class ItemModule {
 
       await onSuccess?.(response);
 
-      return new ItemController_listResponse({ data: response });
+      return {
+        ok: true,
+        data: new ItemController_listResponse({ data: response }),
+      };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -89,10 +92,25 @@ export abstract class ItemModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
+  protected async _listAll(params?: {
+    behavior?: Behavior<ItemController_listResponseInterface, ApiErrorResponse>;
+    queryOverride?: {
+      categoriesIds?: string[];
+      pageNumbers?: number[];
+      statuses?: ENUM_ITEM_ENTITY_STATUSES[];
+      badField?: string | null;
+    };
+  }) {
+    const res = await this._listAllRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearItemController_list() {

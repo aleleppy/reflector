@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { Reflector } from "../src/core/Reflector.js";
 import type { OpenAPIObject } from "../src/types/open-api-spec.interface.js";
 import type { ReflectorConfig } from "../src/core/config/ReflectorConfig.js";
+import type { FieldConfigs } from "../src/types/types.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,7 @@ interface Output {
 
 async function runFixture(
   name: string,
-  opts: { experimentalFeatures?: boolean; config?: Partial<ReflectorConfig> } = {},
+  opts: { experimentalFeatures?: boolean; config?: Partial<ReflectorConfig>; fieldConfigs?: FieldConfigs } = {},
 ): Promise<Output[]> {
   const fixtureDir = path.join(here, "fixtures", name);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `reflector-${name}-`));
@@ -30,7 +31,7 @@ async function runFixture(
     const r = new Reflector({
       components: doc.components!,
       paths: doc.paths,
-      fieldConfigs: new Map(),
+      fieldConfigs: opts.fieldConfigs ?? new Map(),
       typeImports: new Map(),
       apiImport: "$lib/api",
       experimentalFeatures: opts.experimentalFeatures,
@@ -179,30 +180,69 @@ describe("codegen — optional-array-bundle fixture (optional/nullable arrays of
     }
   });
 
-  it("emits null/undefined-safe bundle() for optional and nullable array fields", () => {
+  // Recorta o corpo de uma classe gerada (de `export class X {` até a próxima
+  // `export class ` ou o fim) para asserir bundle() request vs response isoladamente.
+  const classBlock = (content: string, name: string): string => {
+    const start = content.indexOf(`export class ${name} {`);
+    expect(start, `class ${name} não encontrada`).toBeGreaterThanOrEqual(0);
+    const next = content.indexOf("export class ", start + 1);
+    return next === -1 ? content.slice(start) : content.slice(start, next);
+  };
+
+  it("response schema: emits null/undefined-safe bundle() for optional and nullable array fields", () => {
     const schemaFile = outputs.find((o) => o.rel.endsWith("package.schema.svelte.ts"));
     expect(schemaFile).toBeDefined();
-    const content = schemaFile!.content;
+    // PackageView é o response DTO → bundle() via bundleStrict, com os guards por campo.
+    const view = classBlock(schemaFile!.content, "PackageView");
 
     // required, non-nullable: plain .map (no guard needed)
-    expect(content).toMatch(/requiredItems:\s*this\.requiredItems\.map\(\(obj\) => obj\.bundle\(\)\)/);
+    expect(view).toMatch(/requiredItems:\s*this\.requiredItems\.map\(\(obj\) => obj\.bundle\(\)\)/);
 
     // optional, non-nullable: ?.map (undefined-safe)
-    expect(content).toMatch(/optionalItems:\s*this\.optionalItems\?\.map\(\(obj\) => obj\.bundle\(\)\)/);
+    expect(view).toMatch(/optionalItems:\s*this\.optionalItems\?\.map\(\(obj\) => obj\.bundle\(\)\)/);
 
     // required, nullable: == null guard preserves null (prettier may wrap across lines)
-    expect(content).toMatch(
+    expect(view).toMatch(
       /nullableItems:\s*this\.nullableItems\s*==\s*null\s*\?\s*this\.nullableItems\s*:\s*this\.nullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
     );
 
     // optional + nullable: == null guard catches both null and undefined
-    expect(content).toMatch(
+    expect(view).toMatch(
       /optionalNullableItems:\s*this\.optionalNullableItems\s*==\s*null\s*\?\s*this\.optionalNullableItems\s*:\s*this\.optionalNullableItems\.map\(\(obj\) => obj\.bundle\(\)\)/,
     );
 
     // primitive arrays unchanged: no .map call in bundle
-    expect(content).toMatch(/tags:\s*this\.tags[,}\s]/);
-    expect(content).not.toMatch(/tags:\s*this\.tags\?\.map/);
+    expect(view).toMatch(/tags:\s*this\.tags[,}\s]/);
+    expect(view).not.toMatch(/tags:\s*this\.tags\?\.map/);
+  });
+
+  it("request DTO: bundle() serializa via bundleInputs a partir das instâncias (refs cruas)", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith("package.schema.svelte.ts"));
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile!.content;
+    // BatchCreatePackageDto é o request body → request mode → bundleInputs.
+    const dto = classBlock(content, "BatchCreatePackageDto");
+
+    // serializa a partir dos BuildedInput/instâncias, não do .value extraído
+    expect(dto).toMatch(/return bundleInputs\(\{/);
+    expect(dto).not.toMatch(/return bundleStrict\(/);
+
+    // toda prop passa a instância crua — a segurança null/undefined/array é do runtime
+    // (bundleInputs + genericArrayBundler), não mais guards por campo no string gerado
+    expect(dto).toMatch(/requiredItems:\s*this\.requiredItems[,}\s]/);
+    expect(dto).toMatch(/optionalItems:\s*this\.optionalItems[,}\s]/);
+    expect(dto).toMatch(/nullableItems:\s*this\.nullableItems[,}\s]/);
+    expect(dto).toMatch(/optionalNullableItems:\s*this\.optionalNullableItems[,}\s]/);
+    expect(dto).toMatch(/tags:\s*this\.tags[,}\s]/);
+    expect(dto).not.toMatch(/\.map\(\(obj\) => obj\.bundle\(\)\)/);
+
+    // o file importa bundleInputs (request) E bundleStrict (PackageView response)
+    expect(content).toMatch(
+      /import \{[^}]*\bbundleInputs\b[^}]*\} from "\$reflector\/reflector\.svelte"/,
+    );
+    expect(content).toMatch(
+      /import \{[^}]*\bbundleStrict\b[^}]*\} from "\$reflector\/reflector\.svelte"/,
+    );
   });
 });
 
@@ -435,6 +475,67 @@ describe("codegen — experimental Api class (queryOverride generic)", () => {
     // Without the third generic on the type, this access would fail
     // typecheck on the consumer side.
     expect(content).toMatch(/params\?\.queryOverride\s*\?\?\s*this\.querys\.bundle\(\)/);
+  });
+
+  it("form endpoint reset() resets the form in-place (stable reference), never reassigns", () => {
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    const content = apiFile!.content;
+
+    // In-place reset preserves `this.form`, so consumers can use $derived.
+    expect(content).toMatch(/reset\(\)\s*\{[\s\S]*?this\.form\.reset\(\)/);
+    // The old instance-swap must be gone.
+    expect(content).not.toMatch(/this\.form\s*=\s*new\s+UserController_createBody\(\)/);
+  });
+
+  it("matches the committed api-file snapshot (locks the experimental Api contract)", async () => {
+    const snapshotDir = path.join(here, "snapshots/minimal-experimental");
+    const apiFile = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"));
+    expect(apiFile).toBeDefined();
+    await expect(apiFile!.content).toMatchFileSnapshot(path.join(snapshotDir, apiFile!.rel));
+  });
+});
+
+describe("codegen — sanitizer field config", () => {
+  it("emits sanitizer ref + conditional sanitizers import for a matched string field", async () => {
+    const outputs = await runFixture("minimal", {
+      fieldConfigs: new Map([
+        ["email", { validator: "validateInputs.email", sanitizer: "sanitizers.phone" }],
+      ]),
+    });
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"));
+    expect(schema).toBeDefined();
+    const content = schema!.content;
+
+    // ref emitida dentro do build({...})
+    expect(content).toMatch(/sanitizer:\s*sanitizers\.phone/);
+    // validator explícito do config (sobrescreve o default emptyString)
+    expect(content).toMatch(/validator:\s*validateInputs\.email/);
+    // os dois juntos, adjacentes e com vírgula — prova de que o controle de vírgula não quebrou
+    expect(content).toMatch(
+      /validator:\s*validateInputs\.email,\s*sanitizer:\s*sanitizers\.phone/,
+    );
+    // import condicional do objeto sanitizers (default path)
+    expect(content).toMatch(
+      /import\s*\{\s*sanitizers\s*\}\s*from\s*["']\$lib\/sanitizers\/input-sanitizers["']/,
+    );
+  });
+
+  it("honors config.sanitizersImport override", async () => {
+    const outputs = await runFixture("minimal", {
+      fieldConfigs: new Map([["email", { sanitizer: "sanitizers.phone" }]]),
+      config: { sanitizersImport: "$core/utils/sanitizers/input-sanitizers" },
+    });
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
+    expect(schema.content).toContain(
+      `import { sanitizers } from "$core/utils/sanitizers/input-sanitizers"`,
+    );
+  });
+
+  it("emits no sanitizers import when no field is configured (diffless)", async () => {
+    const outputs = await runFixture("minimal");
+    const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
+    expect(schema.content).not.toMatch(/import\s*\{\s*sanitizers\s*\}/);
+    expect(schema.content).not.toMatch(/sanitizer:/);
   });
 });
 

@@ -73,7 +73,7 @@ export abstract class PackageTenantModule {
   }
 
   /**  */
-  protected async _listAllPackages(params?: {
+  protected async _listAllPackagesRun(params?: {
     behavior?: Behavior<
       PackageTenantController_listResponseInterface,
       ApiErrorResponse
@@ -105,7 +105,7 @@ export abstract class PackageTenantModule {
 
       await onSuccess?.(response);
 
-      return this.listPackages;
+      return { ok: true, data: this.listPackages };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -116,14 +116,30 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_listAllPackagesRun()` — returns a discriminated ApiResult */
+  protected async _listAllPackages(params?: {
+    behavior?: Behavior<
+      PackageTenantController_listResponseInterface,
+      ApiErrorResponse
+    >;
+    queryOverride?: {
+      page?: string | null;
+      limit?: string | null;
+    };
+  }) {
+    const res = await this._listAllPackagesRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _findOnePackage(params?: {
+  protected async _findOnePackageRun(params?: {
     behavior?: Behavior<PackageInterface, ApiErrorResponse>;
     paths?: {
       packageId: string;
@@ -145,7 +161,7 @@ export abstract class PackageTenantModule {
 
       await onSuccess?.(response);
 
-      return new Package({ data: response });
+      return { ok: true, data: new Package({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -156,14 +172,26 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_findOnePackageRun()` — returns a discriminated ApiResult */
+  protected async _findOnePackage(params?: {
+    behavior?: Behavior<PackageInterface, ApiErrorResponse>;
+    paths?: {
+      packageId: string;
+    };
+  }) {
+    const res = await this._findOnePackageRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _listAllControllers(params?: {
+  protected async _listAllControllersRun(params?: {
     behavior?: Behavior<
       PackageTenantController_listResponse2Interface,
       ApiErrorResponse
@@ -198,7 +226,7 @@ export abstract class PackageTenantModule {
 
       await onSuccess?.(response);
 
-      return this.listControllers;
+      return { ok: true, data: this.listControllers };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -209,14 +237,32 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_listAllControllersRun()` — returns a discriminated ApiResult */
+  protected async _listAllControllers(params?: {
+    behavior?: Behavior<
+      PackageTenantController_listResponse2Interface,
+      ApiErrorResponse
+    >;
+    paths?: {
+      packageId: string;
+    };
+    queryOverride?: {
+      page?: string | null;
+    };
+  }) {
+    const res = await this._listAllControllersRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _findOneController(params?: {
+  protected async _findOneControllerRun(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
     paths?: {
       packageId: string;
@@ -239,7 +285,7 @@ export abstract class PackageTenantModule {
 
       await onSuccess?.(response);
 
-      return new ControllerItem({ data: response });
+      return { ok: true, data: new ControllerItem({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -250,14 +296,27 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
   }
 
+  /** @deprecated use `_findOneControllerRun()` — returns a discriminated ApiResult */
+  protected async _findOneController(params?: {
+    behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    paths?: {
+      packageId: string;
+      controllerId: string;
+    };
+  }) {
+    const res = await this._findOneControllerRun(params);
+    return res.ok ? res.data : undefined;
+  }
+
   /**  */
-  protected async _update(params?: {
+  protected async _updateRun(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
     paths?: {
       packageId: string;
@@ -281,7 +340,7 @@ export abstract class PackageTenantModule {
 
       await onSuccess?.(response);
 
-      return new ControllerItem({ data: response });
+      return { ok: true, data: new ControllerItem({ data: response }) };
     } catch (e) {
       let parsedError: ApiErrorResponse;
       try {
@@ -292,10 +351,23 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
-      return await onError?.(parsedError);
+      await onError?.(parsedError);
+      return { ok: false, error: parsedError };
     } finally {
       this.loading = false;
     }
+  }
+
+  /** @deprecated use `_updateRun()` — returns a discriminated ApiResult */
+  protected async _update(params?: {
+    behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    paths?: {
+      packageId: string;
+      controllerId: string;
+    };
+  }) {
+    const res = await this._updateRun(params);
+    return res.ok ? res.data : undefined;
   }
 
   protected clearListPackages() {
@@ -323,7 +395,7 @@ export abstract class PackageTenantModule {
   }
 
   protected clearForms() {
-    this.forms = this.buildForms(true);
+    this.forms.update.reset();
   }
 
   protected reset() {

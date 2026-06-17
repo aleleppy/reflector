@@ -1,6 +1,14 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  bundleInputs,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
-import type { ENUM_USER_ENTITY_ROLES } from "$reflector/enums";
+import type {
+  ENUM_USER_ENTITY_PRIORITY,
+  ENUM_USER_ENTITY_ROLES,
+} from "$reflector/enums";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
 
@@ -12,6 +20,7 @@ export interface UserInterface {
   roles?: ENUM_USER_ENTITY_ROLES[];
   status: UserStatusInterface;
   address: AddressInterface | null;
+  priority?: ENUM_USER_ENTITY_PRIORITY;
 }
 export class User {
   id: BuildedInput<string>;
@@ -21,6 +30,7 @@ export class User {
   roles? = $state<ENUM_USER_ENTITY_ROLES[]>([]);
   status = $state<UserStatus>(new UserStatus());
   address = $state<Address | null>(null);
+  priority?: BuildedInput<ENUM_USER_ENTITY_PRIORITY>;
 
   constructor(params?: { data?: UserInterface | undefined; empty?: boolean }) {
     this.id = build({
@@ -63,10 +73,39 @@ export class User {
         : params?.data?.address === null
           ? null
           : new Address();
+    this.priority = build({
+      key: params?.data?.priority,
+      placeholder: "low",
+      example: "low",
+      required: false,
+    });
   }
 
   static from(data: ENUM_USER_ENTITY_ROLES[]) {
     return data.map((obj) => obj);
+  }
+
+  hydrate(data: Partial<UserInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+    if (data.email !== undefined) this.email.hydrate(data.email as never);
+    if (data.tags !== undefined) this.tags = data.tags ?? [];
+    if (data.roles !== undefined) this.roles = data.roles ?? [];
+    if (data.status !== undefined) {
+      if (this.status) this.status.hydrate(data.status as never);
+      else this.status = new UserStatus({ data: data.status as never });
+    }
+    if (data.address !== undefined) {
+      if (data.address === null) this.address = null;
+      else if (this.address) this.address.hydrate(data.address as never);
+      else this.address = new Address({ data: data.address as never });
+    }
+    if (data.priority !== undefined)
+      this.priority?.hydrate(data.priority as never);
+  }
+
+  reset(): void {
+    this.hydrate(new User({ empty: true }).bundle() as Partial<UserInterface>);
   }
 
   bundle() {
@@ -78,6 +117,7 @@ export class User {
       roles: this.roles,
       status: this.status?.bundle(),
       address: this.address?.bundle() ?? null,
+      priority: this.priority?.value,
     });
   }
 }
@@ -108,6 +148,17 @@ export class Address {
       required: false,
       nullable: true,
     });
+  }
+
+  hydrate(data: Partial<AddressInterface>): void {
+    if (data.street !== undefined) this.street.hydrate(data.street as never);
+    if (data.city !== undefined) this.city.hydrate(data.city as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new Address({ empty: true }).bundle() as Partial<AddressInterface>,
+    );
   }
 
   bundle() {
@@ -146,11 +197,28 @@ export class UserController_createBody {
     this.role = new UserRole({ data: params?.data?.role });
   }
 
+  hydrate(data: Partial<UserController_createBodyInterface>): void {
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+    if (data.email !== undefined) this.email.hydrate(data.email as never);
+    if (data.role !== undefined) {
+      if (this.role) this.role.hydrate(data.role as never);
+      else this.role = new UserRole({ data: data.role as never });
+    }
+  }
+
+  reset(): void {
+    this.hydrate(
+      new UserController_createBody({
+        empty: true,
+      }).bundle() as Partial<UserController_createBodyInterface>,
+    );
+  }
+
   bundle() {
-    return bundleStrict({
-      name: this.name?.value,
-      email: this.email?.value,
-      role: this.role?.bundle(),
+    return bundleInputs({
+      name: this.name,
+      email: this.email,
+      role: this.role,
     });
   }
 }

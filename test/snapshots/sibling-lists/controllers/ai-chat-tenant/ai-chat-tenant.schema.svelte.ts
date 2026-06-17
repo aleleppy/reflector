@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  bundleInputs,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -53,6 +58,19 @@ export class AiChatMessage {
     });
   }
 
+  hydrate(data: Partial<AiChatMessageInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.content !== undefined) this.content.hydrate(data.content as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new AiChatMessage({
+        empty: true,
+      }).bundle() as Partial<AiChatMessageInterface>,
+    );
+  }
+
   bundle() {
     return bundleStrict({ id: this.id?.value, content: this.content?.value });
   }
@@ -75,6 +93,16 @@ export class AiChat {
       required: true,
       validator: validateInputs.emptyString,
     });
+  }
+
+  hydrate(data: Partial<AiChatInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new AiChat({ empty: true }).bundle() as Partial<AiChatInterface>,
+    );
   }
 
   bundle() {
@@ -101,8 +129,21 @@ export class AiChatTenantController_createBody {
     });
   }
 
+  hydrate(data: Partial<AiChatTenantController_createBodyInterface>): void {
+    if (data.packageId !== undefined)
+      this.packageId.hydrate(data.packageId as never);
+  }
+
+  reset(): void {
+    this.hydrate(
+      new AiChatTenantController_createBody({
+        empty: true,
+      }).bundle() as Partial<AiChatTenantController_createBodyInterface>,
+    );
+  }
+
   bundle() {
-    return bundleStrict({ packageId: this.packageId?.value });
+    return bundleInputs({ packageId: this.packageId });
   }
 }
 export type AiChatTenantController_listResponseInterface = AiChatInterface[];

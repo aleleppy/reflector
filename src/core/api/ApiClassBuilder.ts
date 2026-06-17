@@ -117,7 +117,7 @@ export class ApiClassBuilder {
     const lines: string[] = [];
 
     if (attributeType === "form" && bodyType) {
-      lines.push(`this.form = new ${bodyType}()`);
+      lines.push(`this.form.reset()`);
     } else if (attributeType === "list") {
       lines.push("this.data = []");
       lines.push("this.totalPages = 1");

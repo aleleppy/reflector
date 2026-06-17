@@ -7,6 +7,7 @@ export interface SchemaDependencies {
   schemaDeps: string[];
   enumDeps: string[];
   customTypeDeps: string[];
+  sanitizerDeps: string[];
 }
 
 export class SchemaDependencyCollector {
@@ -37,14 +38,17 @@ export class SchemaDependencyCollector {
     }
 
     const customTypeDepsSet = new Set<string>();
+    const sanitizerDepsSet = new Set<string>();
     for (const prop of primitiveProps) {
       if (prop.customType) customTypeDepsSet.add(prop.customType);
+      if (prop.sanitizer) sanitizerDepsSet.add(prop.sanitizer);
     }
 
     return {
       schemaDeps: [...schemaDepsSet],
       enumDeps: [...enumDepsSet],
       customTypeDeps: [...customTypeDepsSet],
+      sanitizerDeps: [...sanitizerDepsSet],
     };
   }
 }

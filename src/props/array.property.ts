@@ -128,6 +128,14 @@ export class ArrayProp {
     return `readonly ${this.name} = new EnumQueryBuilder<${this.type}>({ key: '${this.name}', defaultValues: ${literal} })`;
   }
 
+  hydrateBuild() {
+    if (this.isSchemaRef) {
+      return `if (data.${this.name} !== undefined) this.${this.name} = (data.${this.name} ?? []).map((i) => new ${this.type}({ data: i as never }))`;
+    }
+
+    return `if (data.${this.name} !== undefined) this.${this.name} = data.${this.name} ?? []`;
+  }
+
   staticBuild() {
     const result = this._isPrimitiveType ? "obj" : `new ${this.type}({ data: obj })`;
     const aType = this._isPrimitiveType ? this.type : `${this.type}Interface`;

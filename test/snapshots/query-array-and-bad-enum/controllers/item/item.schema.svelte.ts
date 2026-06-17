@@ -48,6 +48,15 @@ export class Item {
     });
   }
 
+  hydrate(data: Partial<ItemInterface>): void {
+    if (data.id !== undefined) this.id.hydrate(data.id as never);
+    if (data.name !== undefined) this.name.hydrate(data.name as never);
+  }
+
+  reset(): void {
+    this.hydrate(new Item({ empty: true }).bundle() as Partial<ItemInterface>);
+  }
+
   bundle() {
     return bundleStrict({ id: this.id?.value, name: this.name?.value });
   }

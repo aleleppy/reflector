@@ -62,4 +62,9 @@ export class EnumProp {
   bundleBuild() {
     return `${this.name}: this.${this.name}?.value`;
   }
+
+  hydrateBuild() {
+    const opt = this.isRequired ? "" : "?";
+    return `if (data.${this.name} !== undefined) this.${this.name}${opt}.hydrate(data.${this.name} as never)`;
+  }
 }

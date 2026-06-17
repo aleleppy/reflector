@@ -27,9 +27,17 @@ export class Schema {
   readonly enumDeps: string[];
   /** Custom type names used by this schema (from fieldConfigs) */
   readonly customTypeDeps: string[];
+  /** Sanitizer refs used by this schema (from fieldConfigs) — gates the `sanitizers` import */
+  readonly sanitizerDeps: string[];
 
   schema: string;
   interface: string;
+  /**
+   * Qual helper de runtime o `bundle()` renderizado referencia — controla os imports
+   * do schema file. `'strict'` = response (bundleStrict), `'inputs'` = request
+   * (bundleInputs), `null` = array-root (mapeia `item.bundle()`, não usa nenhum).
+   */
+  bundleHelper: "strict" | "inputs" | null;
 
   /**
    * Builds a Schema for an array-root component (top-level `type: array`), e.g.
@@ -55,6 +63,7 @@ export class Schema {
     (schema as { schemaDeps: string[] }).schemaDeps = element.kind === "ref" ? [element.type] : [];
     (schema as { enumDeps: string[] }).enumDeps = element.kind === "enum" ? [element.type] : [];
     (schema as { customTypeDeps: string[] }).customTypeDeps = [];
+    (schema as { sanitizerDeps: string[] }).sanitizerDeps = [];
 
     const rendered = ArraySchemaRenderer.render({
       name,
@@ -63,6 +72,7 @@ export class Schema {
     });
     schema.interface = rendered.interface;
     schema.schema = rendered.schema;
+    schema.bundleHelper = null;
 
     return schema;
   }
@@ -141,6 +151,7 @@ export class Schema {
     this.schemaDeps = deps.schemaDeps;
     this.enumDeps = deps.enumDeps;
     this.customTypeDeps = deps.customTypeDeps;
+    this.sanitizerDeps = deps.sanitizerDeps;
 
     const rendered = SchemaClassRenderer.render({
       name: this.name,
@@ -151,5 +162,27 @@ export class Schema {
     });
     this.interface = rendered.interface;
     this.schema = rendered.schema;
+    this.bundleHelper = rendered.bundleHelper;
+  }
+
+  /**
+   * Re-renderiza este schema como request DTO: `bundle()` passa a serializar a partir
+   * das instâncias `BuildedInput` via `bundleInputs` (em vez de `bundleStrict` sobre os
+   * `.value` extraídos). Idempotente. Schemas array-root não têm props → no-op
+   * (continuam mapeando `item.bundle()`). Chamado pelo `SchemaRegistry` para o fecho
+   * transitivo dos request bodies.
+   */
+  setRequestMode(): void {
+    if (this.bundleHelper !== "strict") return;
+    const rendered = SchemaClassRenderer.render({
+      name: this.name,
+      primitiveProps: this.primitiveProps,
+      arrayProps: this.arrayProps,
+      objectProps: this.objectProps,
+      enumProps: this.enumProps,
+      mode: "request",
+    });
+    this.schema = rendered.schema;
+    this.bundleHelper = rendered.bundleHelper;
   }
 }
