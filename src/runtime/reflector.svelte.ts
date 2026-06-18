@@ -299,7 +299,7 @@ function isInputEmpty(input: BuildedInput<unknown>): boolean {
  * o `required` interno de um bloco opcional em branco e bloquearia o submit.
  */
 function forEachBuildedInput(
-  schema: Record<string, unknown>,
+  schema: object,
   fn: (input: BuildedInput<unknown>) => void,
   skipOptionalEmpty: boolean,
 ): void {
@@ -321,7 +321,7 @@ function forEachBuildedInput(
   }
 }
 
-function isEmptyDto(dto: Record<string, unknown>): boolean {
+function isEmptyDto(dto: object): boolean {
   let empty = true;
   forEachBuildedInput(
     dto,
@@ -342,7 +342,7 @@ function isEmptyDto(dto: Record<string, unknown>): boolean {
  * Sem `throw`, sem `toast`, sem mutar o schema. Tocar todos é de propósito (não
  * `.every`, que short-circuita e deixaria campos sem acender).
  */
-export function validateForm(schema: Record<string, unknown>): boolean {
+export function validateForm(schema: object): boolean {
   let valid = true;
   forEachBuildedInput(
     schema,
@@ -363,7 +363,7 @@ export function validateForm(schema: Record<string, unknown>): boolean {
  * `showError` já volta `false` de graça; o untouch só é necessário pra instância
  * reutilizada.)
  */
-export function untouchForm(schema: Record<string, unknown>): void {
+export function untouchForm(schema: object): void {
   forEachBuildedInput(schema, (input) => input.untouch(), false);
 }
 

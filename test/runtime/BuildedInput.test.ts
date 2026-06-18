@@ -313,6 +313,23 @@ describe("validateForm — gate honesto", () => {
     expect(validateForm(schema)).toBe(false);
     expect(card.showError).toBe(true);
   });
+
+  // Caso real: o `form` do adapter é INSTÂNCIA de classe DTO (campos no objeto,
+  // `bundle` no protótipo) — não objeto literal. Instância de classe não é
+  // atribuível a `Record<string, unknown>` (falta index signature), então a
+  // assinatura `object` é o que permite `validateForm(this.form)` sem cast.
+  it("aceita instância de classe (form de adapter), não só objeto literal", () => {
+    class FakeForm {
+      name = required("");
+      bundle() {
+        return {};
+      }
+    }
+    const form = new FakeForm();
+    // compila sem cast — era o erro de svelte-check que o `Record` causava
+    expect(validateForm(form)).toBe(false); // name required vazio
+    expect(form.name.showError).toBe(true);
+  });
 });
 
 describe("untouchForm — simétrico do validateForm", () => {
