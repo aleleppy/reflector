@@ -1,0 +1,80 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "nested-optional fixture", "version": "1.0.0" },
+  "paths": {
+    "/orders": {
+      "post": {
+        "operationId": "OrderController_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "shipping", "audit"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "shipping": { "$ref": "#/components/schemas/ShippingInfo" },
+                  "billing": { "$ref": "#/components/schemas/BillingInfo" },
+                  "coupon": { "allOf": [{ "$ref": "#/components/schemas/CouponInfo" }], "nullable": true },
+                  "audit": { "allOf": [{ "$ref": "#/components/schemas/AuditInfo" }] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Order" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["success"],
+        "properties": { "success": { "type": "boolean" } }
+      },
+      "ShippingInfo": {
+        "type": "object",
+        "required": ["address"],
+        "properties": { "address": { "type": "string" } }
+      },
+      "BillingInfo": {
+        "type": "object",
+        "required": ["cardNumber"],
+        "properties": {
+          "cardNumber": { "type": "string" },
+          "holder": { "type": "string" }
+        }
+      },
+      "CouponInfo": {
+        "type": "object",
+        "required": ["code"],
+        "properties": { "code": { "type": "string" } }
+      },
+      "AuditInfo": {
+        "type": "object",
+        "required": ["createdBy"],
+        "properties": { "createdBy": { "type": "string" } }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } }
+      }
+    }
+  }
+}

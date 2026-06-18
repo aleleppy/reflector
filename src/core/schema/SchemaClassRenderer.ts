@@ -41,6 +41,16 @@ export class SchemaClassRenderer {
     const bundleParams: string[] = [];
     let staticMethod: string = "";
 
+    // Optional, always-instantiated sub-DTOs (`nome? = $state<T>(new T)`): the
+    // runtime gate reads this set to skip an empty optional block instead of
+    // flagging its inner `required` fields. Emitted only when non-empty.
+    const optionalDtoNames = objectProps
+      .map((prop) => prop.optionalGateName())
+      .filter((name): name is string => name !== null);
+    const optionalDtosDecl = optionalDtoNames.length
+      ? `readonly _optionalDtos = new Set<string>([${optionalDtoNames.map((name) => `"${name}"`).join(", ")}])`
+      : "";
+
     primitiveProps.forEach((prop) => {
       constructorThis.push(prop.constructorBuild());
       bundleParams.push(prop.bundleBuild());
@@ -124,7 +134,7 @@ export class SchemaClassRenderer {
 
     const schema = `
     export class ${name} {
-      ${keys.join(";")}
+      ${[...keys, optionalDtosDecl].filter(Boolean).join(";\n      ")}
 
       ${constructorCode}
 

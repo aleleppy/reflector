@@ -13,7 +13,7 @@ export class ObjectProp {
     this.name = name;
     this.type = referenceObject.$ref.split("/").at(-1) ?? "";
 
-    this.required = isRequired ?? true; // tem que ver isso daí
+    this.required = isRequired ?? false;
     this.isNullable = !!isNullable;
   }
 
@@ -43,6 +43,18 @@ export class ObjectProp {
   bundleBuild() {
     const nullable = this.isNullable ? "?? null" : "";
     return `${this.name}: this.${this.name}?.bundle() ${nullable}`;
+  }
+
+  /**
+   * Field name when this sub-DTO is emitted as optional AND always-instantiated
+   * (`nome? = $state<T>(new T)` — `!required && !nullable`), so the client-side
+   * gate (`validateForm`) must skip it when empty instead of validating its inner
+   * `required` fields as mandatory. `null` for required or nullable sub-DTOs (the
+   * latter defaults to `null` and is already skipped at runtime). Mirrors the `?`
+   * modifier `classBuild` emits, keeping the runtime gate consistent with the type.
+   */
+  optionalGateName(): string | null {
+    return !this.required && !this.isNullable ? this.name : null;
   }
 
   hydrateBuild() {

@@ -366,6 +366,46 @@ describe("codegen — nested-objects fixture (inline objects & arrays-of-object)
   });
 });
 
+describe("codegen — nested-optional fixture (sub-DTO optionality honors parent required[])", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/nested-optional");
+
+  beforeAll(async () => {
+    outputs = await runFixture("nested-optional");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("threads parent required[] into sub-DTO optionality (4 cases) and _optionalDtos", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile.content;
+
+    // (a) $ref direto NO required[] → required, sem `?`, fora do set.
+    expect(content).toMatch(/shipping\s*=\s*\$state<ShippingInfo>\(new ShippingInfo\(\)\)/);
+    // (b) $ref direto FORA do required[] → opcional `?`, dentro do set.
+    expect(content).toMatch(/billing\?\s*=\s*\$state<BillingInfo>\(new BillingInfo\(\)\)/);
+    // (c) allOf:[{$ref}] nullable FORA do required[] → opcional `?` + `| null`, init null, fora do set.
+    expect(content).toMatch(/coupon\?\s*=\s*\$state<CouponInfo \| null>\(null\)/);
+    // (d) allOf:[{$ref}] sem nullable NO required[] → required, sem `?`, fora do set (regressão consertada).
+    expect(content).toMatch(/audit\s*=\s*\$state<AuditInfo>\(new AuditInfo\(\)\)/);
+
+    // Só o sub-DTO opcional não-nullable (billing) entra no gate de skip.
+    expect(content).toMatch(/readonly _optionalDtos = new Set<string>\(\[\s*"billing"\s*\]\)/);
+    for (const required of ["shipping", "coupon", "audit"]) {
+      expect(content).not.toMatch(new RegExp(`_optionalDtos = new Set<string>\\(\\[[^\\]]*"${required}"`));
+    }
+  });
+});
+
 describe("codegen — array-response fixture (array-root response, non-ref item kinds)", () => {
   let outputs: Output[] = [];
   const snapshotDir = path.join(here, "snapshots/array-response");

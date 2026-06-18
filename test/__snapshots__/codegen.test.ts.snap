@@ -46,6 +46,17 @@ exports[`codegen — nested-objects fixture (inline objects & arrays-of-object) 
 ]
 `;
 
+exports[`codegen — nested-optional fixture (sub-DTO optionality honors parent required[]) > generates the expected set of files 1`] = `
+[
+  "controllers/order/order.module.svelte.ts",
+  "controllers/order/order.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — optional-array-bundle fixture (optional/nullable arrays of refs) > generates the expected set of files 1`] = `
 [
   "controllers/package/package.module.svelte.ts",

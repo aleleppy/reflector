@@ -46,7 +46,7 @@ export class SchemaPropertyClassifier {
           isNullable: value.nullable,
         });
       }
-      return SchemaPropertyClassifier.classifyObject({ key, value });
+      return SchemaPropertyClassifier.classifyObject({ key, value, requireds });
     }
 
     const required = requireds.includes(key);
@@ -133,12 +133,13 @@ export class SchemaPropertyClassifier {
   private static classifyObject(params: {
     value: ReferenceObject | SchemaObject;
     key: string;
+    requireds: string[];
   }): ObjectProp | null {
-    const { value, key } = params;
+    const { value, key, requireds } = params;
 
     if ("allOf" in value) {
       const ref = value.allOf?.[0];
-      const isRequired = !!value.nullable;
+      const isRequired = requireds.includes(key);
       const nullable = !!value.nullable;
 
       if (ref && isReferenceObject(ref)) {
@@ -148,7 +149,7 @@ export class SchemaPropertyClassifier {
     }
 
     if (isReferenceObject(value)) {
-      return new ObjectProp({ name: key, referenceObject: value });
+      return new ObjectProp({ name: key, referenceObject: value, isRequired: requireds.includes(key) });
     }
 
     return null;

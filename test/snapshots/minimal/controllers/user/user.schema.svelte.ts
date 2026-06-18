@@ -19,7 +19,7 @@ export interface UserInterface {
   tags?: string[];
   roles?: ENUM_USER_ENTITY_ROLES[];
   status: UserStatusInterface;
-  address: AddressInterface | null;
+  address?: AddressInterface | null;
   priority?: ENUM_USER_ENTITY_PRIORITY;
 }
 export class User {
@@ -29,7 +29,7 @@ export class User {
   tags? = $state<string[]>([]);
   roles? = $state<ENUM_USER_ENTITY_ROLES[]>([]);
   status = $state<UserStatus>(new UserStatus());
-  address = $state<Address | null>(null);
+  address? = $state<Address | null>(null);
   priority?: BuildedInput<ENUM_USER_ENTITY_PRIORITY>;
 
   constructor(params?: { data?: UserInterface | undefined; empty?: boolean }) {
@@ -169,12 +169,13 @@ export class Address {
 export interface UserController_createBodyInterface {
   name: string;
   email: string;
-  role: UserRoleInterface;
+  role?: UserRoleInterface;
 }
 export class UserController_createBody {
   name: BuildedInput<string>;
   email: BuildedInput<string>;
-  role = $state<UserRole>(new UserRole());
+  role? = $state<UserRole>(new UserRole());
+  readonly _optionalDtos = new Set<string>(["role"]);
 
   constructor(params?: {
     data?: UserController_createBodyInterface | undefined;

@@ -74,6 +74,7 @@ export class BuildedInput<T> {
   private _value = $state<T>(null as any);
   private serverErrorMessage = $state<string | null>(null);
   private serverErrorValue = $state.raw<T | null>(null);
+  showError = $state(false);
   sanitizer?: Sanitizer;
   required: boolean;
   nullable: boolean;
@@ -180,6 +181,14 @@ export class BuildedInput<T> {
     return this.validator(this.value);
   }
 
+  touch(): void {
+    this.showError = true;
+  }
+
+  untouch(): void {
+    this.showError = false;
+  }
+
   setServerError(message: string) {
     this.serverErrorMessage = message;
     this.serverErrorValue = this.value;
@@ -241,6 +250,11 @@ export function build<T>(params: {
   return new BuildedInput(params);
 }
 
+/**
+ * @deprecated Use `validateForm` — `isFormValid` faz `throw` no primeiro campo
+ * inválido (nunca retorna `false`), ignora o flag `required` e muta o schema
+ * (`delete schema.bundle`). Remoção real fica para o próximo major.
+ */
 export function isFormValid<T>(schema: PartialBuildedInput<T>): boolean {
   delete (schema as { bundle?: unknown }).bundle;
 
@@ -264,6 +278,93 @@ export function isFormValid<T>(schema: PartialBuildedInput<T>): boolean {
   }
 
   return isValid;
+}
+
+function isNestedDto(v: unknown): v is Record<string, unknown> {
+  return v != null && typeof v === "object" && typeof (v as { bundle?: unknown }).bundle === "function";
+}
+
+function isInputEmpty(input: BuildedInput<unknown>): boolean {
+  return input.value === "" || input.value === null || input.value === undefined;
+}
+
+/**
+ * Visita os `BuildedInput` do schema, recursando em DTO aninhado (campo com
+ * `.bundle()`) e em array de DTOs — simétrico ao `bundleInputs`/`bundle`, que
+ * também recursam. Sem short-circuit: aplica `fn` em cada campo.
+ *
+ * `skipOptionalEmpty`: pula um sub-DTO listado no `_optionalDtos` do pai cujos
+ * campos estão TODOS vazios. O codegen marca os sub-DTOs **opcionais
+ * always-instantiated** (`nome? = $state<T>(new T)`); sem isso o gate validaria
+ * o `required` interno de um bloco opcional em branco e bloquearia o submit.
+ */
+function forEachBuildedInput(
+  schema: Record<string, unknown>,
+  fn: (input: BuildedInput<unknown>) => void,
+  skipOptionalEmpty: boolean,
+): void {
+  const optional = skipOptionalEmpty
+    ? (schema as { _optionalDtos?: Set<string> })._optionalDtos
+    : undefined;
+  for (const [key, v] of Object.entries(schema)) {
+    if (isBuildedInput(v)) {
+      fn(v);
+    } else if (Array.isArray(v)) {
+      for (const item of v) {
+        if (isBuildedInput(item)) fn(item);
+        else if (isNestedDto(item)) forEachBuildedInput(item, fn, skipOptionalEmpty);
+      }
+    } else if (isNestedDto(v)) {
+      if (optional?.has(key) && isEmptyDto(v)) continue;
+      forEachBuildedInput(v, fn, skipOptionalEmpty);
+    }
+  }
+}
+
+function isEmptyDto(dto: Record<string, unknown>): boolean {
+  let empty = true;
+  forEachBuildedInput(
+    dto,
+    (input) => {
+      if (!isInputEmpty(input)) empty = false;
+    },
+    false,
+  );
+  return empty;
+}
+
+/**
+ * Gate de validação client-side honesto: percorre os campos `BuildedInput` do
+ * schema (recursando em DTO aninhado e array de DTOs), chama `touch()` em cada um
+ * (acende o erro por-campo no submit) e retorna `true` só se todos forem válidos.
+ * Campo vazio é inválido quando `required`; caso contrário consulta o `validator`.
+ * Sub-DTO opcional inteiramente vazio é pulado (não bloqueia bloco em branco).
+ * Sem `throw`, sem `toast`, sem mutar o schema. Tocar todos é de propósito (não
+ * `.every`, que short-circuita e deixaria campos sem acender).
+ */
+export function validateForm(schema: Record<string, unknown>): boolean {
+  let valid = true;
+  forEachBuildedInput(
+    schema,
+    (input) => {
+      input.touch();
+      const fieldValid = isInputEmpty(input) ? !input.required : input.validate() === null;
+      if (!fieldValid) valid = false;
+    },
+    true,
+  );
+  return valid;
+}
+
+/**
+ * Simétrico do `validateForm`: apaga `showError` de todos os campos do schema
+ * (incl. aninhados, sem pular opcional). Usar no `onClose`/reset de modal que
+ * reusa a instância do form. (Quando o endpoint faz `reset()` → `new Dto()`,
+ * `showError` já volta `false` de graça; o untouch só é necessário pra instância
+ * reutilizada.)
+ */
+export function untouchForm(schema: Record<string, unknown>): void {
+  forEachBuildedInput(schema, (input) => input.untouch(), false);
 }
 
 export function genericArrayBundler(data: string[]): string[];
