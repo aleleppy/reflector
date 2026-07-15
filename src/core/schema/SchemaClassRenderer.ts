@@ -39,7 +39,8 @@ export class SchemaClassRenderer {
     const constructorThis: string[] = [];
     const keys: string[] = [];
     const bundleParams: string[] = [];
-    let staticMethod: string = "";
+    const staticProp = arrayProps.find((prop) => prop.name === "data") ?? arrayProps.at(-1);
+    const staticMethod = staticProp?.staticBuild() ?? "";
 
     // Optional, always-instantiated sub-DTOs (`nome? = $state<T>(new T)`): the
     // runtime gate reads this set to skip an empty optional block instead of
@@ -61,8 +62,6 @@ export class SchemaClassRenderer {
       constructorThis.push(prop.constructorBuild());
       keys.push(prop.classBuild());
       bundleParams.push(prop.bundleBuild());
-
-      staticMethod = prop.staticBuild();
     });
 
     objectProps.forEach((prop) => {

@@ -162,6 +162,45 @@ describe("codegen — sibling-lists fixture (two list-typed methods, different n
   });
 });
 
+describe("codegen — paginated responses select the data array for static from()", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/paginated-response-arrays");
+
+  beforeAll(async () => {
+    outputs = await runFixture("paginated-response-arrays");
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("uses data for a paginated response with no auxiliary arrays", () => {
+    const schema = outputs.find((o) => o.rel.endsWith("dashboard.schema.svelte.ts"))!.content;
+    const simple = schema.split("export class SimplePurchaseResponse")[1]!.split("export interface")[0]!;
+
+    expect(simple).toMatch(/static from\(data: PurchaseResInterface\[\]\)/);
+    expect(simple).toMatch(/data\.map\(\(obj\) => new PurchaseRes\(\{ data: obj \}\)\)/);
+  });
+
+  it("does not let auxiliary arrays overwrite the data array selection", () => {
+    const schema = outputs.find((o) => o.rel.endsWith("dashboard.schema.svelte.ts"))!.content;
+    const rich = schema.split("export class CustomerDashboardResponse")[1]!.split("export interface")[0]!;
+
+    expect(rich).toMatch(/static from\(data: PurchaseResInterface\[\]\)/);
+    expect(rich).toMatch(/data\.map\(\(obj\) => new PurchaseRes\(\{ data: obj \}\)\)/);
+    expect(rich).not.toMatch(/static from\(data: (FavoriteProductRes|PaymentMethodShareRes)Interface\[\]\)/);
+  });
+
+  it("keeps the API integration calling Response.from(response.data)", () => {
+    const module = outputs.find((o) => o.rel.endsWith("dashboard.module.svelte.ts"))!.content;
+
+    expect(module).toMatch(/SimplePurchaseResponse\.from\(\s*response\.data,?\s*\)/);
+    expect(module).toMatch(/CustomerDashboardResponse\.from\(\s*response\.data,?\s*\)/);
+  });
+});
+
 describe("codegen — optional-array-bundle fixture (optional/nullable arrays of refs)", () => {
   let outputs: Output[] = [];
   const snapshotDir = path.join(here, "snapshots/optional-array-bundle");
@@ -451,6 +490,13 @@ describe("codegen — array-response fixture (array-root response, non-ref item 
     expect(content).toMatch(/\blabel\b/);
     // generic empty object: Record<string, unknown>[] (NOT degraded to string[])
     expect(content).toMatch(/class ArrayController_genericResponse\b[\s\S]*?data = \$state<Record<string, unknown>\[\]>/);
+  });
+
+  it("preserves static from() for an array-root response", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    expect(schemaFile.content).toMatch(
+      /class ArrayController_inlineResponse\b[\s\S]*?static from\(data: ArrayController_inlineResponseInterface\)[\s\S]*?new ArrayController_inlineResponseItem/,
+    );
   });
 });
 

@@ -1,0 +1,86 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reflector paginated response arrays fixture", "version": "1.0.0" },
+  "paths": {
+    "/dashboard/simple": {
+      "get": {
+        "operationId": "DashboardController_listSimple",
+        "parameters": [{ "name": "page", "in": "query", "schema": { "type": "integer" } }],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/SimplePurchaseResponse" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/rich": {
+      "get": {
+        "operationId": "DashboardController_listRich",
+        "parameters": [{ "name": "page", "in": "query", "schema": { "type": "integer" } }],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/CustomerDashboardResponse" } } }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["success", "message"],
+        "properties": { "success": { "type": "boolean" }, "message": { "type": "string" } }
+      },
+      "SimplePurchaseResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PurchaseRes" } } }
+      },
+      "CustomerDashboardResponse": {
+        "type": "object",
+        "required": ["data", "favoriteProducts", "paymentMethods"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/PurchaseRes" } },
+          "favoriteProducts": { "type": "array", "items": { "$ref": "#/components/schemas/FavoriteProductRes" } },
+          "paymentMethods": { "type": "array", "items": { "$ref": "#/components/schemas/PaymentMethodShareRes" } }
+        }
+      },
+      "PurchaseRes": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } }
+      },
+      "FavoriteProductRes": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } }
+      },
+      "PaymentMethodShareRes": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "type": "string" } }
+      }
+    }
+  }
+}
