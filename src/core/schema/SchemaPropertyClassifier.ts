@@ -102,6 +102,12 @@ export class SchemaPropertyClassifier {
           isNullable: value.nullable,
         });
       }
+      // `nullable: true` + `type: "object"` + `allOf: [$ref]` — shape que o Nest
+      // emite para um ObjectType nullable. Sem isso a prop era descartada em silêncio.
+      if (value.allOf) {
+        return SchemaPropertyClassifier.classifyObject({ key, value, requireds });
+      }
+
       return null;
     }
 

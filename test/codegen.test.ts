@@ -443,6 +443,109 @@ describe("codegen — nested-optional fixture (sub-DTO optionality honors parent
       expect(content).not.toMatch(new RegExp(`_optionalDtos = new Set<string>\\(\\[[^\\]]*"${required}"`));
     }
   });
+
+  it("passa o _optionalDtos pro bundleInputs, pra não serializar bloco opcional vazio", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!;
+    expect(schemaFile.content).toMatch(/bundleInputs\(\s*\{[^}]*\}\s*,\s*this\._optionalDtos\s*,?\s*\)/s);
+  });
+});
+
+describe("codegen — nullable-object-allof fixture (nullable ObjectType não pode sumir)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/nullable-object-allof");
+
+  beforeAll(async () => {
+    outputs = await runFixture("nullable-object-allof");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("mantém a prop nullable declarada como `type:object` + allOf (bug: era descartada)", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    // Nullable + type:object + allOf, fora do required[] → opcional e | null.
+    expect(content).toMatch(/responsible\?\s*=\s*\$state<DefaultCrasResponsibleRes \| null>\(null\)/);
+    // Mesmo shape, mas NO required[] → sem `?`, ainda | null.
+    expect(content).toMatch(/owner\s*=\s*\$state<CrasOwner \| null>\(null\)/);
+
+    // Chegam no constructor (ternário tri-state), no Interface e no bundle.
+    expect(content).toMatch(/this\.responsible\s*=\s*params\?\.data\?\.responsible != null/);
+    expect(content).toMatch(/responsible\?:\s*DefaultCrasResponsibleResInterface \| null/);
+    expect(content).toMatch(/responsible:\s*this\.responsible/);
+  });
+
+  it("não regride os shapes de objeto que já funcionavam", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    // type:object + allOf sem nullable → instancia direto.
+    expect(content).toMatch(/manager\?\s*=\s*\$state<CrasManager>\(new CrasManager\(\)\)/);
+    // $ref direto (sem `type`).
+    expect(content).toMatch(/shipping\s*=\s*\$state<CrasShipping>\(new CrasShipping\(\)\)/);
+    // allOf sem `type`, nullable.
+    expect(content).toMatch(/coupon\?\s*=\s*\$state<CrasCoupon \| null>\(null\)/);
+    // additionalProperties continua degradando pra primitivo, não vira ObjectProp.
+    expect(content).toMatch(/meta:\s*BuildedInput<string \| null>/);
+    // …e o único sub-DTO no gate é o opcional não-nullable.
+    expect(content).toMatch(/readonly _optionalDtos = new Set<string>\(\["manager"\]\)/);
+  });
+});
+
+describe("codegen — enum-name-stability fixture (nome de enum não depende de ordem)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/enum-name-stability");
+
+  beforeAll(async () => {
+    outputs = await runFixture("enum-name-stability");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("dá nome próprio a cada dono, mesmo reusando o value-set (bug: o 2º roubava o nome do 1º)", () => {
+    const enums = outputs.find((o) => o.rel === "enums.ts")!.content;
+
+    // Mesmos 3 valores, dois donos → dois exports, cada um nomeado pelo SEU schema.
+    expect(enums).toMatch(/export const ENUM_TENANT_ADDRESS_STATE = \["SP", "RJ", "MG"\]/);
+    expect(enums).toMatch(/export const ENUM_MUNICIPALITY_BACK_OFFICE_STATE = \["SP", "RJ", "MG"\]/);
+    // O query param do módulo tem o dele e não rouba nenhum dos dois.
+    expect(enums).toMatch(/export const ENUM_TENANT_ENTITY_STATE = \["SP", "RJ", "MG"\]/);
+  });
+
+  it("desempata colisão de nome com value-sets diferentes, sem emitir export duplicado", () => {
+    const enums = outputs.find((o) => o.rel === "enums.ts")!.content;
+
+    // UserRes e UserDto colapsam em ENUM_USER_ENTITY_KIND depois do strip de trash-words.
+    // Um fica com o nome curto, o outro cai no tier 2 (nome cru da entidade).
+    expect(enums).toMatch(/ENUM_USER_ENTITY_KIND\b/);
+    expect(enums).toMatch(/ENUM_USER_(RES|DTO)_KIND\b/);
+
+    const names = [...enums.matchAll(/export const (ENUM_\w+) =/g)].map((m) => m[1]);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names.filter((n) => n.includes("KIND"))).toHaveLength(2);
+  });
+
+  it("emite enums.ts em ordem alfabética, não em ordem de varredura", () => {
+    const enums = outputs.find((o) => o.rel === "enums.ts")!.content;
+    const names = [...enums.matchAll(/export const (ENUM_\w+) =/g)].map((m) => m[1]);
+
+    expect(names.length).toBeGreaterThan(1);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+  });
 });
 
 describe("codegen — array-response fixture (array-root response, non-ref item kinds)", () => {

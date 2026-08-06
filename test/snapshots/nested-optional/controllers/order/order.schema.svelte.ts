@@ -106,13 +106,16 @@ export class OrderController_createBody {
   }
 
   bundle() {
-    return bundleInputs({
-      name: this.name,
-      shipping: this.shipping,
-      billing: this.billing,
-      coupon: this.coupon,
-      audit: this.audit,
-    });
+    return bundleInputs(
+      {
+        name: this.name,
+        shipping: this.shipping,
+        billing: this.billing,
+        coupon: this.coupon,
+        audit: this.audit,
+      },
+      this._optionalDtos,
+    );
   }
 }
 

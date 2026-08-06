@@ -216,11 +216,10 @@ export class UserController_createBody {
   }
 
   bundle() {
-    return bundleInputs({
-      name: this.name,
-      email: this.email,
-      role: this.role,
-    });
+    return bundleInputs(
+      { name: this.name, email: this.email, role: this.role },
+      this._optionalDtos,
+    );
   }
 }
 export type UserController_listResponseInterface = UserInterface[];

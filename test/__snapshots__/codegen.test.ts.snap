@@ -22,6 +22,19 @@ exports[`codegen — colliding-routes fixture > generates the expected set of fi
 ]
 `;
 
+exports[`codegen — enum-name-stability fixture (nome de enum não depende de ordem) > generates the expected set of files 1`] = `
+[
+  "controllers/tenant/tenant.module.svelte.ts",
+  "controllers/tenant/tenant.schema.svelte.ts",
+  "controllers/user/user.module.svelte.ts",
+  "controllers/user/user.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — minimal fixture > generates the expected set of files 1`] = `
 [
   "controllers/notification/notification.module.svelte.ts",
@@ -50,6 +63,17 @@ exports[`codegen — nested-optional fixture (sub-DTO optionality honors parent 
 [
   "controllers/order/order.module.svelte.ts",
   "controllers/order/order.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
+exports[`codegen — nullable-object-allof fixture (nullable ObjectType não pode sumir) > generates the expected set of files 1`] = `
+[
+  "controllers/cras/cras.module.svelte.ts",
+  "controllers/cras/cras.schema.svelte.ts",
   "enums.ts",
   "fields.ts",
   "mocked-params.svelte.ts",

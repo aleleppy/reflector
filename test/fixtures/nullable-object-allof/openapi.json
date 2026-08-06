@@ -1,0 +1,101 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "nullable-object-allof", "version": "1.0.0" },
+  "paths": {
+    "/cras": {
+      "post": {
+        "operationId": "CrasController_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "owner", "shipping"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "responsible": {
+                    "nullable": true,
+                    "type": "object",
+                    "allOf": [{ "$ref": "#/components/schemas/DefaultCrasResponsibleRes" }]
+                  },
+                  "owner": {
+                    "nullable": true,
+                    "type": "object",
+                    "allOf": [{ "$ref": "#/components/schemas/CrasOwner" }]
+                  },
+                  "manager": {
+                    "type": "object",
+                    "allOf": [{ "$ref": "#/components/schemas/CrasManager" }]
+                  },
+                  "shipping": { "$ref": "#/components/schemas/CrasShipping" },
+                  "coupon": {
+                    "nullable": true,
+                    "allOf": [{ "$ref": "#/components/schemas/CrasCoupon" }]
+                  },
+                  "meta": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Cras" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DefaultCrasResponsibleRes": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string" }
+        }
+      },
+      "CrasOwner": {
+        "type": "object",
+        "required": ["document"],
+        "properties": { "document": { "type": "string" } }
+      },
+      "CrasManager": {
+        "type": "object",
+        "required": ["login"],
+        "properties": { "login": { "type": "string" } }
+      },
+      "CrasShipping": {
+        "type": "object",
+        "required": ["address"],
+        "properties": { "address": { "type": "string" } }
+      },
+      "CrasCoupon": {
+        "type": "object",
+        "required": ["code"],
+        "properties": { "code": { "type": "string" } }
+      },
+      "Cras": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "responsible": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [{ "$ref": "#/components/schemas/DefaultCrasResponsibleRes" }]
+          }
+        }
+      }
+    }
+  }
+}

@@ -128,7 +128,7 @@ export class SchemaClassRenderer {
       mode === "request"
         ? `return bundleInputs({ ${[...primitiveProps, ...arrayProps, ...objectProps, ...enumProps, ...unionProps]
             .map((p) => `${p.name}: this.${p.name}`)
-            .join(",")} })`
+            .join(",")} }${optionalDtoNames.length ? ", this._optionalDtos" : ""})`
         : responseBundle;
 
     const schema = `

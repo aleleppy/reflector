@@ -47,8 +47,12 @@ export class RuntimeFilesEmitter {
       `,
     });
 
+    // Ordena por nome: a ordem de inserção do Map é a ordem de varredura do
+    // documento OpenAPI, então qualquer schema novo no back embaralhava o
+    // arquivo inteiro e o diff virava ruído.
     const enumss = Array.from(context.enumTypes)
-      .map(([types, key]) => `export const ${key} = [ ${types} ] as const; export type ${key} = typeof ${key}[number] `)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, types]) => `export const ${name} = [ ${types} ] as const; export type ${name} = typeof ${name}[number] `)
       .join(";");
 
     const enumFile = new Source({

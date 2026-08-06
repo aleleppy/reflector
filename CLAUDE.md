@@ -147,16 +147,41 @@ threaded through `Reflector` → `ModuleFactory` → `Module` →
 
 ## Hard rules when changing codegen
 
-- **Generated output is the contract.** There are no tests — the only way
-  to validate a change is to diff the generated folder of a reference
-  consumer project before and after. Template string whitespace matters
-  (including trailing spaces inside generated class constructors — a
-  previous refactor had to preserve `"}) { "` byte-for-byte).
+- **Generated output is the contract.** The snapshots under `test/snapshots/`
+  are the assertion; beyond them, the way to validate a change is to diff the
+  generated folder of a reference consumer project before and after. Template
+  string whitespace matters (including trailing spaces inside generated class
+  constructors — a previous refactor had to preserve `"}) { "` byte-for-byte).
 - **Constructors populate, `build()` executes.** No I/O in constructors.
 - **No strings `$lib` / `$env` / `$reflector` in `src/core/**` outside
   `ReflectorConfig.ts` defaults.** Any new emitter takes the config.
 - **`CodegenContext` is per-run.** Don't reintroduce module-level mutable
   state for shared enum / mocked-param tracking.
+- **Nothing in the generated output may depend on OpenAPI document order.**
+  `Object.entries(paths)` / `Object.entries(components.schemas)` order changes
+  whenever the back adds an endpoint or a DTO; anything keyed off "first one
+  seen" silently renames symbols in every consumer. See the enum-naming rule
+  below.
+
+## Enum naming rule
+
+`enums.ts` exports are named **from the schema that declares the field**, never
+inherited from whichever schema was scanned first. `CodegenContext.enumTypes`
+is therefore keyed `generatedName → joinedLiterals` (not the reverse), and
+`EnumProp.resolveName` resolves in three deterministic tiers:
+
+1. `ENUM_<TREATED_ENTITY>_<PROP>` — free, or already registered with the *same*
+   value-set (idempotent, so two schemas that legitimately share an enum share
+   the export).
+2. Name taken by a *different* value-set → re-derive from the raw entity name
+   (no trash-word strip, no segment dedup): `ENUM_USER_RES_KIND` vs
+   `ENUM_USER_DTO_KIND`.
+3. Still colliding → suffix an FNV-1a base36 hash of the literals.
+
+Two schemas reusing the same values now get one export each; `enums.ts` grows
+instead of renaming an existing symbol. `RuntimeFilesEmitter` sorts the file by
+name so scan order can't reorder it either. Locked by the
+`enum-name-stability` fixture.
 
 ## Generated layout on the consumer side
 

@@ -569,6 +569,15 @@ function isBuildedInput(v: unknown): v is BuildedInput<unknown> {
  * Trata cada entry: `undefined` → omite; `BuildedInput` → value (com coerção nullable);
  * array → `genericArrayBundler`; DTO aninhado (`.bundle()`) → recursa; plain → passthrough.
  *
+ * `optionalDtos` é o `_optionalDtos` da classe dona (sub-DTO opcional que nasce sempre
+ * instanciado, `nome? = $state<T>(new T)`). Sem ele o bloco opcional em branco ia no
+ * payload como `{name:'',email:''}` e o back devolvia 400 — o gate era fiel em
+ * `validateForm` e furado na serialização. Sub-DTO `nullable` NÃO entra no set: seu valor
+ * é `null`, cai no passthrough e manda `null` de propósito.
+ *
+ * Limitação assumida: a omissão é runtime-only. O overload continua listando a key como
+ * presente — tipá-la como opcional exigiria o `Set` com chaves literais no generated.
+ *
  * O overload tipado espelha o `bundleStrict`: strip do wrapper `BuildedInput<V> → V`,
  * array → `BundleResult`, DTO aninhado → retorno do seu `bundle`, e dropa as keys
  * puramente `undefined`. Sem ele o request `bundle()` regredia pra `Record<string,unknown>`
@@ -585,6 +594,7 @@ type BundledValue<V> =
 
 export function bundleInputs<T extends Record<string, unknown>>(
   inputs: T,
+  optionalDtos?: ReadonlySet<string>,
 ): {
   [K in keyof T as Exclude<BundledValue<T[K]>, undefined> extends never
     ? never
@@ -592,9 +602,11 @@ export function bundleInputs<T extends Record<string, unknown>>(
 };
 export function bundleInputs(
   inputs: Record<string, unknown>,
+  optionalDtos?: ReadonlySet<string>,
 ): Record<string, unknown>;
 export function bundleInputs(
   inputs: Record<string, unknown>,
+  optionalDtos?: ReadonlySet<string>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, v] of Object.entries(inputs)) {
@@ -614,6 +626,8 @@ export function bundleInputs(
     }
 
     if (v && typeof (v as { bundle?: unknown }).bundle === "function") {
+      // bloco opcional em branco → omite inteiro (mesmo gate do validateForm)
+      if (optionalDtos?.has(key) && isEmptyDto(v as object)) continue;
       out[key] = (v as { bundle: () => unknown }).bundle(); // DTO aninhado → recursa
       continue;
     }
