@@ -1,10 +1,26 @@
 import "./_setup-runes";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { pageMock, gotoMock } = vi.hoisted(() => ({
-  pageMock: { url: new URL("http://localhost/") } as { url: URL },
-  gotoMock: vi.fn(),
-}));
+const { pageMock, gotoMock, storageMock } = vi.hoisted(() => {
+  const store = new Map<string, string>();
+  return {
+    pageMock: { url: new URL("http://localhost/") } as { url: URL },
+    gotoMock: vi.fn(),
+    storageMock: {
+      store,
+      getItem: vi.fn((k: string) => (store.has(k) ? store.get(k)! : null)),
+      setItem: vi.fn((k: string, v: string) => void store.set(k, v)),
+      removeItem: vi.fn((k: string) => void store.delete(k)),
+    },
+  };
+});
+
+// node env do vitest não tem localStorage — o template lê o global direto.
+Object.defineProperty(globalThis, "localStorage", {
+  value: storageMock,
+  configurable: true,
+  writable: true,
+});
 
 vi.mock("$app/state", () => ({ page: pageMock }));
 vi.mock("$app/navigation", () => ({ goto: gotoMock }));
@@ -28,6 +44,10 @@ beforeEach(async () => {
   await Promise.resolve();
   pageMock.url = new URL("http://localhost/");
   gotoMock.mockReset();
+  storageMock.store.clear();
+  storageMock.getItem.mockClear();
+  storageMock.setItem.mockClear();
+  storageMock.removeItem.mockClear();
 });
 
 describe("QueryBuilder", () => {
@@ -182,6 +202,105 @@ describe("setQueryGroup", () => {
 
     expect(page.value).toBe("1");
     expect(limit.value).toBe("20");
+  });
+});
+
+describe("QueryBuilder persist", () => {
+  const STORAGE_KEY = "reflector:query:limit";
+
+  it("URL value wins over persisted value", () => {
+    storageMock.store.set(STORAGE_KEY, "50");
+    pageMock.url = new URL("http://localhost/?limit=25");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("25");
+  });
+
+  it("falls back to the persisted value when the URL has no param", () => {
+    storageMock.store.set(STORAGE_KEY, "50");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("50");
+  });
+
+  it("falls back to defaultValue when there is nothing persisted", () => {
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("10");
+  });
+
+  it("ignores an empty persisted value", () => {
+    storageMock.store.set(STORAGE_KEY, "");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("10");
+  });
+
+  it("accepts any non-empty persisted value (no range validation here)", () => {
+    storageMock.store.set(STORAGE_KEY, "9999");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("9999");
+  });
+
+  it("update() writes to storage before touching the URL", async () => {
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    qb.update(50);
+
+    expect(storageMock.setItem).toHaveBeenCalledWith(STORAGE_KEY, "50");
+    // gravação é síncrona; o goto só acontece no flush da microtask.
+    expect(gotoMock).not.toHaveBeenCalled();
+
+    await Promise.resolve();
+    const [target] = gotoMock.mock.calls[0]!;
+    expect((target as URL).searchParams.get("limit")).toBe("50");
+  });
+
+  it("update('') clears the persisted preference", () => {
+    storageMock.store.set(STORAGE_KEY, "50");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    qb.update("");
+
+    expect(storageMock.removeItem).toHaveBeenCalledWith(STORAGE_KEY);
+    expect(qb.current).toBe("10");
+  });
+
+  it("update(null) does not touch storage", () => {
+    const qb = new QueryBuilder({ key: "limit", persist: true });
+    qb.update(null);
+    expect(storageMock.setItem).not.toHaveBeenCalled();
+    expect(storageMock.removeItem).not.toHaveBeenCalled();
+  });
+
+  it("default (persist off) neither reads nor writes storage", async () => {
+    storageMock.store.set("reflector:query:page", "7");
+    const qb = new QueryBuilder({ key: "page", defaultValue: 1 });
+
+    expect(qb.current).toBe("1");
+    expect(storageMock.getItem).not.toHaveBeenCalled();
+
+    qb.update(3);
+    expect(storageMock.setItem).not.toHaveBeenCalled();
+    await Promise.resolve();
+  });
+
+  it("persist: false is explicitly inert", () => {
+    storageMock.store.set(STORAGE_KEY, "50");
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: false });
+    expect(qb.current).toBe("10");
+    expect(storageMock.getItem).not.toHaveBeenCalled();
+  });
+
+  it("a throwing localStorage breaks neither current nor update", async () => {
+    storageMock.getItem.mockImplementationOnce(() => {
+      throw new Error("SecurityError: storage disabled");
+    });
+    storageMock.setItem.mockImplementationOnce(() => {
+      throw new Error("QuotaExceededError");
+    });
+
+    const qb = new QueryBuilder({ key: "limit", defaultValue: 10, persist: true });
+    expect(qb.current).toBe("10");
+
+    expect(() => qb.update(50)).not.toThrow();
+    await Promise.resolve();
+    const [target] = gotoMock.mock.calls[0]!;
+    expect((target as URL).searchParams.get("limit")).toBe("50");
   });
 });
 

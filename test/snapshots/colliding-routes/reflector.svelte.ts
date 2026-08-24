@@ -451,23 +451,73 @@ type QueryWithArrayType = {
   value: string | number | null | StringOrNumber[];
 };
 
+/**
+ * Namespace próprio no `localStorage` — a chave persistida é derivada do `key` do
+ * query param, então o prefixo evita colidir com storage da aplicação consumidora.
+ */
+const QUERY_STORAGE_PREFIX = "reflector:query:";
+
+/**
+ * Leitura best-effort do valor persistido. Aceita só string não-vazia; qualquer
+ * domínio de valores válidos (opções de itens por página, etc.) é regra da UI
+ * consumidora, não do reflector. Storage indisponível (SSR, Safari private mode)
+ * nunca pode quebrar a leitura do param.
+ */
+function readPersistedQuery(key: string): string | null {
+  if (!browser) return null;
+  try {
+    const stored = localStorage.getItem(QUERY_STORAGE_PREFIX + key);
+    return stored !== null && stored !== "" ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Escrita best-effort: quota estourada / storage bloqueado não derruba a navegação. */
+function writePersistedQuery(key: string, value: string) {
+  if (!browser) return;
+  try {
+    // `""` significa "remove o param" — a preferência salva também morre junto,
+    // senão o valor antigo ressuscitaria na próxima navegação.
+    if (value === "") localStorage.removeItem(QUERY_STORAGE_PREFIX + key);
+    else localStorage.setItem(QUERY_STORAGE_PREFIX + key, value);
+  } catch {
+    /* noop */
+  }
+}
+
 export class QueryBuilder {
   readonly key: string;
   readonly kind = "query";
   private readonly defaultValue: string | null;
+  private readonly persist: boolean;
 
-  constructor(params: { key: string; defaultValue?: string | number | null }) {
+  constructor(params: {
+    key: string;
+    defaultValue?: string | number | null;
+    persist?: boolean;
+  }) {
     this.key = params.key;
+    this.persist = params.persist === true;
     this.defaultValue =
       params.defaultValue === undefined || params.defaultValue === null
         ? null
         : String(params.defaultValue);
   }
 
-  /** Snapshot read-only do query param (a URL é a fonte). Escrita só via `.update()`. */
+  /**
+   * Snapshot read-only do query param. A URL é a fonte de verdade e tem prioridade
+   * absoluta; só na ausência do param entra o valor persistido (quando `persist`)
+   * e, por último, o `defaultValue`. Escrita só via `.update()`.
+   */
   get current(): string | null {
     const fromUrl = (pendingUrl ?? page.url).searchParams.get(this.key);
-    return fromUrl !== null ? fromUrl : this.defaultValue;
+    if (fromUrl !== null) return fromUrl;
+    if (this.persist) {
+      const stored = readPersistedQuery(this.key);
+      if (stored !== null) return stored;
+    }
+    return this.defaultValue;
   }
 
   /**
@@ -481,13 +531,18 @@ export class QueryBuilder {
 
   /**
    * Aplica o valor recebido ao query param.
-   * - `null` / `undefined` → no-op (não chama `goto`).
+   * - `null` / `undefined` → no-op (não chama `goto`, não toca no storage).
    * - `""` (string vazia) → delega pra `changeParam`, que remove o param.
    * - número / string não-vazia → `set(key, String(event))`.
+   *
+   * Com `persist`, grava no storage antes de delegar — a preferência sobrevive à
+   * navegação pra outra tela, que volta com a URL sem o param.
    */
   update(event: string | number | null) {
     if (event === null || event === undefined) return;
-    return changeParam({ key: this.key, event: String(event) });
+    const value = String(event);
+    if (this.persist) writePersistedQuery(this.key, value);
+    return changeParam({ key: this.key, event: value });
   }
 }
 
