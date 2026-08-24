@@ -24,7 +24,7 @@ import {
 
 class Querys {
   readonly page = new QueryBuilder({ key: "page" });
-  readonly limit = new QueryBuilder({ key: "limit" });
+  readonly limit = new QueryBuilder({ key: "limit", persist: true });
 
   bundle() {
     return bundleStrict({

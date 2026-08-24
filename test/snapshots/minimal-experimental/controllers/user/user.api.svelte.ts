@@ -21,7 +21,11 @@ import {
 } from "./user.schema.svelte";
 
 class ListAllQuerys {
-  readonly limit = new QueryBuilder({ key: "limit", defaultValue: 10 });
+  readonly limit = new QueryBuilder({
+    key: "limit",
+    defaultValue: 10,
+    persist: true,
+  });
 
   bundle() {
     return bundleStrict({

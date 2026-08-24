@@ -2,6 +2,16 @@ import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import type { ReflectorParamType } from "../types/types.js";
 import { treatPropertyName } from "../helpers/prop-name.js";
 
+/**
+ * Query params cujo valor escolhido pelo usuário é persistido no storage do runtime
+ * (`QueryBuilder({ persist: true })`), pra sobreviver à navegação pra outra tela —
+ * que volta com a URL sem o param e cairia no `defaultValue`.
+ *
+ * Só `limit`: persistir `page` devolveria o usuário à página 7 de uma listagem que
+ * mudou; filtros idem.
+ */
+const PERSISTED_QUERY_KEYS = new Set(["limit"]);
+
 type AbstractType = string | boolean | number | undefined;
 type Example = string | boolean | number;
 // type FallbackExample = string | false | number;
@@ -208,14 +218,19 @@ export class PrimitiveProp {
   }
 
   queryBuild() {
-    if (this.defaultValue === undefined || this.defaultValue === null) {
-      return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}' })`;
+    const params = [`key: '${this.name}'`];
+
+    if (this.defaultValue !== undefined && this.defaultValue !== null) {
+      const literal =
+        typeof this.defaultValue === "string"
+          ? `'${this.defaultValue}'`
+          : String(this.defaultValue);
+      params.push(`defaultValue: ${literal}`);
     }
-    const literal =
-      typeof this.defaultValue === "string"
-        ? `'${this.defaultValue}'`
-        : String(this.defaultValue);
-    return `readonly ${this.name} = new QueryBuilder({ key: '${this.name}', defaultValue: ${literal} })`;
+
+    if (PERSISTED_QUERY_KEYS.has(this.name)) params.push("persist: true");
+
+    return `readonly ${this.name} = new QueryBuilder({ ${params.join(", ")} })`;
   }
 
   updateQueryBuild() {
