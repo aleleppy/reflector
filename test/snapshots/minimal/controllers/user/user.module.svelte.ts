@@ -25,10 +25,12 @@ class Querys {
     defaultValue: 10,
     persist: true,
   });
+  readonly replacementId = new QueryBuilder({ key: "replacementId" });
 
   bundle() {
     return bundleStrict({
       limit: this.limit?.value,
+      replacementId: this.replacementId?.value,
     });
   }
 }
@@ -225,17 +227,22 @@ export abstract class UserModule {
     paths?: {
       id: string;
     };
+    queryOverride?: {
+      replacementId?: string | null;
+    };
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
+    const { replacementId } = params?.queryOverride ?? this.querys.bundle();
     const { id } = params?.paths ?? this.paths;
     const endpoint = `users/${id}`;
 
     try {
       const response = await api.delete<null, unknown>({
         endpoint,
+        queryData: { replacementId },
       });
 
       await onSuccess?.(response);
@@ -263,6 +270,9 @@ export abstract class UserModule {
     behavior?: Behavior<null, ApiErrorResponse>;
     paths?: {
       id: string;
+    };
+    queryOverride?: {
+      replacementId?: string | null;
     };
   }) {
     const res = await this._removeRun(params);

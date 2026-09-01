@@ -84,7 +84,8 @@
       "delete": {
         "operationId": "UserController_remove",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "replacementId", "in": "query", "required": false, "schema": { "type": "string", "nullable": true } }
         ],
         "responses": { "204": { "description": "ok" } }
       }

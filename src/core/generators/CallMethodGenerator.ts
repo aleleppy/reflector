@@ -155,11 +155,13 @@ export class CallMethodGenerator {
     strategy: CallStrategy,
   ): { inside: string; outside: string } {
     const hasData = !!bodyType;
+    const querys = this.buildQuerys(method.analyzers.props.querys);
     const outside = hasData ? `const data = ${strategy.formStateAccess(method)}.bundle()` : "";
 
     const inside = `
       const response = await api.delete<${responseType}, unknown>({
         endpoint,
+        ${querys}
         ${hasData ? "data," : ""}
       })
     `;

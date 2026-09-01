@@ -63,6 +63,14 @@ describe("codegen — minimal fixture", () => {
       await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
     }
   });
+
+  it("forwards query parameters on DELETE requests", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("user.module.svelte.ts"));
+    expect(moduleFile).toBeDefined();
+    expect(moduleFile!.content).toMatch(
+      /api\.delete<null, unknown>\(\{\s*endpoint,\s*queryData:\s*\{\s*replacementId\s*\}/,
+    );
+  });
 });
 
 describe("codegen — colliding-routes fixture", () => {

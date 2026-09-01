@@ -217,6 +217,16 @@ export class Entity {
   }
 }
 
+class RemoveQuerys {
+  readonly replacementId = new QueryBuilder({ key: "replacementId" });
+
+  bundle() {
+    return bundleStrict({
+      replacementId: this.replacementId?.value,
+    });
+  }
+}
+
 class RemovePaths {
   readonly id = $derived.by(() =>
     "id" in page.params ? page.params.id : mockedParams.id,
@@ -226,20 +236,29 @@ class RemovePaths {
 export class Remove {
   loading = $state<boolean>(false);
   data = $state<unknown>(undefined);
+  querys = new RemoveQuerys();
   paths = new RemovePaths();
 
   /**  */
-  async run(params?: ApiCallParams<null, { id: string }>) {
+  async run(
+    params?: ApiCallParams<
+      null,
+      { id: string },
+      { replacementId?: string | null }
+    >,
+  ) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
     this.loading = true;
+    const { replacementId } = params?.queryOverride ?? this.querys.bundle();
     const { id } = params?.paths ?? this.paths;
     const endpoint = `users/${id}`;
 
     try {
       const response = await api.delete<null, unknown>({
         endpoint,
+        queryData: { replacementId },
       });
 
       await onSuccess?.(response);
@@ -263,13 +282,20 @@ export class Remove {
   }
 
   /** @deprecated use `run()` — returns a discriminated ApiResult */
-  async call(params?: ApiCallParams<null, { id: string }>) {
+  async call(
+    params?: ApiCallParams<
+      null,
+      { id: string },
+      { replacementId?: string | null }
+    >,
+  ) {
     const res = await this.run(params);
     return res.ok ? res.data : undefined;
   }
 
   reset() {
     this.data = undefined;
+    this.querys = new RemoveQuerys();
     this.paths = new RemovePaths();
   }
 }
