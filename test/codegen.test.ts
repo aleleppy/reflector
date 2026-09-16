@@ -736,6 +736,71 @@ describe("codegen — sanitizer field config", () => {
   });
 });
 
+describe("codegen — error-envelope responses never define the success return", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/error-envelope-response");
+
+  beforeAll(async () => {
+    outputs = await runFixture("error-envelope-response");
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("DELETE with only a 204 success keeps the null response type (bug: the 400 envelope leaked in)", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("widget.module.svelte.ts"))!;
+    const content = moduleFile.content;
+
+    // The 4xx envelope declares `data: { type: object, enum: [null] }`, which the
+    // analyzer used to read as a `string` enum response → `api.delete<string, unknown>`
+    // and `data: response.data` (TS error: no `data` on `string`).
+    expect(content).toMatch(/api\.delete<null, unknown>/);
+    expect(content).toMatch(/return \{ ok: true, data: null \}/);
+  });
+
+  it("a 2xx response wins even when the error envelopes are declared first", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("widget.module.svelte.ts"))!;
+    const content = moduleFile.content;
+
+    // entity GET: 404 declared before 200 → must still type against Widget.
+    expect(content).toMatch(/api\.get<WidgetInterface, unknown>/);
+    expect(content).toMatch(/return \{\s*ok: true,\s*data: new Widget\(\{ data: response \}\),?\s*\}/);
+
+    // list GET: 400 declared before 200 → must still type against the list response.
+    expect(content).toMatch(/api\.get<\s*WidgetController_listResponseInterface,\s*unknown\s*>/);
+    expect(content).toMatch(/WidgetController_listResponse\.from\(\s*response\.data,?\s*\)/);
+  });
+
+  it("an unnamed inline enum response degrades to a primitive, not to `response.data` on a string", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("widget.module.svelte.ts"))!;
+    const content = moduleFile.content;
+
+    // `{ type: string, enum: [...] }` with no x-enum-name/title => responseType "string".
+    expect(content).toMatch(/api\.get<string, unknown>/);
+    // The returned expression must be the body itself, never `response.data`.
+    expect(content).not.toMatch(/ok: true, data: response\.data/);
+  });
+
+  it("a named enum response returns the body, never `response.data`", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("widget.module.svelte.ts"))!;
+    const content = moduleFile.content;
+
+    // x-enum-name → the raw alias is used as the api call generic, so `.data`
+    // would not exist on the resolved type. (The alias itself is not exported by
+    // the generated schema file — a pre-existing import gap, locked separately.)
+    expect(content).toMatch(/api\.get<ENUM_WIDGET_SHAPE, unknown>/);
+    expect(content).not.toMatch(/ok: true, data: response\.data/);
+  });
+
+  it("never emits an untyped `response.data` return anywhere in the module", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("widget.module.svelte.ts"))!;
+    expect(moduleFile.content).not.toMatch(/ok: true,\s*data:\s*response\.data/);
+  });
+});
+
 function collect(root: string, dir: string, out: Output[] = []): Output[] {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -1,0 +1,186 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reflector error-envelope fixture", "version": "1.0.0" },
+  "paths": {
+    "/widgets": {
+      "get": {
+        "operationId": "WidgetController_list",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["statusCode", "message", "data"],
+                  "properties": {
+                    "statusCode": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "data": { "type": "object", "nullable": true, "enum": [null] }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ApiEnvelope" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "type": "array", "items": { "$ref": "#/components/schemas/Widget" } }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{widgetId}": {
+      "get": {
+        "operationId": "WidgetController_entity",
+        "parameters": [
+          { "name": "widgetId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["statusCode", "message", "data"],
+                  "properties": {
+                    "statusCode": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "data": { "type": "object", "nullable": true, "enum": [null] }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Widget" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "WidgetController_remove",
+        "parameters": [
+          { "name": "widgetId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "no body" },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["statusCode", "message", "data"],
+                  "properties": {
+                    "statusCode": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "data": { "type": "object", "nullable": true, "enum": [null] }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["statusCode", "message", "data"],
+                  "properties": {
+                    "statusCode": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "data": { "type": "object", "nullable": true, "enum": [null] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{widgetId}/kind": {
+      "get": {
+        "operationId": "WidgetController_kind",
+        "parameters": [
+          { "name": "widgetId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "type": "string", "enum": ["round", "square"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/widgets/{widgetId}/shape": {
+      "get": {
+        "operationId": "WidgetController_shape",
+        "parameters": [
+          { "name": "widgetId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["round", "square"],
+                  "x-enum-name": "ENUM_WIDGET_SHAPE"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "required": ["statusCode", "message"],
+        "properties": {
+          "statusCode": { "type": "number" },
+          "message": { "type": "string" }
+        }
+      },
+      "Widget": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      }
+    }
+  }
+}

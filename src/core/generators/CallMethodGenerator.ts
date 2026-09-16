@@ -173,8 +173,10 @@ export class CallMethodGenerator {
 
     if (attributeType === "list") return strategy.listStateAccess(method);
     if (!responseType) return "null";
-    if (hasEnumResponse) return "response.data";
-    if (isPrimitiveResponse) return "response";
+    // Enum and primitive responses are typed by the raw type name passed as the
+    // api call's generic (`api.get<ENUM_X, unknown>` / `api.get<string, unknown>`),
+    // so the call resolves to the body itself — never to a `data` wrapper.
+    if (hasEnumResponse || isPrimitiveResponse) return "response";
     return `new ${responseType}({ data: response })`;
   }
 
