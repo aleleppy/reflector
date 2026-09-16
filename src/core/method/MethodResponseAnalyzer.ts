@@ -10,13 +10,16 @@ type RefLike = { $ref: string };
 
 const PRIMITIVE_RESPONSE_TYPES = new Set(["string", "number", "boolean", "integer", "any", "object", "array"]);
 
+/** A successful HTTP status. Only these may define an operation's return value. */
+const SUCCESS_STATUS = /^2\d\d$/;
+
 export class MethodResponseAnalyzer {
   responseType: string | null = null;
   hasEnumResponse: boolean = false;
   isPrimitiveResponse: boolean = false;
 
   analyze(responses: ResponsesObject): void {
-    for (const response of Object.values(responses)) {
+    for (const response of this.successResponses(responses)) {
       if (!response || this.isRef(response)) continue;
       const schemaOrType = this.getFromContent(response.content);
       const type = this.typeFromSchemaOrType(schemaOrType);
@@ -26,6 +29,26 @@ export class MethodResponseAnalyzer {
         break;
       }
     }
+  }
+
+  /**
+   * Response entries that are allowed to define the return value, in
+   * declaration order.
+   *
+   * Error responses must never win: NestJS documents them with an envelope
+   * whose `data` is a nullable "enum of one" (`{ type: "object", nullable:
+   * true, enum: [null] }`), which this analyzer reads as a `string` enum. On
+   * an operation with no typed 2xx body — `DELETE` + `204` is the common one —
+   * that envelope used to become the return type, emitting `api.delete<...>`
+   * typed `string` plus `data: response.data`, i.e. `.data` on a `string`.
+   *
+   * Everything falls back to every declared response only when the operation
+   * declares no 2xx at all (specs that describe success as `default`).
+   */
+  private successResponses(responses: ResponsesObject): (ResponseObject | ReferenceObject)[] {
+    const entries = Object.entries(responses ?? {});
+    const success = entries.filter(([status]) => SUCCESS_STATUS.test(status));
+    return (success.length > 0 ? success : entries).flatMap(([, response]) => (response ? [response] : []));
   }
 
   private normalizePrimitive(type: string): string {
@@ -67,8 +90,7 @@ export class MethodResponseAnalyzer {
     const schema = schemaOrType;
 
     if (schema.enum) {
-      this.hasEnumResponse = true;
-      return this.extractEnumType(schema);
+      return this.resolveEnum(schema);
     }
 
     if (schema.allOf) {
@@ -83,8 +105,7 @@ export class MethodResponseAnalyzer {
       const items = schema.items;
       if (this.isRef(items)) return this.componentName(items);
       if (items.enum) {
-        this.hasEnumResponse = true;
-        return this.extractEnumType(items);
+        return this.resolveEnum(items, items.type);
       }
       return items.type;
     }
@@ -97,17 +118,6 @@ export class MethodResponseAnalyzer {
     return schema.type;
   }
 
-  private extractEnumType(schema: SchemaObject): string {
-    const extended = schema as SchemaObject & { "x-enum-name"?: string };
-    if (extended["x-enum-name"]) {
-      return extended["x-enum-name"];
-    }
-    if (schema.title) {
-      return schema.title;
-    }
-    return "string";
-  }
-
   private typeFromProperties(properties: Record<string, ReferenceObject | SchemaObject> | undefined): string | undefined {
     if (!properties?.["data"]) return undefined;
 
@@ -116,12 +126,30 @@ export class MethodResponseAnalyzer {
     if (this.isRef(data)) return this.componentName(data);
     if (data.type === "any") return undefined;
     if (data.enum) {
-      this.hasEnumResponse = true;
-      return this.extractEnumType(data);
+      return this.resolveEnum(data, data.type);
     }
     if (data.type === "array" && data.items && !this.isRef(data.items) && "enum" in data.items && data.items.enum) {
-      this.hasEnumResponse = true;
+      this.hasEnumResponse = this.extractEnumName(data.items) !== null;
     }
     return data.type;
+  }
+
+  /**
+   * Resolves an `enum` schema to the type name it should be typed against.
+   *
+   * Only a *named* enum (`x-enum-name` / `title`) yields an enum response —
+   * that name is the alias emitted in `enums.ts`. An unnamed inline enum is
+   * just a constrained primitive, and reporting it as an enum response made
+   * the generator emit `data: response.data` over a `string`-typed body.
+   */
+  private resolveEnum(schema: SchemaObject, fallback?: string): string {
+    const name = this.extractEnumName(schema);
+    this.hasEnumResponse = name !== null;
+    return name ?? fallback ?? "string";
+  }
+
+  private extractEnumName(schema: SchemaObject): string | null {
+    const extended = schema as SchemaObject & { "x-enum-name"?: string };
+    return extended["x-enum-name"] ?? schema.title ?? null;
   }
 }
