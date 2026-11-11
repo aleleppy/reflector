@@ -801,6 +801,34 @@ describe("codegen — error-envelope responses never define the success return",
   });
 });
 
+describe("codegen — Nest multi-path controllers", () => {
+  let outputs: Output[] = [];
+
+  beforeAll(async () => {
+    outputs = await runFixture("nest-path-aliases");
+  });
+
+  it("never leaks the [n] alias suffix into generated identifiers", () => {
+    const controllers = outputs.filter((o) => o.rel.startsWith("controllers/"));
+    expect(controllers.length).toBeGreaterThan(0);
+    for (const { rel, content } of controllers) {
+      expect(content, rel).not.toMatch(/\w\[\d+\]/);
+    }
+  });
+
+  it("drops an alias whose canonical operation exists and keeps the canonical path", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("affiliate-customer.module.svelte.ts"))!;
+    expect(moduleFile.content).toContain("customer/affiliate");
+    expect(moduleFile.content).not.toContain("customer/arpiam/affiliate");
+  });
+
+  it("keeps an alias-only operation under its canonical name", () => {
+    const moduleFile = outputs.find((o) => o.rel.endsWith("affiliate-public.module.svelte.ts"))!;
+    expect(moduleFile.content).toMatch(/signUp/);
+    expect(moduleFile.content).toContain("recommenderAccountId");
+  });
+});
+
 function collect(root: string, dir: string, out: Output[] = []): Output[] {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

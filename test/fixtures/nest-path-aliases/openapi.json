@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Reflector nest-path-aliases fixture", "version": "1.0.0" },
+  "paths": {
+    "/customer/affiliate": {
+      "get": {
+        "operationId": "AffiliateCustomerController_find",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AffiliateResponse" } } }
+          }
+        }
+      }
+    },
+    "/customer/arpiam/affiliate": {
+      "get": {
+        "operationId": "AffiliateCustomerController_find[1]",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AffiliateResponse" } } }
+          }
+        }
+      }
+    },
+    "/public/arpiam/affiliates/recommender/{recommenderAccountId}/sign-up": {
+      "post": {
+        "operationId": "AffiliatePublicController_signUp[1]",
+        "parameters": [
+          { "name": "recommenderAccountId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignUpDto" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "ok",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AffiliateResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AffiliateResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "recommenderAccountId": { "type": "string" }
+        },
+        "required": ["id", "recommenderAccountId"]
+      },
+      "SignUpDto": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string" },
+          "password": { "type": "string" }
+        },
+        "required": ["email", "password"]
+      }
+    }
+  }
+}
