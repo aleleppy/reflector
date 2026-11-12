@@ -1,4 +1,5 @@
 import { capitalizeFirstLetter, isReferenceObject } from "../../helpers/helpers.js";
+import { HTTP_METHODS } from "./http-methods.js";
 import type {
   ComponentsObject,
   OperationObject,
@@ -8,8 +9,6 @@ import type {
   ResponsesObject,
   SchemaObject,
 } from "../../types/open-api-spec.interface.js";
-
-const HTTP_METHODS = ["get", "put", "post", "delete", "patch", "options", "head", "trace"] as const;
 
 /**
  * Promotes inline request-body and response `data` schemas to named

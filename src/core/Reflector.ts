@@ -6,6 +6,7 @@ import { Source } from "../file.js";
 import { Module } from "./module/Module.js";
 import { Schema } from "./schema/Schema.js";
 import { CodegenContext } from "./CodegenContext.js";
+import { AliasOperationFilter } from "./openapi/AliasOperationFilter.js";
 import { InlineSchemaPromoter } from "./openapi/InlineSchemaPromoter.js";
 import { SchemaRegistry } from "./schema/SchemaRegistry.js";
 import { ModuleFactory } from "./module/ModuleFactory.js";
@@ -43,6 +44,7 @@ export class Reflector {
     this.typeImports = typeImports;
     this.config = resolveReflectorConfig(config);
 
+    AliasOperationFilter.apply(paths);
     InlineSchemaPromoter.promote(components, paths);
 
     this.modules = ModuleFactory.build({
