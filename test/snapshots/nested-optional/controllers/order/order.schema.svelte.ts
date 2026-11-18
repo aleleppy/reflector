@@ -3,6 +3,7 @@ import {
   BuildedInput,
   bundleStrict,
   bundleInputs,
+  untouchForm,
 } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -32,6 +33,7 @@ export class Order {
     this.hydrate(
       new Order({ empty: true }).bundle() as Partial<OrderInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -103,6 +105,7 @@ export class OrderController_createBody {
         empty: true,
       }).bundle() as Partial<OrderController_createBodyInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -147,6 +150,7 @@ export class AuditInfo {
     this.hydrate(
       new AuditInfo({ empty: true }).bundle() as Partial<AuditInfoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -181,6 +185,7 @@ export class CouponInfo {
     this.hydrate(
       new CouponInfo({ empty: true }).bundle() as Partial<CouponInfoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -227,6 +232,7 @@ export class BillingInfo {
         empty: true,
       }).bundle() as Partial<BillingInfoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -263,6 +269,7 @@ export class ShippingInfo {
         empty: true,
       }).bundle() as Partial<ShippingInfoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

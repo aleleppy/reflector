@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  untouchForm,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -86,6 +91,7 @@ export class CalendarController_getResponse {
         empty: true,
       }).bundle() as Partial<CalendarController_getResponseInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -126,6 +132,7 @@ export class RefItem {
     this.hydrate(
       new RefItem({ empty: true }).bundle() as Partial<RefItemInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -184,6 +191,7 @@ export class CalendarController_getResponseCalendario {
         empty: true,
       }).bundle() as Partial<CalendarController_getResponseCalendarioInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -233,6 +241,7 @@ export class CalendarController_getResponseEmpresa {
         empty: true,
       }).bundle() as Partial<CalendarController_getResponseEmpresaInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

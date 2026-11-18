@@ -3,6 +3,7 @@ import {
   BuildedInput,
   bundleStrict,
   bundleInputs,
+  untouchForm,
 } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -106,6 +107,7 @@ export class PackageView {
         empty: true,
       }).bundle() as Partial<PackageViewInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -155,6 +157,7 @@ export class PackageItem {
         empty: true,
       }).bundle() as Partial<PackageItemInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -260,6 +263,7 @@ export class BatchCreatePackageDto {
         empty: true,
       }).bundle() as Partial<BatchCreatePackageDtoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

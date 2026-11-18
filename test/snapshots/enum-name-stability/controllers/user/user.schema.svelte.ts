@@ -3,6 +3,7 @@ import {
   BuildedInput,
   bundleStrict,
   bundleInputs,
+  untouchForm,
 } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import type {
@@ -38,6 +39,7 @@ export class UserRes {
     this.hydrate(
       new UserRes({ empty: true }).bundle() as Partial<UserResInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -71,6 +73,7 @@ export class UserDto {
     this.hydrate(
       new UserDto({ empty: true }).bundle() as Partial<UserDtoInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

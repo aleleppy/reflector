@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  untouchForm,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import type { ENUM_ARRAY_CONTROLLER_ENUMS_DATA } from "$reflector/enums";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -91,6 +96,7 @@ export class ArrayController_inlineResponseItem {
         empty: true,
       }).bundle() as Partial<ArrayController_inlineResponseItemInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

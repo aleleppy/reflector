@@ -3,6 +3,7 @@ import {
   BuildedInput,
   bundleStrict,
   bundleInputs,
+  untouchForm,
 } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -47,6 +48,7 @@ export class Cras {
 
   reset(): void {
     this.hydrate(new Cras({ empty: true }).bundle() as Partial<CrasInterface>);
+    untouchForm(this);
   }
 
   bundle() {
@@ -96,6 +98,7 @@ export class DefaultCrasResponsibleRes {
         empty: true,
       }).bundle() as Partial<DefaultCrasResponsibleResInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -199,6 +202,7 @@ export class CrasController_createBody {
         empty: true,
       }).bundle() as Partial<CrasController_createBodyInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -244,6 +248,7 @@ export class CrasCoupon {
     this.hydrate(
       new CrasCoupon({ empty: true }).bundle() as Partial<CrasCouponInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -280,6 +285,7 @@ export class CrasShipping {
         empty: true,
       }).bundle() as Partial<CrasShippingInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -316,6 +322,7 @@ export class CrasManager {
         empty: true,
       }).bundle() as Partial<CrasManagerInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -351,6 +358,7 @@ export class CrasOwner {
     this.hydrate(
       new CrasOwner({ empty: true }).bundle() as Partial<CrasOwnerInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

@@ -3,6 +3,7 @@ import {
   BuildedInput,
   bundleStrict,
   bundleInputs,
+  untouchForm,
 } from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -69,6 +70,7 @@ export class AiChatMessage {
         empty: true,
       }).bundle() as Partial<AiChatMessageInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -103,6 +105,7 @@ export class AiChat {
     this.hydrate(
       new AiChat({ empty: true }).bundle() as Partial<AiChatInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -140,6 +143,7 @@ export class AiChatTenantController_createBody {
         empty: true,
       }).bundle() as Partial<AiChatTenantController_createBodyInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
