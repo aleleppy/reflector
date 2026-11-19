@@ -855,3 +855,47 @@ function collect(root: string, dir: string, out: Output[] = []): Output[] {
   }
   return out;
 }
+
+describe("codegen — oneof-primitives fixture (oneOf inline não pode gerar tipo vazio)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/oneof-primitives");
+
+  beforeAll(async () => {
+    outputs = await runFixture("oneof-primitives");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("tipa oneOf de primitivos como union TS (bug: saía `value: ` e o prettier morria)", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/value:\s*string \| number;/);
+    expect(content).toMatch(/value\s*=\s*\$state<string \| number>\(\)/);
+  });
+
+  it("deduplica integer/number e respeita nullable e opcional", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/hint\?:\s*number \| boolean \| null;/);
+  });
+
+  it("mistura $ref, enum literal e array no mesmo oneOf", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/mixed:\s*ReportMoneyInterface \| "N\/A" \| "PENDING" \| string\[\];/);
+  });
+
+  it("membro inline sem forma primitiva cai em unknown, nunca em tipo vazio", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/opaque\?:\s*unknown;/);
+  });
+});

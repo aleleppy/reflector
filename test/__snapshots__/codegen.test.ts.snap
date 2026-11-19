@@ -81,6 +81,17 @@ exports[`codegen — nullable-object-allof fixture (nullable ObjectType não pod
 ]
 `;
 
+exports[`codegen — oneof-primitives fixture (oneOf inline não pode gerar tipo vazio) > generates the expected set of files 1`] = `
+[
+  "controllers/report/report.module.svelte.ts",
+  "controllers/report/report.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — optional-array-bundle fixture (optional/nullable arrays of refs) > generates the expected set of files 1`] = `
 [
   "controllers/package/package.module.svelte.ts",
