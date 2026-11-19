@@ -8,6 +8,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -43,7 +44,9 @@ class Paths {
 export abstract class UserModule {
   loading = $state<boolean>(false);
   userController_list = $state<UserController_listResponse | undefined>();
+  #userController_listRunId = 0;
   userEntity = $state<User | undefined>();
+  #userEntityRunId = 0;
   querys = new Querys();
   paths = new Paths();
   forms = $state({
@@ -64,6 +67,7 @@ export abstract class UserModule {
   /**  */
   protected async _listAllRun(params?: {
     behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       limit?: string | null;
     };
@@ -71,6 +75,7 @@ export abstract class UserModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#userController_listRunId;
     this.loading = true;
     const { limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `users`;
@@ -79,11 +84,13 @@ export abstract class UserModule {
       const response = await api.get<
         UserController_listResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { limit },
-      });
+      >({ endpoint, queryData: { limit }, request: params?.request });
 
+      if (thisRun !== this.#userController_listRunId)
+        return {
+          ok: true,
+          data: new UserController_listResponse({ data: response }),
+        };
       this.userController_list = new UserController_listResponse({
         data: response,
       });
@@ -104,16 +111,19 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#userController_listRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#userController_listRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
   protected async _listAll(params?: {
     behavior?: Behavior<UserController_listResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       limit?: string | null;
     };
@@ -125,6 +135,7 @@ export abstract class UserModule {
   /**  */
   protected async _createRun(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -139,6 +150,7 @@ export abstract class UserModule {
       const response = await api.post<UserInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -164,6 +176,7 @@ export abstract class UserModule {
   /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
   protected async _create(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const res = await this._createRun(params);
     return res.ok ? res.data : undefined;
@@ -172,6 +185,7 @@ export abstract class UserModule {
   /**  */
   protected async _entityRun(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };
@@ -179,6 +193,7 @@ export abstract class UserModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#userEntityRunId;
     this.loading = true;
     const { id } = params?.paths ?? this.paths;
     const endpoint = `users/${id}`;
@@ -186,8 +201,11 @@ export abstract class UserModule {
     try {
       const response = await api.get<UserInterface, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#userEntityRunId)
+        return { ok: true, data: new User({ data: response }) };
       this.userEntity = new User({ data: response });
 
       await onSuccess?.(response);
@@ -203,16 +221,19 @@ export abstract class UserModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#userEntityRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#userEntityRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_entityRun()` — returns a discriminated ApiResult */
   protected async _entity(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };
@@ -224,6 +245,7 @@ export abstract class UserModule {
   /**  */
   protected async _removeRun(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };
@@ -243,6 +265,7 @@ export abstract class UserModule {
       const response = await api.delete<null, unknown>({
         endpoint,
         queryData: { replacementId },
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -268,6 +291,7 @@ export abstract class UserModule {
   /** @deprecated use `_removeRun()` — returns a discriminated ApiResult */
   protected async _remove(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };

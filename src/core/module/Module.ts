@@ -56,6 +56,7 @@ export class Module {
 
     // Inicializa os gerenciadores
     this.imports = new ModuleImports(apiImport, config);
+    this.imports.addReflectorImport("ApiRequestOptions");
     this.classBuilder = new ModuleClassBuilder({ imports: this.imports, context });
     this.paramProcessor = new ModuleParamProcessor({
       imports: this.imports,

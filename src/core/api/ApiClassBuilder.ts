@@ -5,6 +5,7 @@ import type { ModuleImports } from "../module/ModuleImports.js";
 import type { ModuleClassBuilder } from "../module/ModuleClassBuilder.js";
 import { CallMethodGenerator } from "../generators/CallMethodGenerator.js";
 import { ApiCallStrategy } from "../generators/ApiCallStrategy.js";
+import { runIdField } from "../generators/runGuard.js";
 import { ApiParamProcessor } from "./ApiParamProcessor.js";
 
 export interface ApiEndpointBlock {
@@ -103,8 +104,10 @@ export class ApiClassBuilder {
     } else if (attributeType === "list") {
       props.push(`data = $state<${responseType}['data']>([])`);
       props.push("totalPages = $state<number>(1)");
+      props.push(`${runIdField(this.callStrategy.listStateField(method))} = 0`);
     } else if (attributeType === "entity" && responseType && !isPrimitiveResponse) {
       props.push(`data = $state<${responseType} | undefined>()`);
+      props.push(`${runIdField(this.callStrategy.entityStateField(method))} = 0`);
     } else {
       props.push("data = $state<unknown>(undefined)");
     }

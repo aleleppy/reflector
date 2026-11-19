@@ -9,6 +9,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -43,8 +44,10 @@ export abstract class AiChatTenantModule {
   loading = $state<boolean>(false);
   totalPages = $state<number>(1);
   listAiChats = $state<AiChatTenantController_listResponse["data"]>([]);
+  #listAiChatsRunId = 0;
   bundledListAiChats = $derived(genericArrayBundler(this.listAiChats));
   listMessages = $state<AiChatTenantController_getMessagesResponse["data"]>([]);
+  #listMessagesRunId = 0;
   bundledListMessages = $derived(genericArrayBundler(this.listMessages));
   querys = new Querys();
   paths = new Paths();
@@ -69,6 +72,7 @@ export abstract class AiChatTenantModule {
       AiChatTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -77,6 +81,7 @@ export abstract class AiChatTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listAiChatsRunId;
     this.loading = true;
     const { page, limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `tenant/ai-chat`;
@@ -85,13 +90,11 @@ export abstract class AiChatTenantModule {
       const response = await api.get<
         AiChatTenantController_listResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { page, limit },
-      });
-      this.listAiChats = AiChatTenantController_listResponse.from(
-        response.data,
-      );
+      >({ endpoint, queryData: { page, limit }, request: params?.request });
+      const fetched = AiChatTenantController_listResponse.from(response.data);
+      if (thisRun !== this.#listAiChatsRunId)
+        return { ok: true, data: fetched };
+      this.listAiChats = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -107,10 +110,12 @@ export abstract class AiChatTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listAiChatsRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listAiChatsRunId) this.loading = false;
     }
   }
 
@@ -120,6 +125,7 @@ export abstract class AiChatTenantModule {
       AiChatTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -132,6 +138,7 @@ export abstract class AiChatTenantModule {
   /**  */
   protected async _createRun(params?: {
     behavior?: Behavior<AiChatInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -146,6 +153,7 @@ export abstract class AiChatTenantModule {
       const response = await api.post<AiChatInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -171,6 +179,7 @@ export abstract class AiChatTenantModule {
   /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
   protected async _create(params?: {
     behavior?: Behavior<AiChatInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const res = await this._createRun(params);
     return res.ok ? res.data : undefined;
@@ -182,6 +191,7 @@ export abstract class AiChatTenantModule {
       AiChatTenantController_getMessagesResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       chatId: string;
     };
@@ -192,6 +202,7 @@ export abstract class AiChatTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listMessagesRunId;
     this.loading = true;
     const { page } = params?.queryOverride ?? this.querys.bundle();
     const { chatId } = params?.paths ?? this.paths;
@@ -201,13 +212,13 @@ export abstract class AiChatTenantModule {
       const response = await api.get<
         AiChatTenantController_getMessagesResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { page },
-      });
-      this.listMessages = AiChatTenantController_getMessagesResponse.from(
+      >({ endpoint, queryData: { page }, request: params?.request });
+      const fetched = AiChatTenantController_getMessagesResponse.from(
         response.data,
       );
+      if (thisRun !== this.#listMessagesRunId)
+        return { ok: true, data: fetched };
+      this.listMessages = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -223,10 +234,12 @@ export abstract class AiChatTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listMessagesRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listMessagesRunId) this.loading = false;
     }
   }
 
@@ -236,6 +249,7 @@ export abstract class AiChatTenantModule {
       AiChatTenantController_getMessagesResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       chatId: string;
     };

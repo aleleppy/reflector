@@ -7,6 +7,7 @@ import {
   EnumQueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
 import { ENUM_ITEM_ENTITY_STATUSES } from "$reflector/enums";
@@ -43,11 +44,13 @@ class Querys {
 export abstract class ItemModule {
   loading = $state<boolean>(false);
   itemController_list = $state<ItemController_listResponse | undefined>();
+  #itemController_listRunId = 0;
   querys = new Querys();
 
   /**  */
   protected async _listAllRun(params?: {
     behavior?: Behavior<ItemController_listResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       categoriesIds?: string[];
       pageNumbers?: number[];
@@ -58,6 +61,7 @@ export abstract class ItemModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#itemController_listRunId;
     this.loading = true;
     const { categoriesIds, pageNumbers, statuses, badField } =
       params?.queryOverride ?? this.querys.bundle();
@@ -70,8 +74,14 @@ export abstract class ItemModule {
       >({
         endpoint,
         queryData: { categoriesIds, pageNumbers, statuses, badField },
+        request: params?.request,
       });
 
+      if (thisRun !== this.#itemController_listRunId)
+        return {
+          ok: true,
+          data: new ItemController_listResponse({ data: response }),
+        };
       this.itemController_list = new ItemController_listResponse({
         data: response,
       });
@@ -92,16 +102,19 @@ export abstract class ItemModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#itemController_listRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#itemController_listRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
   protected async _listAll(params?: {
     behavior?: Behavior<ItemController_listResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       categoriesIds?: string[];
       pageNumbers?: number[];

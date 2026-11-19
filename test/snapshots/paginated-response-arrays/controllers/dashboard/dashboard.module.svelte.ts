@@ -7,6 +7,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
 import {
@@ -30,14 +31,17 @@ export abstract class DashboardModule {
   loading = $state<boolean>(false);
   totalPages = $state<number>(1);
   listSimples = $state<SimplePurchaseResponse["data"]>([]);
+  #listSimplesRunId = 0;
   bundledListSimples = $derived(genericArrayBundler(this.listSimples));
   listRiches = $state<CustomerDashboardResponse["data"]>([]);
+  #listRichesRunId = 0;
   bundledListRiches = $derived(genericArrayBundler(this.listRiches));
   querys = new Querys();
 
   /**  */
   protected async _listSimpleRun(params?: {
     behavior?: Behavior<SimplePurchaseResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
     };
@@ -45,6 +49,7 @@ export abstract class DashboardModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listSimplesRunId;
     this.loading = true;
     const { page } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `dashboard/simple`;
@@ -53,8 +58,12 @@ export abstract class DashboardModule {
       const response = await api.get<SimplePurchaseResponseInterface, unknown>({
         endpoint,
         queryData: { page },
+        request: params?.request,
       });
-      this.listSimples = SimplePurchaseResponse.from(response.data);
+      const fetched = SimplePurchaseResponse.from(response.data);
+      if (thisRun !== this.#listSimplesRunId)
+        return { ok: true, data: fetched };
+      this.listSimples = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -70,16 +79,19 @@ export abstract class DashboardModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listSimplesRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listSimplesRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_listSimpleRun()` — returns a discriminated ApiResult */
   protected async _listSimple(params?: {
     behavior?: Behavior<SimplePurchaseResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
     };
@@ -91,6 +103,7 @@ export abstract class DashboardModule {
   /**  */
   protected async _listRichRun(params?: {
     behavior?: Behavior<CustomerDashboardResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
     };
@@ -98,6 +111,7 @@ export abstract class DashboardModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listRichesRunId;
     this.loading = true;
     const { page } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `dashboard/rich`;
@@ -106,11 +120,10 @@ export abstract class DashboardModule {
       const response = await api.get<
         CustomerDashboardResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { page },
-      });
-      this.listRiches = CustomerDashboardResponse.from(response.data);
+      >({ endpoint, queryData: { page }, request: params?.request });
+      const fetched = CustomerDashboardResponse.from(response.data);
+      if (thisRun !== this.#listRichesRunId) return { ok: true, data: fetched };
+      this.listRiches = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -126,16 +139,19 @@ export abstract class DashboardModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listRichesRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listRichesRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_listRichRun()` — returns a discriminated ApiResult */
   protected async _listRich(params?: {
     behavior?: Behavior<CustomerDashboardResponseInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
     };

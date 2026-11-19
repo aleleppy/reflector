@@ -26,12 +26,12 @@ export interface CallStrategy {
    *  reproduces the old `Res | null | undefined` return shape. Emitted verbatim
    *  after the run method. Api → `call()`; module → `_foo()`. */
   buildLegacyWrapper(method: CallMethodInput): string;
-  /** State field holding list results — e.g. `this.list` / `this.listControllers` (module) or `this.data` (api).
+  /** Name of the state field holding list results — e.g. `list` / `listControllers` (module) or `data` (api).
    *  Takes `method` so the module strategy can suffix the field when two list
    *  operations collide in the same controller. */
-  listStateAccess(method: CallMethodInput): string;
-  /** State field receiving the fetched entity */
-  entityStateAccess(method: CallMethodInput): string;
+  listStateField(method: CallMethodInput): string;
+  /** Name of the state field receiving the fetched entity */
+  entityStateField(method: CallMethodInput): string;
   /** Form instance accessed to bundle body data */
   formStateAccess(method: CallMethodInput): string;
 }

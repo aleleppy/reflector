@@ -37,6 +37,7 @@ class ListAllQuerys {
 export class ListAll {
   loading = $state<boolean>(false);
   data = $state<UserController_listResponse | undefined>();
+  #dataRunId = 0;
   querys = new ListAllQuerys();
 
   /**  */
@@ -50,6 +51,7 @@ export class ListAll {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#dataRunId;
     this.loading = true;
     const { limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `users`;
@@ -58,11 +60,13 @@ export class ListAll {
       const response = await api.get<
         UserController_listResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { limit },
-      });
+      >({ endpoint, queryData: { limit }, request: params?.request });
 
+      if (thisRun !== this.#dataRunId)
+        return {
+          ok: true,
+          data: new UserController_listResponse({ data: response }),
+        };
       this.data = new UserController_listResponse({ data: response });
 
       await onSuccess?.(response);
@@ -81,10 +85,11 @@ export class ListAll {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#dataRunId) return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#dataRunId) this.loading = false;
     }
   }
 
@@ -125,6 +130,7 @@ export class Create {
       const response = await api.post<UserInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -167,6 +173,7 @@ class EntityPaths {
 export class Entity {
   loading = $state<boolean>(false);
   data = $state<User | undefined>();
+  #dataRunId = 0;
   paths = new EntityPaths();
 
   /**  */
@@ -174,6 +181,7 @@ export class Entity {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#dataRunId;
     this.loading = true;
     const { id } = params?.paths ?? this.paths;
     const endpoint = `users/${id}`;
@@ -181,8 +189,11 @@ export class Entity {
     try {
       const response = await api.get<UserInterface, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#dataRunId)
+        return { ok: true, data: new User({ data: response }) };
       this.data = new User({ data: response });
 
       await onSuccess?.(response);
@@ -198,10 +209,11 @@ export class Entity {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#dataRunId) return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#dataRunId) this.loading = false;
     }
   }
 
@@ -259,6 +271,7 @@ export class Remove {
       const response = await api.delete<null, unknown>({
         endpoint,
         queryData: { replacementId },
+        request: params?.request,
       });
 
       await onSuccess?.(response);

@@ -3,8 +3,8 @@ import { queryOverrideEntryType } from "./queryOverride.js";
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ModuleCallStrategy implements CallStrategy {
-  listStateAccess(method: CallMethodInput): string {
-    return `this.list${method.stateSuffix}`;
+  listStateField(method: CallMethodInput): string {
+    return `list${method.stateSuffix}`;
   }
 
   buildSignature(method: CallMethodInput): string {
@@ -22,9 +22,8 @@ export class ModuleCallStrategy implements CallStrategy {
       }`;
   }
 
-  entityStateAccess(method: CallMethodInput): string {
-    const rType = method.analyzers.request.responseType ?? "";
-    return `this.${treatByUppercase(rType)}`;
+  entityStateField(method: CallMethodInput): string {
+    return treatByUppercase(method.analyzers.request.responseType ?? "");
   }
 
   formStateAccess(method: CallMethodInput): string {
@@ -36,7 +35,7 @@ export class ModuleCallStrategy implements CallStrategy {
     const pathsBlock = this.buildPathsBlock(method);
     const queryBlock = this.buildQueryOverrideBlock(method);
 
-    const blocks = [`behavior?: ${behaviorType};`, pathsBlock, queryBlock]
+    const blocks = [`behavior?: ${behaviorType};`, `request?: ApiRequestOptions;`, pathsBlock, queryBlock]
       .filter((b): b is string => !!b)
       .join("\n");
 

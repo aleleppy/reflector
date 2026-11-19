@@ -9,6 +9,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -50,11 +51,15 @@ export abstract class PackageTenantModule {
   loading = $state<boolean>(false);
   totalPages = $state<number>(1);
   listPackages = $state<PackageTenantController_listResponse["data"]>([]);
+  #listPackagesRunId = 0;
   bundledListPackages = $derived(genericArrayBundler(this.listPackages));
   packageEntity = $state<Package | undefined>();
+  #packageEntityRunId = 0;
   listControllers = $state<PackageTenantController_listResponse2["data"]>([]);
+  #listControllersRunId = 0;
   bundledListControllers = $derived(genericArrayBundler(this.listControllers));
   controllerItem = $state<ControllerItem | undefined>();
+  #controllerItemRunId = 0;
   querys = new Querys();
   paths = new Paths();
   forms = $state({
@@ -78,6 +83,7 @@ export abstract class PackageTenantModule {
       PackageTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -86,6 +92,7 @@ export abstract class PackageTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listPackagesRunId;
     this.loading = true;
     const { page, limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `tenant/package`;
@@ -94,13 +101,11 @@ export abstract class PackageTenantModule {
       const response = await api.get<
         PackageTenantController_listResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { page, limit },
-      });
-      this.listPackages = PackageTenantController_listResponse.from(
-        response.data,
-      );
+      >({ endpoint, queryData: { page, limit }, request: params?.request });
+      const fetched = PackageTenantController_listResponse.from(response.data);
+      if (thisRun !== this.#listPackagesRunId)
+        return { ok: true, data: fetched };
+      this.listPackages = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -116,10 +121,12 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listPackagesRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listPackagesRunId) this.loading = false;
     }
   }
 
@@ -129,6 +136,7 @@ export abstract class PackageTenantModule {
       PackageTenantController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -141,6 +149,7 @@ export abstract class PackageTenantModule {
   /**  */
   protected async _findOnePackageRun(params?: {
     behavior?: Behavior<PackageInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
     };
@@ -148,6 +157,7 @@ export abstract class PackageTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#packageEntityRunId;
     this.loading = true;
     const { packageId } = params?.paths ?? this.paths;
     const endpoint = `tenant/package/${packageId}`;
@@ -155,8 +165,11 @@ export abstract class PackageTenantModule {
     try {
       const response = await api.get<PackageInterface, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#packageEntityRunId)
+        return { ok: true, data: new Package({ data: response }) };
       this.packageEntity = new Package({ data: response });
 
       await onSuccess?.(response);
@@ -172,16 +185,19 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#packageEntityRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#packageEntityRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_findOnePackageRun()` — returns a discriminated ApiResult */
   protected async _findOnePackage(params?: {
     behavior?: Behavior<PackageInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
     };
@@ -196,6 +212,7 @@ export abstract class PackageTenantModule {
       PackageTenantController_listResponse2Interface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
     };
@@ -206,6 +223,7 @@ export abstract class PackageTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listControllersRunId;
     this.loading = true;
     const { page } = params?.queryOverride ?? this.querys.bundle();
     const { packageId } = params?.paths ?? this.paths;
@@ -215,13 +233,11 @@ export abstract class PackageTenantModule {
       const response = await api.get<
         PackageTenantController_listResponse2Interface,
         unknown
-      >({
-        endpoint,
-        queryData: { page },
-      });
-      this.listControllers = PackageTenantController_listResponse2.from(
-        response.data,
-      );
+      >({ endpoint, queryData: { page }, request: params?.request });
+      const fetched = PackageTenantController_listResponse2.from(response.data);
+      if (thisRun !== this.#listControllersRunId)
+        return { ok: true, data: fetched };
+      this.listControllers = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -237,10 +253,12 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listControllersRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listControllersRunId) this.loading = false;
     }
   }
 
@@ -250,6 +268,7 @@ export abstract class PackageTenantModule {
       PackageTenantController_listResponse2Interface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
     };
@@ -264,6 +283,7 @@ export abstract class PackageTenantModule {
   /**  */
   protected async _findOneControllerRun(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
       controllerId: string;
@@ -272,6 +292,7 @@ export abstract class PackageTenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#controllerItemRunId;
     this.loading = true;
     const { packageId, controllerId } = params?.paths ?? this.paths;
     const endpoint = `tenant/package/${packageId}/controller/${controllerId}`;
@@ -279,8 +300,11 @@ export abstract class PackageTenantModule {
     try {
       const response = await api.get<ControllerItemInterface, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#controllerItemRunId)
+        return { ok: true, data: new ControllerItem({ data: response }) };
       this.controllerItem = new ControllerItem({ data: response });
 
       await onSuccess?.(response);
@@ -296,16 +320,19 @@ export abstract class PackageTenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#controllerItemRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#controllerItemRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_findOneControllerRun()` — returns a discriminated ApiResult */
   protected async _findOneController(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
       controllerId: string;
@@ -318,6 +345,7 @@ export abstract class PackageTenantModule {
   /**  */
   protected async _updateRun(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
       controllerId: string;
@@ -336,6 +364,7 @@ export abstract class PackageTenantModule {
       const response = await api.patch<ControllerItemInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -361,6 +390,7 @@ export abstract class PackageTenantModule {
   /** @deprecated use `_updateRun()` — returns a discriminated ApiResult */
   protected async _update(params?: {
     behavior?: Behavior<ControllerItemInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       packageId: string;
       controllerId: string;
