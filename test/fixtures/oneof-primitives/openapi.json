@@ -42,7 +42,8 @@
               { "type": "array", "items": { "type": "string" } }
             ]
           },
-          "opaque": { "oneOf": [{ "type": "object" }] }
+          "opaque": { "oneOf": [{ "type": "object", "properties": { "a": { "type": "string" } } }] },
+          "bag": { "oneOf": [{ "type": "string" }, { "type": "object", "additionalProperties": { "type": "number" } }] }
         }
       }
     }

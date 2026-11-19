@@ -1,4 +1,5 @@
 import { isEnumSchema, isReferenceObject } from "../helpers/helpers.js";
+import { inlineType, isFreeFormMap } from "../helpers/inline-type.js";
 import { treatPropertyName } from "../helpers/prop-name.js";
 import type { SchemaObject } from "../types/open-api-spec.interface.js";
 import type { CodegenContext } from "../core/CodegenContext.js";
@@ -13,6 +14,8 @@ export class ArrayProp {
   private readonly isNullable: boolean;
   private readonly context: CodegenContext;
   private readonly defaultValues: unknown[];
+  /** Component schemas referenced from inside an inline item type (e.g. `Record<string, Foo>[]`). */
+  inlineRefs: string[] = [];
 
   get isSchemaRef(): boolean {
     return !this._isPrimitiveType && !this.isEnum;
@@ -67,6 +70,12 @@ export class ArrayProp {
     }
 
     this._isPrimitiveType = true;
+
+    if (isFreeFormMap(items)) {
+      const map = inlineType(items);
+      this.inlineRefs = map.refs;
+      return map.type;
+    }
 
     const itemType = items.type;
     if (itemType === "integer") return "number";

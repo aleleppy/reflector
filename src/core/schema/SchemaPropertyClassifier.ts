@@ -33,16 +33,10 @@ export class SchemaPropertyClassifier {
         });
       }
       if (!isReferenceObject(value) && value.additionalProperties) {
-        const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
-        const config = fieldConfigs.get(key);
-        return new PrimitiveProp({
+        return UnionProp.forMap({
           name: key,
-          schemaObject: fakeStringSchema,
-          required: requireds.includes(key),
-          validator: config?.validator,
-          sanitizer: config?.sanitizer,
-          customType: config?.type,
-          isParam: undefined,
+          schemaObject: value,
+          isRequired: requireds.includes(key),
           isNullable: value.nullable,
         });
       }
@@ -90,17 +84,7 @@ export class SchemaPropertyClassifier {
 
     if (type === "object") {
       if (value.additionalProperties) {
-        const fakeStringSchema = { ...value, type: "string" } as SchemaObject;
-        return new PrimitiveProp({
-          name: key,
-          schemaObject: fakeStringSchema,
-          required,
-          validator,
-          sanitizer,
-          customType,
-          isParam: undefined,
-          isNullable: value.nullable,
-        });
+        return UnionProp.forMap({ name: key, schemaObject: value, isRequired: required, isNullable: value.nullable });
       }
       // `nullable: true` + `type: "object"` + `allOf: [$ref]` — shape que o Nest
       // emite para um ObjectType nullable. Sem isso a prop era descartada em silêncio.

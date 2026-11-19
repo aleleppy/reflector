@@ -14,6 +14,7 @@ export interface ReportSummaryItemInterface {
   hint?: number | boolean | null;
   mixed: ReportMoneyInterface | "N/A" | "PENDING" | string[];
   opaque?: unknown;
+  bag?: string | Record<string, number>;
 }
 export class ReportSummaryItem {
   label: BuildedInput<string>;
@@ -21,6 +22,7 @@ export class ReportSummaryItem {
   hint? = $state<number | boolean | null>();
   mixed = $state<ReportMoneyInterface | "N/A" | "PENDING" | string[]>();
   opaque? = $state<unknown>();
+  bag? = $state<string | Record<string, number>>();
 
   constructor(params?: {
     data?: ReportSummaryItemInterface | undefined;
@@ -37,6 +39,7 @@ export class ReportSummaryItem {
     this.hint = params?.data?.hint;
     this.mixed = params?.data?.mixed;
     this.opaque = params?.data?.opaque;
+    this.bag = params?.data?.bag;
   }
 
   hydrate(data: Partial<ReportSummaryItemInterface>): void {
@@ -45,6 +48,7 @@ export class ReportSummaryItem {
     if (data.hint !== undefined) this.hint = data.hint;
     if (data.mixed !== undefined) this.mixed = data.mixed;
     if (data.opaque !== undefined) this.opaque = data.opaque;
+    if (data.bag !== undefined) this.bag = data.bag;
   }
 
   reset(): void {
@@ -63,6 +67,7 @@ export class ReportSummaryItem {
       hint: this.hint,
       mixed: this.mixed,
       opaque: this.opaque,
+      bag: this.bag,
     });
   }
 }

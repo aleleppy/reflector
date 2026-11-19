@@ -510,8 +510,8 @@ describe("codegen — nullable-object-allof fixture (nullable ObjectType não po
     expect(content).toMatch(/shipping\s*=\s*\$state<CrasShipping>\(new CrasShipping\(\)\)/);
     // allOf sem `type`, nullable.
     expect(content).toMatch(/coupon\?\s*=\s*\$state<CrasCoupon \| null>\(null\)/);
-    // additionalProperties continua degradando pra primitivo, não vira ObjectProp.
-    expect(content).toMatch(/meta:\s*BuildedInput<string \| null>/);
+    // additionalProperties é mapa passthrough (Record), não vira ObjectProp nem BuildedInput.
+    expect(content).toMatch(/meta\?\s*=\s*\$state<Record<string, string>>\(\)/);
     // …e o único sub-DTO no gate é o opcional não-nullable.
     expect(content).toMatch(/readonly _optionalDtos = new Set<string>\(\["manager"\]\)/);
   });
@@ -897,5 +897,49 @@ describe("codegen — oneof-primitives fixture (oneOf inline não pode gerar tip
     const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
 
     expect(content).toMatch(/opaque\?:\s*unknown;/);
+    expect(content).toMatch(/bag\?:\s*string \| Record<string, number>;/);
+  });
+});
+
+describe("codegen — free-form-maps fixture (additionalProperties não é string)", () => {
+  let outputs: Output[] = [];
+  const snapshotDir = path.join(here, "snapshots/free-form-maps");
+
+  beforeAll(async () => {
+    outputs = await runFixture("free-form-maps");
+  });
+
+  it("generates the expected set of files", () => {
+    expect(outputs.map((o) => o.rel).sort()).toMatchSnapshot();
+  });
+
+  it("matches content snapshots for every generated file", async () => {
+    for (const { rel, content } of outputs) {
+      await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+    }
+  });
+
+  it("tipa mapa como Record passthrough (bug: virava BuildedInput<string> com example '[object Object]')", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/labels\?:\s*Record<string, string> \| null;/);
+    expect(content).toMatch(/labels\?\s*=\s*\$state<Record<string, string> \| null>\(\)/);
+    expect(content).toMatch(/totals\?:\s*Record<string, number>;/);
+    expect(content).not.toContain("[object Object]");
+  });
+
+  it("tipa array de mapas como Record[] (bug: virava string[])", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/rows:\s*Record<string, unknown>\[\];/);
+    expect(content).toMatch(/bareRows\?:\s*Record<string, unknown>\[\];/);
+  });
+
+  it("mapa de $ref referencia a Interface do schema e mantém a dependência", () => {
+    const content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+
+    expect(content).toMatch(/columnsByKey:\s*Record<string, SheetColumnInterface>;/);
+    expect(content).toMatch(/columnGroups\?:\s*Record<string, SheetColumnInterface>\[\];/);
+    expect(content).toMatch(/export interface SheetColumnInterface/);
   });
 });

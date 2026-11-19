@@ -35,6 +35,17 @@ exports[`codegen — enum-name-stability fixture (nome de enum não depende de o
 ]
 `;
 
+exports[`codegen — free-form-maps fixture (additionalProperties não é string) > generates the expected set of files 1`] = `
+[
+  "controllers/sheet/sheet.module.svelte.ts",
+  "controllers/sheet/sheet.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — minimal fixture > generates the expected set of files 1`] = `
 [
   "controllers/notification/notification.module.svelte.ts",

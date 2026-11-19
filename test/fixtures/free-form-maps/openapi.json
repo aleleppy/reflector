@@ -1,0 +1,67 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "free-form-maps", "version": "1.0.0" },
+  "paths": {
+    "/sheet": {
+      "get": {
+        "operationId": "SheetController_data",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Sheet" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SheetColumn": {
+        "type": "object",
+        "required": ["key"],
+        "properties": {
+          "key": { "type": "string" },
+          "labels": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": { "type": "string" },
+            "example": { "ACTIVE": "Ativo" }
+          }
+        }
+      },
+      "Sheet": {
+        "type": "object",
+        "required": ["name", "rows", "columnsByKey"],
+        "properties": {
+          "name": { "type": "string" },
+          "rows": {
+            "type": "array",
+            "items": { "type": "object", "additionalProperties": true }
+          },
+          "bareRows": {
+            "type": "array",
+            "items": { "type": "object" }
+          },
+          "columnGroups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/components/schemas/SheetColumn" }
+            }
+          },
+          "columnsByKey": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/components/schemas/SheetColumn" }
+          },
+          "totals": {
+            "additionalProperties": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
