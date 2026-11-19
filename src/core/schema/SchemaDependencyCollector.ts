@@ -29,9 +29,12 @@ export class SchemaDependencyCollector {
       if (prop.isSchemaRef) {
         schemaDepsSet.add(prop.type);
       }
+      for (const ref of prop.inlineRefs) {
+        schemaDepsSet.add(ref);
+      }
     }
     for (const prop of unionProps) {
-      for (const variant of prop.variantTypes) {
+      for (const variant of prop.schemaRefs) {
         schemaDepsSet.add(variant);
       }
     }

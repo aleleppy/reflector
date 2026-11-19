@@ -71,7 +71,7 @@ export class SchemaClassRenderer {
     });
 
     enumProps.forEach((prop) => {
-      constructorThis.push(prop.constructorBuild());
+      constructorThis.push(prop.constructorBuild(mode));
       keys.push(prop.classBuild());
       bundleParams.push(prop.bundleBuild());
     });
@@ -90,7 +90,7 @@ export class SchemaClassRenderer {
     primitiveProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
     arrayProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
     objectProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
-    enumProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
+    enumProps.forEach((p) => hydrateLines.push(p.hydrateBuild(mode)));
     unionProps.forEach((p) => hydrateLines.push(p.hydrateBuild()));
 
     const hydrateCode = `

@@ -1,6 +1,6 @@
 {
   "name": "svelte-reflector",
-  "version": "2.6.4",
+  "version": "2.6.5",
   "description": "Reflects types from openAPI schemas",
   "type": "module",
   "main": "./dist/index.js",

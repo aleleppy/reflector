@@ -12,6 +12,8 @@ function fnv1aBase36(input: string): string {
   return hash.toString(36).toUpperCase();
 }
 
+export type SchemaMode = "request" | "response";
+
 export class EnumProp {
   name: string;
   isParam: boolean;
@@ -101,8 +103,25 @@ export class EnumProp {
     return `${this.name}${req}: BuildedInput<${this.enumName}>`;
   }
 
-  constructorBuild() {
-    return `this.${this.name} = build({ key: params?.data?.${this.name}, placeholder: '${this.example}', example: '${this.example}', required: ${this.isRequired}})`;
+  private buildCall(key: string) {
+    return `build({ key: ${key}, placeholder: '${this.example}', example: '${this.example}', required: ${this.isRequired}})`;
+  }
+
+  /**
+   * `example` é pré-preenchimento de formulário. Num DTO de response um enum opcional
+   * ausente tem que continuar ausente — senão o `build()` devolve o primeiro valor do
+   * enum como se o back tivesse mandado (dado inventado).
+   */
+  private staysAbsent(mode: SchemaMode) {
+    return mode === "response" && !this.isRequired;
+  }
+
+  constructorBuild(mode: SchemaMode = "response") {
+    const key = `params?.data?.${this.name}`;
+    if (this.staysAbsent(mode)) {
+      return `if (${key} !== undefined) this.${this.name} = ${this.buildCall(key)}`;
+    }
+    return `this.${this.name} = ${this.buildCall(key)}`;
   }
 
   interfaceBuild() {
@@ -119,7 +138,10 @@ export class EnumProp {
     return `${this.name}: this.${this.name}?.value`;
   }
 
-  hydrateBuild() {
+  hydrateBuild(mode: SchemaMode = "response") {
+    if (this.staysAbsent(mode)) {
+      return `if (data.${this.name} !== undefined) { if (this.${this.name}) this.${this.name}.hydrate(data.${this.name} as never); else this.${this.name} = ${this.buildCall(`data.${this.name}`)} }`;
+    }
     const opt = this.isRequired ? "" : "?";
     return `if (data.${this.name} !== undefined) this.${this.name}${opt}.hydrate(data.${this.name} as never)`;
   }

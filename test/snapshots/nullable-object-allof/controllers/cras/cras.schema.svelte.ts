@@ -108,21 +108,21 @@ export class DefaultCrasResponsibleRes {
 
 export interface CrasController_createBodyInterface {
   name: string;
-  meta: string | null;
   responsible?: DefaultCrasResponsibleResInterface | null;
   owner: CrasOwnerInterface | null;
   manager?: CrasManagerInterface;
   shipping: CrasShippingInterface;
   coupon?: CrasCouponInterface | null;
+  meta?: Record<string, string>;
 }
 export class CrasController_createBody {
   name: BuildedInput<string>;
-  meta: BuildedInput<string | null>;
   responsible? = $state<DefaultCrasResponsibleRes | null>(null);
   owner = $state<CrasOwner | null>(null);
   manager? = $state<CrasManager>(new CrasManager());
   shipping = $state<CrasShipping>(new CrasShipping());
   coupon? = $state<CrasCoupon | null>(null);
+  meta? = $state<Record<string, string>>();
   readonly _optionalDtos = new Set<string>(["manager"]);
 
   constructor(params?: {
@@ -135,12 +135,6 @@ export class CrasController_createBody {
       example: params?.empty || isEmpty ? "" : "",
       required: true,
       validator: validateInputs.emptyString,
-    });
-    this.meta = build<string | null>({
-      key: params?.data?.meta ?? null,
-      placeholder: "",
-      example: params?.empty || isEmpty ? "" : "",
-      required: false,
     });
     this.responsible =
       params?.data?.responsible != null
@@ -162,11 +156,11 @@ export class CrasController_createBody {
         : params?.data?.coupon === null
           ? null
           : new CrasCoupon();
+    this.meta = params?.data?.meta;
   }
 
   hydrate(data: Partial<CrasController_createBodyInterface>): void {
     if (data.name !== undefined) this.name.hydrate(data.name as never);
-    if (data.meta !== undefined) this.meta.hydrate(data.meta as never);
     if (data.responsible !== undefined) {
       if (data.responsible === null) this.responsible = null;
       else if (this.responsible)
@@ -194,6 +188,7 @@ export class CrasController_createBody {
       else if (this.coupon) this.coupon.hydrate(data.coupon as never);
       else this.coupon = new CrasCoupon({ data: data.coupon as never });
     }
+    if (data.meta !== undefined) this.meta = data.meta;
   }
 
   reset(): void {
@@ -209,12 +204,12 @@ export class CrasController_createBody {
     return bundleInputs(
       {
         name: this.name,
-        meta: this.meta,
         responsible: this.responsible,
         owner: this.owner,
         manager: this.manager,
         shipping: this.shipping,
         coupon: this.coupon,
+        meta: this.meta,
       },
       this._optionalDtos,
     );

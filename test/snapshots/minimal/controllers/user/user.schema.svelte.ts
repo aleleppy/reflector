@@ -74,12 +74,13 @@ export class User {
         : params?.data?.address === null
           ? null
           : new Address();
-    this.priority = build({
-      key: params?.data?.priority,
-      placeholder: "low",
-      example: "low",
-      required: false,
-    });
+    if (params?.data?.priority !== undefined)
+      this.priority = build({
+        key: params?.data?.priority,
+        placeholder: "low",
+        example: "low",
+        required: false,
+      });
   }
 
   static from(data: ENUM_USER_ENTITY_ROLES[]) {
@@ -101,8 +102,16 @@ export class User {
       else if (this.address) this.address.hydrate(data.address as never);
       else this.address = new Address({ data: data.address as never });
     }
-    if (data.priority !== undefined)
-      this.priority?.hydrate(data.priority as never);
+    if (data.priority !== undefined) {
+      if (this.priority) this.priority.hydrate(data.priority as never);
+      else
+        this.priority = build({
+          key: data.priority,
+          placeholder: "low",
+          example: "low",
+          required: false,
+        });
+    }
   }
 
   reset(): void {

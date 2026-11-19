@@ -35,6 +35,17 @@ exports[`codegen — enum-name-stability fixture (nome de enum não depende de o
 ]
 `;
 
+exports[`codegen — free-form-maps fixture (additionalProperties não é string) > generates the expected set of files 1`] = `
+[
+  "controllers/sheet/sheet.module.svelte.ts",
+  "controllers/sheet/sheet.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
 exports[`codegen — minimal fixture > generates the expected set of files 1`] = `
 [
   "controllers/notification/notification.module.svelte.ts",
@@ -74,6 +85,17 @@ exports[`codegen — nullable-object-allof fixture (nullable ObjectType não pod
 [
   "controllers/cras/cras.module.svelte.ts",
   "controllers/cras/cras.schema.svelte.ts",
+  "enums.ts",
+  "fields.ts",
+  "mocked-params.svelte.ts",
+  "reflector.svelte.ts",
+]
+`;
+
+exports[`codegen — oneof-primitives fixture (oneOf inline não pode gerar tipo vazio) > generates the expected set of files 1`] = `
+[
+  "controllers/report/report.module.svelte.ts",
+  "controllers/report/report.schema.svelte.ts",
   "enums.ts",
   "fields.ts",
   "mocked-params.svelte.ts",

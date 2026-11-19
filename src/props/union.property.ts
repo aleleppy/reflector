@@ -1,4 +1,5 @@
 import { isReferenceObject } from "../helpers/helpers.js";
+import { inlineType } from "../helpers/inline-type.js";
 import type {
   DiscriminatorObject,
   ReferenceObject,
@@ -7,8 +8,12 @@ import type {
 
 /**
  * Property whose OpenAPI schema is a `oneOf` — a union of `$ref`ed component
- * schemas, optionally carrying a `discriminator`. Only `$ref` variants are
- * supported (inline `oneOf` members aren't promoted today).
+ * schemas (optionally carrying a `discriminator`) and/or inline members
+ * (`{ type: "string" }`, enums, arrays, free-form maps — see `inlineType`).
+ *
+ * Also models a free-form map property (`additionalProperties`), which is the
+ * same thing at runtime — a raw passthrough value — typed as the one-member
+ * union `Record<string, T>` (see `UnionProp.forMap`).
  *
  * Runtime model is intentionally flat/passthrough: the class field stores the
  * raw incoming object typed as the union of the variants' `Interface`s — there
@@ -21,6 +26,10 @@ export class UnionProp {
   name: string;
   /** Variant component names extracted from each `oneOf` `$ref` (deduped, order-preserving). */
   readonly variantTypes: string[];
+  /** TS types of the inline (non-`$ref`) members, e.g. `string`, `number` (deduped, order-preserving). */
+  readonly inlineTypes: string[];
+  /** Every component schema whose `Interface` the field type references (variants + refs nested in inline members). */
+  readonly schemaRefs: string[];
   readonly discriminator: DiscriminatorObject | undefined;
 
   private readonly required: boolean;
@@ -45,11 +54,26 @@ export class UnionProp {
       .map((ref) => ref.$ref.split("/").at(-1) ?? "")
       .filter(Boolean);
     this.variantTypes = [...new Set(refs)];
+    const inline = oneOf.filter((member) => !isReferenceObject(member)).map(inlineType);
+    this.inlineTypes = [...new Set(inline.map((member) => member.type))];
+    this.schemaRefs = [...new Set([...this.variantTypes, ...inline.flatMap((member) => member.refs)])];
   }
 
-  /** `AInterface | BInterface | ...` — the flat union used for the class field type. */
+  /** Free-form map property (`additionalProperties`): a passthrough typed `Record<string, T>`. */
+  static forMap(params: {
+    name: string;
+    schemaObject: SchemaObject;
+    isRequired: boolean;
+    isNullable?: boolean | undefined;
+  }): UnionProp {
+    const { name, schemaObject, isRequired, isNullable } = params;
+    return new UnionProp({ name, oneOf: [{ ...schemaObject, nullable: false }], isRequired, isNullable });
+  }
+
+  /** `AInterface | BInterface | string | ...` — the flat union used for the class field type. */
   flatUnion(): string {
-    return this.variantTypes.map((t) => `${t}Interface`).join(" | ");
+    const members = [...this.variantTypes.map((t) => `${t}Interface`), ...this.inlineTypes];
+    return members.length ? members.join(" | ") : "unknown";
   }
 
   /** True when this union can render as a discriminated `Interface` (needs a mapping). */

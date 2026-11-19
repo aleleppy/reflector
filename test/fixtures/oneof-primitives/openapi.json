@@ -1,0 +1,53 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "oneof-primitives", "version": "1.0.0" },
+  "paths": {
+    "/report": {
+      "get": {
+        "operationId": "ReportController_data",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportSummaryItem" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReportMoney": {
+        "type": "object",
+        "required": ["cents"],
+        "properties": { "cents": { "type": "integer" } }
+      },
+      "ReportSummaryItem": {
+        "type": "object",
+        "required": ["label", "value", "mixed", "unit"],
+        "properties": {
+          "label": { "type": "string" },
+          "kind": { "type": "string", "enum": ["text", "integer", "currency"] },
+          "unit": { "type": "string", "enum": ["BRL", "USD"] },
+          "value": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
+          "hint": {
+            "nullable": true,
+            "oneOf": [{ "type": "integer" }, { "type": "number" }, { "type": "boolean" }]
+          },
+          "mixed": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/ReportMoney" },
+              { "type": "string", "enum": ["N/A", "PENDING"] },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          },
+          "opaque": { "oneOf": [{ "type": "object", "properties": { "a": { "type": "string" } } }] },
+          "bag": { "oneOf": [{ "type": "string" }, { "type": "object", "additionalProperties": { "type": "number" } }] }
+        }
+      }
+    }
+  }
+}
