@@ -7,6 +7,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
 import { ENUM_TENANT_ENTITY_STATE } from "$reflector/enums";
@@ -31,6 +32,7 @@ class Querys {
 export abstract class TenantModule {
   loading = $state<boolean>(false);
   tenantAddress = $state<TenantAddress | undefined>();
+  #tenantAddressRunId = 0;
   querys = new Querys();
   forms = $state({
     create: new MunicipalityBackOffice(),
@@ -50,6 +52,7 @@ export abstract class TenantModule {
   /**  */
   protected async _listAllRun(params?: {
     behavior?: Behavior<TenantAddressInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       state?: string | null;
     };
@@ -57,6 +60,7 @@ export abstract class TenantModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#tenantAddressRunId;
     this.loading = true;
     const { state } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `tenants`;
@@ -65,8 +69,11 @@ export abstract class TenantModule {
       const response = await api.get<TenantAddressInterface, unknown>({
         endpoint,
         queryData: { state },
+        request: params?.request,
       });
 
+      if (thisRun !== this.#tenantAddressRunId)
+        return { ok: true, data: new TenantAddress({ data: response }) };
       this.tenantAddress = new TenantAddress({ data: response });
 
       await onSuccess?.(response);
@@ -82,16 +89,19 @@ export abstract class TenantModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#tenantAddressRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#tenantAddressRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_listAllRun()` — returns a discriminated ApiResult */
   protected async _listAll(params?: {
     behavior?: Behavior<TenantAddressInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     queryOverride?: {
       state?: string | null;
     };
@@ -103,6 +113,7 @@ export abstract class TenantModule {
   /**  */
   protected async _createRun(params?: {
     behavior?: Behavior<UserResInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -117,6 +128,7 @@ export abstract class TenantModule {
       const response = await api.post<UserResInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -142,6 +154,7 @@ export abstract class TenantModule {
   /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
   protected async _create(params?: {
     behavior?: Behavior<UserResInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const res = await this._createRun(params);
     return res.ok ? res.data : undefined;

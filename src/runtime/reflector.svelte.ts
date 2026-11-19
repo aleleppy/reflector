@@ -15,8 +15,19 @@ export type Sanitizer = {
   format: (value: string) => string; // valor canônico -> texto exibido (máscara)
 };
 
+/**
+ * Per-call transport options forwarded verbatim to the consumer's `api`.
+ * `authErrors: 'throw'` opts out of the global 401/403 handling (toast,
+ * session clear, redirect) so the caller receives the error with its
+ * `statusCode`. Default `'redirect'` keeps the global behavior.
+ */
+export type ApiRequestOptions = {
+  authErrors?: "redirect" | "throw";
+};
+
 export type ApiCallParams<TResponse, TPaths = void, TQuery = void> = {
   behavior?: Behavior<TResponse, ApiErrorResponse>;
+  request?: ApiRequestOptions;
 } & (TPaths extends void ? object : { paths?: TPaths }) &
   (TQuery extends void ? object : { queryOverride?: TQuery });
 

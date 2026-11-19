@@ -66,7 +66,7 @@ export class ModuleImports {
     return Array.from(this.mockedImports);
   }
 
-  private readonly typeOnlyImports = new Set(["ApiCallParams"]);
+  private readonly typeOnlyImports = new Set(["ApiCallParams", "ApiRequestOptions"]);
 
   buildReflectorImportsLine(): string {
     const imports = this.getReflectorImportsArray();

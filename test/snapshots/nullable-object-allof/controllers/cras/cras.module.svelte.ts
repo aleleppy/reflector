@@ -5,6 +5,7 @@ import {
   Behavior,
   isFormValid,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
 import {
@@ -33,6 +34,7 @@ export abstract class CrasModule {
   /**  */
   protected async _createRun(params?: {
     behavior?: Behavior<CrasInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -47,6 +49,7 @@ export abstract class CrasModule {
       const response = await api.post<CrasInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -72,6 +75,7 @@ export abstract class CrasModule {
   /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
   protected async _create(params?: {
     behavior?: Behavior<CrasInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const res = await this._createRun(params);
     return res.ok ? res.data : undefined;

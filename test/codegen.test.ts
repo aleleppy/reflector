@@ -179,6 +179,23 @@ describe("codegen — sibling-lists fixture (two list-typed methods, different n
     expect(clearDecls.length).toBe(2);
     expect(new Set(clearDecls.map((d) => d.match(/clearList\w*/)![0])).size).toBe(2);
   });
+
+  it("guards each list field with its own run id so a superseded call never writes it", () => {
+    const content = outputs.find((o) => o.rel.endsWith("ai-chat-tenant.module.svelte.ts"))!.content;
+
+    for (const field of ["listAiChats", "listMessages"]) {
+      const counter = `this.#${field}RunId`;
+      expect(content).toContain(`#${field}RunId = 0;`);
+
+      const run = content.slice(content.indexOf(`++${counter}`));
+      const body = run.slice(0, run.indexOf("finally"));
+      const staleReturn = body.indexOf(`if (thisRun !== ${counter})`);
+      expect(staleReturn).toBeGreaterThan(-1);
+      expect(staleReturn).toBeLessThan(body.indexOf(`this.${field} = fetched`));
+      expect(body).toMatch(new RegExp(`if \\(thisRun !== this\\.#${field}RunId\\)\\s*return \\{ ok: false, error: parsedError \\};\\s*await onError`));
+      expect(run).toMatch(new RegExp(`finally \\{\\s*if \\(thisRun === this\\.#${field}RunId\\) this\\.loading = false;`));
+    }
+  });
 });
 
 describe("codegen — paginated responses select the data array for static from()", () => {
@@ -693,6 +710,38 @@ describe("codegen — experimental Api class (queryOverride generic)", () => {
     expect(content).toMatch(/reset\(\)\s*\{[\s\S]*?this\.form\.reset\(\)/);
     // The old instance-swap must be gone.
     expect(content).not.toMatch(/this\.form\s*=\s*new\s+UserController_createBody\(\)/);
+  });
+
+  it("forwards the caller's request options on every HTTP call", () => {
+    const content = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"))!.content;
+    const calls = content.match(/api\.(get|post|put|patch|delete)<[\s\S]*?\)\s*;/g) ?? [];
+
+    expect(calls.length).toBeGreaterThan(0);
+    for (const call of calls) expect(call).toMatch(/request:\s*params\?\.request/);
+  });
+
+  it("stale entity/list calls return their own instance and skip behaviors; mutations stay unguarded", () => {
+    const content = outputs.find((o) => o.rel.endsWith("user.api.svelte.ts"))!.content;
+    const classes = content.split(/(?=export class )/).filter((c) => c.startsWith("export class"));
+    const guarded = classes.filter((c) => c.includes("#dataRunId = 0;"));
+    const unguarded = classes.filter((c) => !c.includes("#dataRunId"));
+
+    expect(guarded.length).toBeGreaterThan(0);
+    for (const cls of guarded) {
+      const beforeWrite = cls.slice(0, cls.indexOf("this.data = new"));
+      expect(beforeWrite).toMatch(/if \(thisRun !== this\.#dataRunId\)\s*return \{\s*ok: true,\s*data: new \w+\(\{ data: response \}\),?\s*\}/);
+      expect(cls.indexOf("thisRun !== this.#dataRunId")).toBeLessThan(cls.indexOf("onSuccess?.(response)"));
+    }
+
+    expect(unguarded.some((c) => /api\.(post|delete)</.test(c))).toBe(true);
+    for (const cls of unguarded) expect(cls).not.toContain("thisRun");
+  });
+
+  it("declares request options on ApiCallParams in the runtime", () => {
+    const runtime = outputs.find((o) => o.rel.endsWith("reflector.svelte.ts"))!.content;
+
+    expect(runtime).toMatch(/export type ApiRequestOptions = \{\s*authErrors\?: "redirect" \| "throw";?\s*\}/);
+    expect(runtime).toMatch(/ApiCallParams<[^>]*>\s*=\s*\{[^}]*request\?: ApiRequestOptions;/);
   });
 
   it("matches the committed api-file snapshot (locks the experimental Api contract)", async () => {

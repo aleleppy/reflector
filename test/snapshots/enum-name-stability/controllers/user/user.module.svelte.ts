@@ -5,6 +5,7 @@ import {
   Behavior,
   isFormValid,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
 import { UserDto, type UserResInterface, UserRes } from "./user.schema.svelte";
@@ -29,6 +30,7 @@ export abstract class UserModule {
   /**  */
   protected async _createRun(params?: {
     behavior?: Behavior<UserResInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
@@ -43,6 +45,7 @@ export abstract class UserModule {
       const response = await api.post<UserResInterface>({
         endpoint,
         data,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -68,6 +71,7 @@ export abstract class UserModule {
   /** @deprecated use `_createRun()` — returns a discriminated ApiResult */
   protected async _create(params?: {
     behavior?: Behavior<UserResInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
   }) {
     const res = await this._createRun(params);
     return res.ok ? res.data : undefined;

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0]
+
+### Added
+- `ApiRequestOptions` (`{ authErrors?: "redirect" | "throw" }`) in the runtime;
+  `ApiCallParams` and the Module `_xRun` params gained `request?: ApiRequestOptions`.
+  Every generated `api.*` call forwards it as `request: params?.request`.
+  `authErrors: "throw"` lets the consumer's `api` skip its global 401/403
+  handling and surface the error with its `statusCode`.
+
+### Fixed
+- Out-of-order responses: list and entity calls take a per-field run id
+  (`#<field>RunId`). A call superseded by a newer one to the same state field
+  no longer writes the field, no longer clears `loading` and no longer fires
+  behaviors; it returns its own result (own instance, never the state
+  reference). Mutations (post/put/patch/delete) write no state and stay unguarded.
+
+### Breaking for consumers
+- The consumer's `api` (RepoApi) must accept a `request` property in every
+  method's argument object before upgrading, or generated calls fail
+  type-checking with an excess-property error.
+
 ## [2.1.1]
 
 ### Fixed

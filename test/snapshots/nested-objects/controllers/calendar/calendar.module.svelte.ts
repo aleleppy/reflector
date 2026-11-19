@@ -6,6 +6,7 @@ import {
   Behavior,
   QueryBuilder,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -23,6 +24,7 @@ class Paths {
 export abstract class CalendarModule {
   loading = $state<boolean>(false);
   calendarController_get = $state<CalendarController_getResponse | undefined>();
+  #calendarController_getRunId = 0;
   paths = new Paths();
 
   /**  */
@@ -31,6 +33,7 @@ export abstract class CalendarModule {
       CalendarController_getResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };
@@ -38,6 +41,7 @@ export abstract class CalendarModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#calendarController_getRunId;
     this.loading = true;
     const { id } = params?.paths ?? this.paths;
     const endpoint = `calendar/${id}`;
@@ -46,10 +50,13 @@ export abstract class CalendarModule {
       const response = await api.get<
         CalendarController_getResponseInterface,
         unknown
-      >({
-        endpoint,
-      });
+      >({ endpoint, request: params?.request });
 
+      if (thisRun !== this.#calendarController_getRunId)
+        return {
+          ok: true,
+          data: new CalendarController_getResponse({ data: response }),
+        };
       this.calendarController_get = new CalendarController_getResponse({
         data: response,
       });
@@ -70,10 +77,12 @@ export abstract class CalendarModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#calendarController_getRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#calendarController_getRunId) this.loading = false;
     }
   }
 
@@ -83,6 +92,7 @@ export abstract class CalendarModule {
       CalendarController_getResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     paths?: {
       id: string;
     };

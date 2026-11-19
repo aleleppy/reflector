@@ -8,6 +8,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
 
@@ -41,9 +42,12 @@ export abstract class WidgetModule {
   loading = $state<boolean>(false);
   totalPages = $state<number>(1);
   list = $state<WidgetController_listResponse["data"]>([]);
+  #listRunId = 0;
   bundledList = $derived(genericArrayBundler(this.list));
   widgetEntity = $state<Widget | undefined>();
+  #widgetEntityRunId = 0;
   eNUM_WIDGET_SHAPE = $state<ENUM_WIDGET_SHAPE | undefined>();
+  #eNUM_WIDGET_SHAPERunId = 0;
   querys = new Querys();
   paths = new Paths();
 
@@ -53,6 +57,7 @@ export abstract class WidgetModule {
       WidgetController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -61,6 +66,7 @@ export abstract class WidgetModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#listRunId;
     this.loading = true;
     const { page, limit } = params?.queryOverride ?? this.querys.bundle();
     const endpoint = `widgets`;
@@ -69,11 +75,10 @@ export abstract class WidgetModule {
       const response = await api.get<
         WidgetController_listResponseInterface,
         unknown
-      >({
-        endpoint,
-        queryData: { page, limit },
-      });
-      this.list = WidgetController_listResponse.from(response.data);
+      >({ endpoint, queryData: { page, limit }, request: params?.request });
+      const fetched = WidgetController_listResponse.from(response.data);
+      if (thisRun !== this.#listRunId) return { ok: true, data: fetched };
+      this.list = fetched;
       this.totalPages = response.totalPages;
 
       await onSuccess?.(response);
@@ -89,10 +94,11 @@ export abstract class WidgetModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#listRunId) return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#listRunId) this.loading = false;
     }
   }
 
@@ -102,6 +108,7 @@ export abstract class WidgetModule {
       WidgetController_listResponseInterface,
       ApiErrorResponse
     >;
+    request?: ApiRequestOptions;
     queryOverride?: {
       page?: string | null;
       limit?: string | null;
@@ -114,6 +121,7 @@ export abstract class WidgetModule {
   /**  */
   protected async _entityRun(params?: {
     behavior?: Behavior<WidgetInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -121,6 +129,7 @@ export abstract class WidgetModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#widgetEntityRunId;
     this.loading = true;
     const { widgetId } = params?.paths ?? this.paths;
     const endpoint = `widgets/${widgetId}`;
@@ -128,8 +137,11 @@ export abstract class WidgetModule {
     try {
       const response = await api.get<WidgetInterface, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#widgetEntityRunId)
+        return { ok: true, data: new Widget({ data: response }) };
       this.widgetEntity = new Widget({ data: response });
 
       await onSuccess?.(response);
@@ -145,16 +157,19 @@ export abstract class WidgetModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#widgetEntityRunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#widgetEntityRunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_entityRun()` — returns a discriminated ApiResult */
   protected async _entity(params?: {
     behavior?: Behavior<WidgetInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -166,6 +181,7 @@ export abstract class WidgetModule {
   /**  */
   protected async _removeRun(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -180,6 +196,7 @@ export abstract class WidgetModule {
     try {
       const response = await api.delete<null, unknown>({
         endpoint,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -205,6 +222,7 @@ export abstract class WidgetModule {
   /** @deprecated use `_removeRun()` — returns a discriminated ApiResult */
   protected async _remove(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -216,6 +234,7 @@ export abstract class WidgetModule {
   /**  */
   protected async _kindRun(params?: {
     behavior?: Behavior<string, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -230,6 +249,7 @@ export abstract class WidgetModule {
     try {
       const response = await api.get<string, unknown>({
         endpoint,
+        request: params?.request,
       });
 
       await onSuccess?.(response);
@@ -255,6 +275,7 @@ export abstract class WidgetModule {
   /** @deprecated use `_kindRun()` — returns a discriminated ApiResult */
   protected async _kind(params?: {
     behavior?: Behavior<string, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -266,6 +287,7 @@ export abstract class WidgetModule {
   /**  */
   protected async _shapeRun(params?: {
     behavior?: Behavior<ENUM_WIDGET_SHAPEInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };
@@ -273,6 +295,7 @@ export abstract class WidgetModule {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
+    const thisRun = ++this.#eNUM_WIDGET_SHAPERunId;
     this.loading = true;
     const { widgetId } = params?.paths ?? this.paths;
     const endpoint = `widgets/${widgetId}/shape`;
@@ -280,8 +303,11 @@ export abstract class WidgetModule {
     try {
       const response = await api.get<ENUM_WIDGET_SHAPE, unknown>({
         endpoint,
+        request: params?.request,
       });
 
+      if (thisRun !== this.#eNUM_WIDGET_SHAPERunId)
+        return { ok: true, data: new ENUM_WIDGET_SHAPE({ data: response }) };
       this.eNUM_WIDGET_SHAPE = new ENUM_WIDGET_SHAPE({ data: response });
 
       await onSuccess?.(response);
@@ -297,16 +323,19 @@ export abstract class WidgetModule {
           message: (e as Error).message ?? String(e),
         };
       }
+      if (thisRun !== this.#eNUM_WIDGET_SHAPERunId)
+        return { ok: false, error: parsedError };
       await onError?.(parsedError);
       return { ok: false, error: parsedError };
     } finally {
-      this.loading = false;
+      if (thisRun === this.#eNUM_WIDGET_SHAPERunId) this.loading = false;
     }
   }
 
   /** @deprecated use `_shapeRun()` — returns a discriminated ApiResult */
   protected async _shape(params?: {
     behavior?: Behavior<ENUM_WIDGET_SHAPEInterface, ApiErrorResponse>;
+    request?: ApiRequestOptions;
     paths?: {
       widgetId: string;
     };

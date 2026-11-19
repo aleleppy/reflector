@@ -2,8 +2,8 @@ import { queryOverrideTypeLiteral } from "./queryOverride.js";
 import type { CallMethodInput, CallStrategy } from "./CallStrategy.js";
 
 export class ApiCallStrategy implements CallStrategy {
-  listStateAccess(_method: CallMethodInput): string {
-    return "this.data";
+  listStateField(_method: CallMethodInput): string {
+    return "data";
   }
 
   buildSignature(method: CallMethodInput): string {
@@ -21,8 +21,8 @@ export class ApiCallStrategy implements CallStrategy {
       }`;
   }
 
-  entityStateAccess(_method: CallMethodInput): string {
-    return "this.data";
+  entityStateField(_method: CallMethodInput): string {
+    return "data";
   }
 
   formStateAccess(_method: CallMethodInput): string {

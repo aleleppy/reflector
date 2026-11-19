@@ -5,6 +5,7 @@ import { MethodValidator } from "../method/MethodValidator.js";
 import type { PrimitiveProp } from "../../props/primitive.property.js";
 import type { ModuleImports } from "./ModuleImports.js";
 import type { Form } from "./ModuleConstructorBuilder.js";
+import { runIdField } from "../generators/runGuard.js";
 
 export interface ProcessedMethods {
   buildedMethods: string[];
@@ -69,9 +70,10 @@ export class ModuleMethodProcessor {
 
       buildedMethods.push(method.build());
 
-      if (attributeType === "entity" && !isPrimitiveResponse) {
-        const entityName = treatByUppercase(method.request.responseType ?? "");
+      if (attributeType === "entity" && responseType && !isPrimitiveResponse) {
+        const entityName = treatByUppercase(responseType);
         methodsAttributes.add(`${entityName} = $state<${responseType} | undefined>()`);
+        methodsAttributes.add(`${runIdField(entityName)} = 0`);
         methodsInit.add(`this.clear${capitalizeFirstLetter(entityName)}()`);
         methodsClear.add(`protected clear${capitalizeFirstLetter(entityName)}() { this.${entityName} = undefined }`);
       } else if (attributeType === "list") {
@@ -80,6 +82,7 @@ export class ModuleMethodProcessor {
         const clearMethod = `clear${capitalizeFirstLetter(listField)}`;
         methodsAttributes.add("totalPages = $state<number>(1)");
         methodsAttributes.add(`${listField} = $state<${responseType}['data']>([])`);
+        methodsAttributes.add(`${runIdField(listField)} = 0`);
         this.imports.addReflectorImport("genericArrayBundler");
         methodsAttributes.add(`${bundledField} = $derived(genericArrayBundler(this.${listField}))`);
         methodsInit.add(`this.${clearMethod}()`);
