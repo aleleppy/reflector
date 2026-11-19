@@ -1,6 +1,8 @@
 export const FIELD_NAMES = [
   "cents",
   "label",
+  "kind",
+  "unit",
   "value",
   "hint",
   "mixed",

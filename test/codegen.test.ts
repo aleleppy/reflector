@@ -943,3 +943,24 @@ describe("codegen — free-form-maps fixture (additionalProperties não é strin
     expect(content).toMatch(/export interface SheetColumnInterface/);
   });
 });
+
+describe("codegen — enum opcional em response não inventa valor", () => {
+  let content = "";
+
+  beforeAll(async () => {
+    const outputs = await runFixture("oneof-primitives");
+    content = outputs.find((o) => o.rel.endsWith(".schema.svelte.ts"))!.content;
+  });
+
+  it("enum opcional ausente fica ausente (bug: build() devolvia o primeiro valor do enum)", () => {
+    expect(content).toMatch(/if \(params\?\.data\?\.kind !== undefined\)\s*this\.kind = build\(/);
+  });
+
+  it("hydrate cria o input quando o enum opcional chega depois", () => {
+    expect(content).toMatch(/if \(this\.kind\) this\.kind\.hydrate\(data\.kind as never\);\s*else\s*this\.kind = build\(\{\s*key: data\.kind,/);
+  });
+
+  it("enum obrigatório continua construído sempre", () => {
+    expect(content).toMatch(/^\s*this\.unit = build\(\{\s*key: params\?\.data\?\.unit,/m);
+  });
+});
