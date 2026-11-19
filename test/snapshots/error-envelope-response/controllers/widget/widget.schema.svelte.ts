@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  untouchForm,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -40,6 +45,7 @@ export class Widget {
     this.hydrate(
       new Widget({ empty: true }).bundle() as Partial<WidgetInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

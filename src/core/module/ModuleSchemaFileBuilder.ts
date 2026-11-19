@@ -33,6 +33,7 @@ export class ModuleSchemaFileBuilder {
     const reflectorImports = ["build", "BuildedInput"];
     if (needsStrict) reflectorImports.push("bundleStrict");
     if (needsInputs) reflectorImports.push("bundleInputs");
+    if (needsStrict || needsInputs) reflectorImports.push("untouchForm");
 
     const imports: string[] = [
       `import { ${reflectorImports.join(", ")} } from "${config.reflectorAlias}/reflector.svelte";`,

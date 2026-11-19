@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  untouchForm,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import type { ENUM_NOTIFICATION_ENTITY_ACTION } from "$reflector/enums";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
@@ -79,6 +84,7 @@ export class Notification {
         empty: true,
       }).bundle() as Partial<NotificationInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -133,6 +139,7 @@ export class StockMeta {
     this.hydrate(
       new StockMeta({ empty: true }).bundle() as Partial<StockMetaInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -170,6 +177,7 @@ export class UserMeta {
     this.hydrate(
       new UserMeta({ empty: true }).bundle() as Partial<UserMetaInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {

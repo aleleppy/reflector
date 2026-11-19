@@ -383,9 +383,8 @@ export function validateForm(schema: object): boolean {
 /**
  * Simétrico do `validateForm`: apaga `showError` de todos os campos do schema
  * (incl. aninhados, sem pular opcional). Usar no `onClose`/reset de modal que
- * reusa a instância do form. (Quando o endpoint faz `reset()` → `new Dto()`,
- * `showError` já volta `false` de graça; o untouch só é necessário pra instância
- * reutilizada.)
+ * reusa a instância do form sem resetar. O `reset()` gerado já chama isto:
+ * reset in-place volta o form ao estado pristine (valores vazios + sem erro).
  */
 export function untouchForm(schema: object): void {
   forEachBuildedInput(schema, (input) => input.untouch(), false);

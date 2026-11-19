@@ -71,6 +71,17 @@ describe("codegen — minimal fixture", () => {
       /api\.delete<null, unknown>\(\{\s*endpoint,\s*queryData:\s*\{\s*replacementId\s*\}/,
     );
   });
+
+  it("reset() returns every schema to the pristine state (empty values + untouched)", () => {
+    const schemaFile = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"));
+    expect(schemaFile).toBeDefined();
+    const content = schemaFile!.content;
+    const resets = [...content.matchAll(/reset\(\): void \{[\s\S]*?\n  \}/g)].map((m) => m[0]);
+
+    expect(resets.length).toBeGreaterThan(0);
+    for (const reset of resets) expect(reset).toContain("untouchForm(this);");
+    expect(content).toMatch(/import \{[^}]*\buntouchForm\b[^}]*\} from "\$reflector\/reflector\.svelte"/);
+  });
 });
 
 describe("codegen — colliding-routes fixture", () => {

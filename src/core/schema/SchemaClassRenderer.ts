@@ -100,6 +100,7 @@ export class SchemaClassRenderer {
 
       reset(): void {
         this.hydrate(new ${name}({ empty: true }).bundle() as Partial<${name}Interface>);
+        untouchForm(this);
       }
     `;
 

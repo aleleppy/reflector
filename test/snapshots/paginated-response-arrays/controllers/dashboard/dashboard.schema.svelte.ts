@@ -1,4 +1,9 @@
-import { build, BuildedInput, bundleStrict } from "$reflector/reflector.svelte";
+import {
+  build,
+  BuildedInput,
+  bundleStrict,
+  untouchForm,
+} from "$reflector/reflector.svelte";
 import { validateInputs } from "$lib/sanitizers/validateFormats";
 import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 const isEmpty = PUBLIC_ENVIRONMENT !== "DEV";
@@ -66,6 +71,7 @@ export class CustomerDashboardResponse {
         empty: true,
       }).bundle() as Partial<CustomerDashboardResponseInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -106,6 +112,7 @@ export class PaymentMethodShareRes {
         empty: true,
       }).bundle() as Partial<PaymentMethodShareResInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -142,6 +149,7 @@ export class FavoriteProductRes {
         empty: true,
       }).bundle() as Partial<FavoriteProductResInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -178,6 +186,7 @@ export class PurchaseRes {
         empty: true,
       }).bundle() as Partial<PurchaseResInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
@@ -220,6 +229,7 @@ export class SimplePurchaseResponse {
         empty: true,
       }).bundle() as Partial<SimplePurchaseResponseInterface>,
     );
+    untouchForm(this);
   }
 
   bundle() {
