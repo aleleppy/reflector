@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-import { reflector } from "./generate-doc.js";
+import { runCli } from "./helpers/cli.js";
 
-await reflector(true);
+process.exitCode = await runCli(process.argv.slice(2));

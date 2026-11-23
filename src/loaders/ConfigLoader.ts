@@ -3,14 +3,18 @@ import * as path from "node:path";
 import * as process from "node:process";
 
 import { parseFieldConfigsFromConfig, parseTypeImportsFromTypesFile } from "../helpers/generate-doc.helper.js";
+import { parseSpecSource } from "./SpecSource.js";
 
 import type { FieldConfigs, TypeImports } from "../types/types.js";
 import type { ReflectorConfig } from "../core/config/ReflectorConfig.js";
+import type { SpecSource } from "./SpecSource.js";
 
 export interface ReflectorJson {
   apiImport: string;
   experimentalFeatures: boolean;
   config: Partial<ReflectorConfig>;
+  /** Where the OpenAPI contract comes from; absent = legacy BACKEND_URL mode. */
+  source?: SpecSource;
 }
 
 /**
@@ -56,7 +60,7 @@ export class ConfigLoader {
     const text = ConfigLoader.readOptional(jsonPath);
     if (text === null) return result;
 
-    let parsed: { api?: string; experimentalFeatures?: boolean; config?: Partial<ReflectorConfig> };
+    let parsed: { api?: string; experimentalFeatures?: boolean; config?: Partial<ReflectorConfig>; source?: unknown };
     try {
       parsed = JSON.parse(text);
     } catch (e) {
@@ -66,6 +70,7 @@ export class ConfigLoader {
     if (parsed.api) result.apiImport = parsed.api;
     if (parsed.experimentalFeatures === true) result.experimentalFeatures = true;
     if (parsed.config) result.config = parsed.config;
+    if (parsed.source !== undefined) result.source = parseSpecSource(parsed.source, jsonPath);
     return result;
   }
 

@@ -52,7 +52,10 @@ separately.
 
 ```
 generate-doc.reflector()          src/generate-doc.ts
- ├─ OpenAPILoader.load            HTTP GET + on-failure fallback to backup
+ ├─ loadSpecSource                source.file / source.url (CLI --spec/--url
+ │                                wins over reflector.json): read + validate,
+ │                                no backup, no fallback. Without source:
+ │                                OpenAPILoader.load (legacy, deprecated)
  ├─ ConfigLoader.load*            reflector.config.ts / .types.ts / .json
  └─ new Reflector(...).build()    src/core/Reflector.ts
       ├─ InlineSchemaPromoter     promotes inline req-body + response.data
@@ -65,7 +68,8 @@ generate-doc.reflector()          src/generate-doc.ts
       ├─ ModuleSchemaFileBuilder  per-module *.schema.svelte.ts content
       ├─ RuntimeFilesEmitter      fields.ts, enums.ts, mocked-params.svelte.ts,
       │                           reflector.svelte.ts (template)
-      └─ Promise.all saves        all Sources in parallel through prettier
+      └─ AtomicOutput.commit      prettier in memory → staging dir → swap
+                                  with rollback; failure = old output intact
 ```
 
 `CodegenContext` is a per-run state bag shared across the pipeline:
@@ -78,8 +82,10 @@ globals — two concurrent `Reflector` instances don't corrupt each other.
 Root of `src/` is kept deliberately thin — only entry points and
 runtime-adjacent utilities:
 
-- `cli.ts` / `generate-doc.ts` / `index.ts` — entries
-- `file.ts` — `Source` wrapper (path + data, `save()` runs prettier)
+- `cli.ts` / `generate-doc.ts` / `index.ts` — entries (`cli.ts` is a thin
+  wrapper over `helpers/cli.ts`: `parseCliArgs` + `runCli` → exit code)
+- `file.ts` — `Source` wrapper (path + data, `format()` runs prettier in
+  memory, `save()` formats + writes)
 - `loadTemplate.ts` — reads the reflector runtime template verbatim
 - `vars.global.ts` — `generatedDir` ( = `src/reflector`)
 - `runtime/` — the hand-written `.svelte.ts` template that gets copied into
@@ -90,7 +96,8 @@ runtime-adjacent utilities:
   `bundleBuild`, `interfaceBuild`, `staticBuild`)
 - `helpers/` — `isReferenceObject`, `capitalizeFirstLetter`,
   `splitByUppercase`, `toKebabCase`, the `generate-doc.helper.ts` parsers
-- `loaders/` — `OpenAPILoader` (HTTP+fallback), `ConfigLoader`
+- `loaders/` — `SpecSource` (file/url source, strict), `OpenAPILoader`
+  (legacy HTTP+fallback, deprecated, removed in 3.0), `ConfigLoader`
   (reflector.config.ts / reflector.types.ts / reflector.json)
 
 All codegen logic lives under `src/core/`:
