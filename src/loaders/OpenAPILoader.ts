@@ -12,10 +12,12 @@ function backupPath(): string {
 }
 
 /**
- * Fetches the remote OpenAPI document; on network failure, falls back to
- * the on-disk backup written during the previous successful run. The
- * backup lives under `generatedDir` so it moves with the rest of the
- * generated output.
+ * Legacy loader (no `source` configured). Fetches the remote OpenAPI
+ * document; on ANY failure, silently falls back to the on-disk backup
+ * written during the previous successful run, under `generatedDir`.
+ *
+ * @deprecated The fallback hides a dead backend behind a "successful" run.
+ * Use `source` (`SpecSource`), which never falls back. Removed in 3.0.
  */
 export class OpenAPILoader {
   static async load(docUrl: string): Promise<OpenAPIObject> {

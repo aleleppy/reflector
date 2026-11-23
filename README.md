@@ -39,16 +39,21 @@ pnpm add svelte-reflector
 
 ## Quick Start
 
-### 1. Configure Environment Variables
+### 1. Point Reflector at your OpenAPI contract
 
-Create a `.env` file in your project root:
+Create a `reflector.json` in your project root with a `source`:
+
+```json
+{
+  "source": { "file": "contract/openapi.json" }
+}
+```
+
+The contract is a versioned OpenAPI 3.x file (typically exported by the backend's CI). See [OpenAPI Source](#openapi-source) for the URL mode, the CLI flags and the legacy `BACKEND_URL` mode.
+
+Optionally set the environment in `.env` (controls the Vite plugin, see [Workflow](#workflow)):
 
 ```env
-# Required - Your backend URL
-BACKEND_URL=https://api.example.com/
-# or
-PUBLIC_BACKEND=https://api.example.com/
-
 # Optional - Environment (defaults to PROD)
 ENVIRONMENT=DEV
 # or
@@ -76,10 +81,11 @@ Validators are resolved from `$lib/sanitizers/validateFormats` — you need to i
 
 ### 3. Configure API Import Path (Optional)
 
-Create a `reflector.json` in your project root to customize the API import path:
+Add `api` to `reflector.json` to customize the API import path:
 
 ```json
 {
+  "source": { "file": "contract/openapi.json" },
   "api": "$lib/api"
 }
 ```
@@ -89,12 +95,17 @@ Defaults to `$lib/api` if not specified. This is the module that generated modul
 ### 4. Run the Generator
 
 ```bash
-# Manual generation
+# Manual generation (uses "source" from reflector.json)
 npx reflect
+
+# Override the source from the command line
+npx reflect --spec contract/openapi.json
+npx reflect --url https://api.example.com/openapi.json
 
 # Or programmatically as a Vite plugin
 import { reflector } from "svelte-reflector";
 await reflector(true); // true = force generation
+await reflector(true, { source: { file: "contract/openapi.json" } }); // explicit source
 ```
 
 ### 5. Use Generated Modules
@@ -143,8 +154,10 @@ src/reflector/
 ├── fields.ts                          # Field name constants
 ├── enums.ts                           # Enum type definitions
 ├── mocked-params.svelte.ts            # Mocked path parameters ($state)
-└── backup.json                        # Cached OpenAPI spec
+└── backup.json                        # Legacy mode only: cached OpenAPI spec (deprecated)
 ```
+
+Generation is **atomic**: everything (prettier included) is rendered and written to a staging folder first, and only then swapped into `src/reflector/`. If any step fails, the previous output stays intact. `controllers/` is replaced as a whole, so modules removed from the contract disappear; unrelated files in `src/reflector/` are left alone.
 
 Each module gets its own schema file (`*.schema.svelte.ts`) containing only the schemas it uses, with transitive dependencies automatically resolved.
 
@@ -289,17 +302,37 @@ match on a per-call basis. Omit a key to drop it from the request; pass
 
 ## Configuration
 
+### OpenAPI Source
+
+Where the OpenAPI document comes from. Resolution order: CLI flag → `source` in `reflector.json` → legacy mode.
+
+| Mode | `reflector.json` | CLI | Behavior |
+|------|------------------|-----|----------|
+| File (recommended) | `"source": { "file": "<path>" }` | `--spec <path>` | Reads the file (path relative to the project root) and validates it: valid JSON, OpenAPI 3.x, with `paths` and `components`. Never writes `backup.json`, never falls back. |
+| URL | `"source": { "url": "<url>" }` | `--url <url>` | GETs the full document URL (e.g. `https://api.example.com/openapi.json`), same validation. Never writes `backup.json`, never falls back. |
+| Legacy (deprecated) | no `source` | — | GETs `${BACKEND_URL}openapi.json`; if that fails for any reason, silently loads `src/reflector/backup.json`. Logs a deprecation warning. **Removed in 3.0.** |
+
+`source` takes exactly one key. `--spec` and `--url` are mutually exclusive and override `reflector.json`. Both also accept `--spec=<path>` / `--url=<url>`.
+
+In file and URL modes any failure (missing file, unreadable file, invalid JSON, Swagger 2.0 / non-OpenAPI document, server down, HTTP error) aborts **before** touching the generated folder: `npx reflect` prints the reason and exits with code `1`, and the Vite plugin throws. This is what makes it safe to run in CI.
+
+Typical CI usage (contract versioned in the front repo):
+
+```bash
+npx reflect --spec contract/openapi.json
+```
+
 ### Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `BACKEND_URL` | Yes* | Backend API URL |
-| `PUBLIC_BACKEND` | Yes* | Alternative to BACKEND_URL |
+| `BACKEND_URL` | Legacy mode only* | Backend API URL (doc fetched from `${BACKEND_URL}openapi.json`) |
+| `PUBLIC_BACKEND` | Legacy mode only* | Alternative to BACKEND_URL |
 | `ENVIRONMENT` | No | DEV/PROD (defaults to PROD) |
 | `VITE_ENVIRONMENT` | No | Vite-specific env var |
 | `NODE_ENV` | No | Node environment |
 
-\* At least one of `BACKEND_URL` or `PUBLIC_BACKEND` is required.
+\* Without `source`, at least one of `BACKEND_URL` or `PUBLIC_BACKEND` is required. With `source`, neither is read.
 
 ### Behavior Pattern
 
@@ -384,8 +417,8 @@ In `ENVIRONMENT=DEV`:
 
 In `ENVIRONMENT=PROD`:
 - Schemas are auto-regenerated on each build
-- Fresh types from latest OpenAPI spec
-- Fallback to `backup.json` if backend is unavailable
+- Fresh types from the configured OpenAPI source
+- A broken source fails the build (legacy mode only: fallback to `backup.json`, deprecated)
 
 ## Advanced Usage
 
@@ -445,11 +478,15 @@ setQueryGroup([
 
 ### "BACKEND_URL vazio" Error
 
-Ensure you have set `BACKEND_URL` or `PUBLIC_BACKEND` in your `.env` file.
+You are in legacy mode (no `source`). Configure `"source": { "file": "contract/openapi.json" }` in `reflector.json` (recommended), or set `BACKEND_URL` / `PUBLIC_BACKEND` in your `.env` file.
+
+### "DEPRECATED: nenhum \"source\" configurado"
+
+Same cause: legacy mode, which silently falls back to `backup.json` when the backend is down. Add a `source` to `reflector.json`; the fallback is removed in 3.0.
 
 ### Schemas Not Updating
 
-In DEV mode, run `npx reflect` manually. Check that your backend's OpenAPI spec is accessible at `{BACKEND_URL}openapi.json`.
+In DEV mode, run `npx reflect` manually. Check that the configured source is current (the contract file, or the URL). In legacy mode, a dead backend silently regenerates from a stale `backup.json`.
 
 ### Type Errors After Generation
 

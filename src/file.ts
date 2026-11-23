@@ -14,12 +14,19 @@ export class Source {
   }
 
   async save() {
+    const formatted = await this.format();
     mkdirSync(dirname(this.path), { recursive: true });
+    writeFileSync(this.path, formatted, "utf8");
+  }
+
+  /**
+   * Runs prettier in memory, resolving the consumer's config against the
+   * final path (so staging elsewhere doesn't change the formatting).
+   */
+  async format(): Promise<string> {
     const outputPath = resolve(this.path);
     const options = await prettier.resolveConfig(outputPath);
-    const formatted = await prettier.format(this.data, { ...options, filepath: outputPath });
-
-    writeFileSync(this.path, formatted, "utf8");
+    return prettier.format(this.data, { ...options, filepath: outputPath });
   }
 
   async safeSave() {

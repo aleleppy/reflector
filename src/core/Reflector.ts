@@ -1,5 +1,4 @@
 import * as path from "node:path";
-import * as fs from "node:fs";
 import * as process from "node:process";
 
 import { Source } from "../file.js";
@@ -12,6 +11,7 @@ import { SchemaRegistry } from "./schema/SchemaRegistry.js";
 import { ModuleFactory } from "./module/ModuleFactory.js";
 import { ModuleSchemaFileBuilder } from "./module/ModuleSchemaFileBuilder.js";
 import { RuntimeFilesEmitter } from "./emit/RuntimeFilesEmitter.js";
+import { AtomicOutput } from "./emit/AtomicOutput.js";
 import { resolveReflectorConfig } from "./config/ReflectorConfig.js";
 import { generatedDir } from "../vars.global.js";
 
@@ -29,7 +29,7 @@ export class Reflector {
   private readonly config: ReflectorConfig;
   private readonly context = new CodegenContext();
 
-  private readonly srcDir = path.resolve(process.cwd(), `${generatedDir}/controllers`);
+  private readonly outDir = path.resolve(process.cwd(), generatedDir);
 
   constructor(params: {
     components: ComponentsObject;
@@ -62,10 +62,12 @@ export class Reflector {
     this.propertiesNames = this.registry.propertiesNames;
   }
 
+  /**
+   * All-or-nothing: if any file fails (prettier included), the previous
+   * generated output stays intact. `controllers/` is replaced wholesale so
+   * modules removed from the contract disappear.
+   */
   async build() {
-    fs.rmSync(this.srcDir, { recursive: true, force: true });
-    fs.mkdirSync(this.srcDir, { recursive: true });
-
     const moduleSchemaFiles: Source[] = [];
     for (const module of this.modules) {
       if (module.methods.length === 0 || module.schemaClassNames.length === 0) continue;
@@ -84,12 +86,18 @@ export class Reflector {
       config: this.config,
     });
 
-    await Promise.all([
-      ...moduleSchemaFiles.map((f) => f.save()),
-      ...runtimeFiles.map((f) => f.save()),
-      ...this.modules.filter((m) => m.methods.length > 0).map((m) => m.src.save()),
-      ...this.modules.filter((m) => m.methods.length > 0 && m.apiSrc).map((m) => m.apiSrc!.save()),
-    ]);
+    const emittedModules = this.modules.filter((m) => m.methods.length > 0);
+
+    await AtomicOutput.commit({
+      root: this.outDir,
+      replaceDirs: ["controllers"],
+      sources: [
+        ...moduleSchemaFiles,
+        ...runtimeFiles,
+        ...emittedModules.map((m) => m.src),
+        ...emittedModules.flatMap((m) => (m.apiSrc ? [m.apiSrc] : [])),
+      ],
+    });
 
     return {};
   }
