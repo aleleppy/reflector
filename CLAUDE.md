@@ -24,6 +24,15 @@ Used two ways:
 - `npm test` — runs vitest once; snapshot tests over the codegen output.
 - `npm run test:watch` — vitest in watch mode.
 
+## Release
+
+Publish is CI-only (`.github/workflows/publish.yml`, npm trusted publishing
+via OIDC + provenance; no npm token anywhere). Bump `version` in
+`package.json` through a PR, merge, then push a tag `v<version>` on main.
+The workflow fails if the tag doesn't match `package.json`, then runs build +
+tests before `npm publish --provenance --access public`. Renaming
+`publish.yml` breaks the trusted publisher configured on npmjs.com.
+
 ## Tests
 
 Single test file — `test/codegen.test.ts` — runs `Reflector` end-to-end

@@ -1,0 +1,36 @@
+name: Publish
+
+# Push de tag vX.Y.Z publica no npm via trusted publishing (OIDC): sem token,
+# provenance automática. O trusted publisher no npmjs.com aponta para ESTE
+# arquivo (publish.yml) — renomear o arquivo quebra o publish.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      # Trusted publishing exige npm >= 11.5.1.
+      - run: npm install -g npm@^11.5.1
+      - name: Tag bate com package.json
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${PKG_VERSION}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} não bate com package.json (v${PKG_VERSION})."
+            exit 1
+          fi
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm publish --provenance --access public
