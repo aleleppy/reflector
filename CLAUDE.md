@@ -157,7 +157,7 @@ threaded through `Reflector` → `ModuleFactory` → `Module` →
 ## Consumer-project files read at runtime
 
 - `reflector.json` — `{ api: string, experimentalFeatures?: boolean, config?: Partial<ReflectorConfig> }`. Optional; ENOENT is silent.
-- `src/reflector.config.ts` — `export const fieldConfigs = [{ fields, validator, type }]`. Parsed by regex/brace-walking — AST parser would be nicer but isn't worth the dep. Optional.
+- `src/reflector.config.ts` — `export const fieldConfigs = [{ fields | formats, validator, sanitizer, type }]` (exactly one matcher per entry; `formats` matches the OpenAPI property `format` and wins over `fields`). Parsed by regex/brace-walking — AST parser would be nicer but isn't worth the dep. Optional.
 - `src/reflector.types.ts` — a file whose only purpose is to list `import type { X } from '…'` statements for custom field types. Optional.
 - `src/reflector/backup.json` — written on every successful fetch; read if the live fetch fails.
 
@@ -204,7 +204,7 @@ name so scan order can't reorder it either. Locked by the
 ```
 src/reflector/
 ├── backup.json
-├── fields.ts                       (FIELD_NAMES union)
+├── fields.ts                       (FIELD_NAMES / FORMAT_NAMES unions)
 ├── enums.ts                        (generated enum unions)
 ├── mocked-params.svelte.ts         (MockedParams class)
 ├── reflector.svelte.ts             (copied template)

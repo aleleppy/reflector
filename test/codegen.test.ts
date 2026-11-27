@@ -8,6 +8,7 @@ import { Reflector } from "../src/core/Reflector.js";
 import type { OpenAPIObject } from "../src/types/open-api-spec.interface.js";
 import type { ReflectorConfig } from "../src/core/config/ReflectorConfig.js";
 import type { FieldConfigs } from "../src/types/types.js";
+import { createFieldConfigs } from "../src/core/config/FieldConfigs.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +32,7 @@ async function runFixture(
     const r = new Reflector({
       components: doc.components!,
       paths: doc.paths,
-      fieldConfigs: opts.fieldConfigs ?? new Map(),
+      fieldConfigs: opts.fieldConfigs ?? createFieldConfigs([]),
       typeImports: new Map(),
       apiImport: "$lib/api",
       experimentalFeatures: opts.experimentalFeatures,
@@ -755,8 +756,8 @@ describe("codegen — experimental Api class (queryOverride generic)", () => {
 describe("codegen — sanitizer field config", () => {
   it("emits sanitizer ref + conditional sanitizers import for a matched string field", async () => {
     const outputs = await runFixture("minimal", {
-      fieldConfigs: new Map([
-        ["email", { validator: "validateInputs.email", sanitizer: "sanitizers.phone" }],
+      fieldConfigs: createFieldConfigs([
+        { matcher: "fields", names: ["email"], config: { validator: "validateInputs.email", sanitizer: "sanitizers.phone" } },
       ]),
     });
     const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"));
@@ -779,7 +780,7 @@ describe("codegen — sanitizer field config", () => {
 
   it("honors config.sanitizersImport override", async () => {
     const outputs = await runFixture("minimal", {
-      fieldConfigs: new Map([["email", { sanitizer: "sanitizers.phone" }]]),
+      fieldConfigs: createFieldConfigs([{ matcher: "fields", names: ["email"], config: { sanitizer: "sanitizers.phone" } }]),
       config: { sanitizersImport: "$core/utils/sanitizers/input-sanitizers" },
     });
     const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
@@ -793,6 +794,87 @@ describe("codegen — sanitizer field config", () => {
     const schema = outputs.find((o) => o.rel.endsWith("user.schema.svelte.ts"))!;
     expect(schema.content).not.toMatch(/import\s*\{\s*sanitizers\s*\}/);
     expect(schema.content).not.toMatch(/sanitizer:/);
+  });
+});
+
+describe("codegen — field config matched by OpenAPI format", () => {
+  const snapshotDir = path.join(here, "snapshots/field-config-format");
+
+  /** `build({...})` args of `<field>` inside `export class <schema>`. */
+  function fieldBuild(outputs: Output[], schema: string, field: string): string {
+    const file = outputs.find((o) => o.rel.endsWith("auth.schema.svelte.ts"));
+    if (!file) throw new Error("auth.schema.svelte.ts not generated");
+    const classBody = file.content.match(new RegExp(`export class ${schema} \\{[\\s\\S]*?\\n\\}`))?.[0];
+    if (!classBody) throw new Error(`class ${schema} not found`);
+    const build = classBody.match(new RegExp(`\\b${field} = build\\(\\{[^}]*\\}`))?.[0];
+    if (!build) throw new Error(`${schema}.${field} build() not found`);
+    return build;
+  }
+
+  describe("format entry + conflicting field-name entry", () => {
+    let outputs: Output[] = [];
+
+    beforeAll(async () => {
+      outputs = await runFixture("field-config-format", {
+        fieldConfigs: createFieldConfigs([
+          { matcher: "fields", names: ["password"], config: { validator: "validateInputs.minLength" } },
+          { matcher: "formats", names: ["strong-password"], config: { validator: "validateInputs.strongPassword" } },
+        ]),
+      });
+    });
+
+    it("matches content snapshots for every generated file", async () => {
+      for (const { rel, content } of outputs) {
+        await expect(content).toMatchFileSnapshot(path.join(snapshotDir, rel));
+      }
+    });
+
+    it("format match wins over the field-name match", () => {
+      const build = fieldBuild(outputs, "SignUpDto", "password");
+      expect(build).toContain("validator: validateInputs.strongPassword");
+      expect(build).not.toContain("minLength");
+    });
+
+    it("same-name field without the format keeps the field-name config", () => {
+      const build = fieldBuild(outputs, "SignInDto", "password");
+      expect(build).toContain("validator: validateInputs.minLength");
+      expect(build).not.toContain("strongPassword");
+    });
+
+    it("emits FORMAT_NAMES / FormatName next to FIELD_NAMES, sorted", () => {
+      const fields = outputs.find((o) => o.rel === "fields.ts");
+      expect(fields).toBeDefined();
+      expect(fields!.content).toMatch(/export const FORMAT_NAMES = \[\s*"email",\s*"strong-password",\s*"uuid",?\s*\] as const;/);
+      expect(fields!.content).toContain("export type FormatName = (typeof FORMAT_NAMES)[number];");
+    });
+  });
+
+  describe("format entry only", () => {
+    let outputs: Output[] = [];
+
+    beforeAll(async () => {
+      outputs = await runFixture("field-config-format", {
+        fieldConfigs: createFieldConfigs([
+          { matcher: "formats", names: ["strong-password"], config: { validator: "validateInputs.strongPassword" } },
+        ]),
+      });
+    });
+
+    it("attaches the validator to the field carrying the format", () => {
+      expect(fieldBuild(outputs, "SignUpDto", "password")).toContain("validator: validateInputs.strongPassword");
+    });
+
+    it("does not attach it to a same-name field without the format", () => {
+      const build = fieldBuild(outputs, "SignInDto", "password");
+      expect(build).not.toContain("strongPassword");
+      expect(build).toContain("validator: validateInputs.emptyString");
+    });
+  });
+
+  it("emits an empty FORMAT_NAMES when the contract declares no format", async () => {
+    const outputs = await runFixture("minimal");
+    const fields = outputs.find((o) => o.rel === "fields.ts");
+    expect(fields!.content).toMatch(/export const FORMAT_NAMES = \[\] as const;/);
   });
 });
 

@@ -62,22 +62,41 @@ VITE_ENVIRONMENT=DEV
 
 ### 2. Create Reflector Config (Optional)
 
-Create a `src/reflector.config.ts` to define custom validators:
+Create a `src/reflector.config.ts` to attach validators, sanitizers or custom types to generated fields. Each entry matches by **exactly one** of:
+
+- `fields` — property names (any schema property with that name).
+- `formats` — OpenAPI `format` values declared by the contract (e.g. `format: "strong-password"`).
 
 ```typescript
-export const validators = [
-  {
-    fields: ["email", "userEmail"],
-    validator: "validateEmail",
-  },
-  {
-    fields: ["phone", "mobile"],
-    validator: "validatePhone",
-  },
+import { validateInputs } from "$lib/sanitizers/validateFormats";
+import { sanitizers } from "$lib/sanitizers/input-sanitizers";
+import type { ReflectorFieldsConfig } from "./reflector.types";
+
+export const fieldConfigs: ReflectorFieldsConfig[] = [
+  { fields: ["email", "userEmail"], validator: validateInputs.email },
+  { fields: ["phone"], sanitizer: sanitizers.phone },
+  { formats: ["strong-password"], validator: validateInputs.strongPassword },
 ];
 ```
 
-Validators are resolved from `$lib/sanitizers/validateFormats` — you need to implement and export them in your project.
+Precedence per property: a `formats` match **wins** over a `fields` match (the contract is more specific than the name); the two are never merged. An entry declaring both `fields` and `formats` is rejected at generation time.
+
+The generated `fields.ts` exports `FieldName` (every schema property name) and `FormatName` (every `format` declared on a schema property), so the config can be type-checked against the contract. Type it in `src/reflector.types.ts` (hand-written in your project) as a union, so an entry with both or neither matcher does not compile:
+
+```typescript
+import type { FieldName, FormatName } from "$reflector/fields";
+
+type FieldPayload = {
+  validator?: (v: never) => string | null;
+  sanitizer?: { parse: (display: string) => string; format: (value: string) => string };
+  type?: string;
+};
+
+export type ReflectorFieldsConfig = FieldPayload &
+  ({ fields: FieldName[]; formats?: never } | { formats: FormatName[]; fields?: never });
+```
+
+The file is parsed textually: `validator`/`sanitizer` must be plain references (e.g. `validateInputs.email`), `type` a string literal. Validators are emitted from `$lib/sanitizers/validateFormats` and sanitizers from `$lib/sanitizers/input-sanitizers` (override with `config.validatorsImport` / `config.sanitizersImport` in `reflector.json`).
 
 ### 3. Configure API Import Path (Optional)
 
@@ -151,7 +170,7 @@ src/reflector/
 │       ├── user.module.svelte.ts      # Abstract API module with methods
 │       └── user.schema.svelte.ts      # Schemas & types used by this module
 ├── reflector.svelte.ts                # Core utilities (build, isFormValid, QueryBuilder, etc.)
-├── fields.ts                          # Field name constants
+├── fields.ts                          # FIELD_NAMES / FORMAT_NAMES (FieldName, FormatName)
 ├── enums.ts                           # Enum type definitions
 ├── mocked-params.svelte.ts            # Mocked path parameters ($state)
 └── backup.json                        # Legacy mode only: cached OpenAPI spec (deprecated)

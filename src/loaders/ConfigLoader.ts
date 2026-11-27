@@ -4,6 +4,7 @@ import * as process from "node:process";
 
 import { parseFieldConfigsFromConfig, parseTypeImportsFromTypesFile } from "../helpers/generate-doc.helper.js";
 import { parseSpecSource } from "./SpecSource.js";
+import { createFieldConfigs } from "../core/config/FieldConfigs.js";
 
 import type { FieldConfigs, TypeImports } from "../types/types.js";
 import type { ReflectorConfig } from "../core/config/ReflectorConfig.js";
@@ -26,24 +27,12 @@ export interface ReflectorJson {
  */
 export class ConfigLoader {
   static loadFieldConfigs(): FieldConfigs {
-    const fieldConfigs: FieldConfigs = new Map();
     const configPath = path.resolve(process.cwd(), "src/reflector.config.ts");
 
     const configText = ConfigLoader.readOptional(configPath);
-    if (configText === null) return fieldConfigs;
+    if (configText === null) return createFieldConfigs([]);
 
-    const parsedConfigs = parseFieldConfigsFromConfig(configText);
-    parsedConfigs.forEach((rel) => {
-      rel.fields.forEach((field) => {
-        const config: { validator?: string; sanitizer?: string; type?: string } = {};
-        if (rel.validator) config.validator = rel.validator;
-        if (rel.sanitizer) config.sanitizer = rel.sanitizer;
-        if (rel.type) config.type = rel.type;
-        fieldConfigs.set(field, config);
-      });
-    });
-
-    return fieldConfigs;
+    return createFieldConfigs(parseFieldConfigsFromConfig(configText));
   }
 
   static loadTypeImports(): TypeImports {

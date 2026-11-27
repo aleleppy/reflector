@@ -8,6 +8,8 @@ import type { CodegenContext } from "../CodegenContext.js";
 export class SchemaRegistry {
   readonly schemas: Schema[] = [];
   readonly propertiesNames = new Set<string>();
+  /** Distinct `format` values on schema properties — the set a `formats` field config can match. */
+  readonly formatNames = new Set<string>();
   private readonly schemaMap = new Map<string, Schema>();
 
   constructor(params: {
@@ -40,9 +42,10 @@ export class SchemaRegistry {
         requireds: object.required || [],
       };
 
-      Object.keys(properties).forEach((prop) => {
+      for (const [prop, value] of Object.entries(properties)) {
         this.propertiesNames.add(prop);
-      });
+        if (!isReferenceObject(value) && value.format !== undefined) this.formatNames.add(value.format);
+      }
 
       this.schemas.push(new Schema({ ...schema, isEmpty: false, fieldConfigs, context }));
     }
