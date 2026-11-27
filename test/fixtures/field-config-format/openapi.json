@@ -1,0 +1,45 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "field-config-format fixture", "version": "1.0.0" },
+  "paths": {
+    "/auth/sign-in": {
+      "post": {
+        "operationId": "AuthController_signIn",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignInDto" } } }
+        },
+        "responses": { "201": { "description": "ok" } }
+      }
+    },
+    "/auth/sign-up": {
+      "post": {
+        "operationId": "AuthController_signUp",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SignUpDto" } } }
+        },
+        "responses": { "201": { "description": "ok" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SignInDto": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "SignUpDto": {
+        "type": "object",
+        "required": ["email", "password", "inviteId"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "strong-password" },
+          "inviteId": { "type": "string", "format": "uuid" }
+        }
+      }
+    }
+  }
+}

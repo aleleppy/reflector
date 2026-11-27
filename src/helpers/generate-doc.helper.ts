@@ -1,9 +1,4 @@
-interface LooseFieldConfig {
-  fields: string[];
-  validator?: string;
-  sanitizer?: string;
-  type?: string;
-}
+import type { FieldConfig, FieldConfigMatcher, ParsedFieldConfig } from "../types/types.js";
 
 function stripComments(code: string): string {
   // remove //... e /* ... */
@@ -83,45 +78,65 @@ function extractObjectBlocks(arrSrc: string): string[] {
   return blocks;
 }
 
-export function parseFieldConfigsFromConfig(code: string): LooseFieldConfig[] {
+const LIST_PATTERNS: Record<FieldConfigMatcher, RegExp> = {
+  fields: /\bfields\s*:\s*\[([\s\S]*?)\]/,
+  formats: /\bformats\s*:\s*\[([\s\S]*?)\]/,
+};
+
+/** Strings inside `<matcher>: [ ... ]` of an entry block; `null` when the key is absent. */
+function extractStringList(block: string, matcher: FieldConfigMatcher): string[] | null {
+  const listMatch = block.match(LIST_PATTERNS[matcher]);
+  if (!listMatch) return null;
+
+  const names: string[] = [];
+  const strRegex = /['"`]([^'"`]+)['"`]/g;
+  let sm: RegExpExecArray | null;
+  while ((sm = strRegex.exec(listMatch[1] ?? ""))) {
+    if (sm[1]) names.push(sm[1]);
+  }
+  return names;
+}
+
+function extractPayload(block: string): FieldConfig {
+  // validator / sanitizer: referência sem aspas (ex: validateInputs.email, sanitizers.phone)
+  const validator = block.match(/validator\s*:\s*([A-Za-z0-9_$.]+)/)?.[1]?.trim();
+  const sanitizer = block.match(/sanitizer\s*:\s*([A-Za-z0-9_$.]+)/)?.[1]?.trim();
+  // type: string literal com aspas (ex: 'IconName')
+  const type = block.match(/type\s*:\s*['"`]([^'"`]+)['"`]/)?.[1]?.trim();
+
+  const config: FieldConfig = {};
+  if (validator) config.validator = validator;
+  if (sanitizer) config.sanitizer = sanitizer;
+  if (type) config.type = type;
+  return config;
+}
+
+/**
+ * Each entry matches by exactly one of `fields` (property names) or `formats`
+ * (OpenAPI `format` values). Both in one entry is ambiguous and throws; an
+ * entry with neither (or an empty list) is skipped, as before.
+ */
+export function parseFieldConfigsFromConfig(code: string): ParsedFieldConfig[] {
   const arrSrc = extractFieldConfigsArraySource(code);
   if (!arrSrc) return [];
 
-  const blocks = extractObjectBlocks(arrSrc);
-  const results: LooseFieldConfig[] = [];
+  const results: ParsedFieldConfig[] = [];
 
-  for (const block of blocks) {
-    // extrai fields: [...]
-    const fieldsMatch = block.match(/fields\s*:\s*\[([\s\S]*?)\]/);
-    if (!fieldsMatch) continue;
+  for (const block of extractObjectBlocks(arrSrc)) {
+    const fields = extractStringList(block, "fields");
+    const formats = extractStringList(block, "formats");
 
-    const fields: string[] = [];
-    const strRegex = /['"`]([^'"`]+)['"`]/g;
-    let sm: RegExpExecArray | null;
-    while ((sm = strRegex.exec(fieldsMatch[1] ?? ""))) {
-      if (sm[1]) fields.push(sm[1]);
+    if (fields !== null && formats !== null) {
+      throw new Error(
+        `[reflector] fieldConfigs: an entry must declare either 'fields' or 'formats', not both: ${block.replace(/\s+/g, " ")}`,
+      );
     }
 
-    if (fields.length === 0) continue;
+    const match: Omit<ParsedFieldConfig, "config"> | null =
+      fields !== null ? { matcher: "fields", names: fields } : formats !== null ? { matcher: "formats", names: formats } : null;
+    if (match === null || match.names.length === 0) continue;
 
-    // extrai validator (referência sem aspas, ex: validateInputs.email)
-    const validatorMatch = block.match(/validator\s*:\s*([A-Za-z0-9_$.]+)/);
-    const validator = validatorMatch?.[1]?.trim();
-
-    // extrai sanitizer (referência sem aspas, ex: sanitizers.phone)
-    const sanitizerMatch = block.match(/sanitizer\s*:\s*([A-Za-z0-9_$.]+)/);
-    const sanitizer = sanitizerMatch?.[1]?.trim();
-
-    // extrai type (string literal com aspas, ex: 'IconName')
-    const typeMatch = block.match(/type\s*:\s*['"`]([^'"`]+)['"`]/);
-    const type = typeMatch?.[1]?.trim();
-
-    const config: LooseFieldConfig = { fields };
-    if (validator) config.validator = validator;
-    if (sanitizer) config.sanitizer = sanitizer;
-    if (type) config.type = type;
-
-    results.push(config);
+    results.push({ ...match, config: extractPayload(block) });
   }
 
   return results;

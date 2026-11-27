@@ -16,12 +16,17 @@ function generated(relPath: string): string {
 
 /**
  * Emits the shared runtime-support files that sit alongside the generated
- * module files: the reflector runtime template, the FIELD_NAMES list, the
+ * module files: the reflector runtime template, the FIELD_NAMES / FORMAT_NAMES lists, the
  * enum unions, and the MockedParams class used by path-param stubs.
  */
 export class RuntimeFilesEmitter {
-  static build(params: { propertiesNames: Set<string>; context: CodegenContext; config: ReflectorConfig }): Source[] {
-    const { propertiesNames, context, config } = params;
+  static build(params: {
+    propertiesNames: Set<string>;
+    formatNames: Set<string>;
+    context: CodegenContext;
+    config: ReflectorConfig;
+  }): Source[] {
+    const { propertiesNames, formatNames, context, config } = params;
 
     let templateData = loadReflectorTemplate();
     if (config.toastImport !== DEFAULT_REFLECTOR_CONFIG.toastImport) {
@@ -37,6 +42,10 @@ export class RuntimeFilesEmitter {
     });
 
     const fieldLiterals = Array.from(propertiesNames).map((p) => `'${p}'`);
+    // Ordenado: formatos vêm do contrato e a ordem de varredura não deve gerar diff.
+    const formatLiterals = Array.from(formatNames)
+      .sort((a, b) => a.localeCompare(b))
+      .map((f) => JSON.stringify(f));
     const fieldsFile = new Source({
       path: generated("fields.ts"),
       data: dedent`
@@ -44,6 +53,11 @@ export class RuntimeFilesEmitter {
           ${fieldLiterals}
         ] as const;
         export type FieldName = (typeof FIELD_NAMES)[number]
+
+        export const FORMAT_NAMES = [
+          ${formatLiterals}
+        ] as const;
+        export type FormatName = (typeof FORMAT_NAMES)[number]
       `,
     });
 

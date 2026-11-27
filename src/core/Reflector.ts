@@ -23,6 +23,7 @@ export class Reflector {
   readonly schemas: Schema[];
   readonly modules: Module[];
   readonly propertiesNames: Set<string>;
+  readonly formatNames: Set<string>;
 
   private readonly registry: SchemaRegistry;
   private readonly typeImports: TypeImports;
@@ -60,6 +61,7 @@ export class Reflector {
     this.registry = new SchemaRegistry({ components, fieldConfigs, context: this.context, requestBodyNames });
     this.schemas = this.registry.schemas;
     this.propertiesNames = this.registry.propertiesNames;
+    this.formatNames = this.registry.formatNames;
   }
 
   /**
@@ -82,6 +84,7 @@ export class Reflector {
 
     const runtimeFiles = RuntimeFilesEmitter.build({
       propertiesNames: this.propertiesNames,
+      formatNames: this.formatNames,
       context: this.context,
       config: this.config,
     });

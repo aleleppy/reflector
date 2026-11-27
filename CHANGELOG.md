@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0]
+
+### Added
+- `fieldConfigs` entries can match by OpenAPI `format` instead of property name:
+  `{ formats: ['strong-password'], validator: ... }`. Each entry declares exactly
+  one matcher (`fields` or `formats`); declaring both throws at generation time.
+  Per property, a `formats` match wins over a `fields` match, with no merging.
+- Generated `fields.ts` also exports `FORMAT_NAMES` / `type FormatName` (sorted,
+  every `format` declared on a schema property), mirroring `FIELD_NAMES` /
+  `FieldName`, so `formats: [...]` can be type-checked against the contract.
+
+### Changed (consumer action)
+- `src/reflector.types.ts` is hand-written by the consumer: widen the entry type
+  to `({ fields: FieldName[]; formats?: never } | { formats: FormatName[]; fields?: never })`
+  before using `formats` (see README, "Create Reflector Config").
+
 ## [2.7.0]
 
 ### Added

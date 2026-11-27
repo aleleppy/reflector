@@ -8,6 +8,7 @@ import type { SchemaObject, ReferenceObject } from "../../types/open-api-spec.in
 import type { FieldConfigs, ReflectorParamType } from "../../types/types.js";
 import type { CodegenContext } from "../CodegenContext.js";
 import { isReferenceObject, isPrimitiveEnumValues } from "../../helpers/helpers.js";
+import { resolveFieldConfig } from "../config/FieldConfigs.js";
 
 export type ClassifiedProp = PrimitiveProp | ArrayProp | ObjectProp | EnumProp | UnionProp;
 
@@ -76,7 +77,7 @@ export class SchemaPropertyClassifier {
       }
     }
 
-    const config = fieldConfigs.get(key);
+    const config = resolveFieldConfig(fieldConfigs, { name: key, format: value.format });
     const validator = config?.validator;
     const sanitizer = config?.sanitizer;
     const customType = config?.type;

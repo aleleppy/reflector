@@ -9,7 +9,7 @@ describe("parseFieldConfigsFromConfig — sanitizer capture", () => {
       ];
     `;
     expect(parseFieldConfigsFromConfig(code)).toEqual([
-      { fields: ["phone"], sanitizer: "sanitizers.phone" },
+      { matcher: "fields", names: ["phone"], config: { sanitizer: "sanitizers.phone" } },
     ]);
   });
 
@@ -19,13 +19,13 @@ describe("parseFieldConfigsFromConfig — sanitizer capture", () => {
         { fields: ["email", "userEmail"], validator: validateInputs.email, sanitizer: sanitizers.email, type: 'CustomType' },
       ];
     `;
-    const [cfg] = parseFieldConfigsFromConfig(code);
-    expect(cfg).toEqual({
-      fields: ["email", "userEmail"],
-      validator: "validateInputs.email",
-      sanitizer: "sanitizers.email",
-      type: "CustomType",
-    });
+    expect(parseFieldConfigsFromConfig(code)).toEqual([
+      {
+        matcher: "fields",
+        names: ["email", "userEmail"],
+        config: { validator: "validateInputs.email", sanitizer: "sanitizers.email", type: "CustomType" },
+      },
+    ]);
   });
 
   it("leaves sanitizer undefined when absent (back-compat)", () => {
@@ -34,8 +34,8 @@ describe("parseFieldConfigsFromConfig — sanitizer capture", () => {
         { fields: ["name"], validator: validateInputs.emptyString },
       ];
     `;
-    const [cfg] = parseFieldConfigsFromConfig(code);
-    expect(cfg?.sanitizer).toBeUndefined();
-    expect(cfg).toEqual({ fields: ["name"], validator: "validateInputs.emptyString" });
+    expect(parseFieldConfigsFromConfig(code)).toEqual([
+      { matcher: "fields", names: ["name"], config: { validator: "validateInputs.emptyString" } },
+    ]);
   });
 });
