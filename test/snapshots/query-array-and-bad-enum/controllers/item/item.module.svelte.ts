@@ -7,6 +7,7 @@ import {
   EnumQueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -57,7 +58,7 @@ export abstract class ItemModule {
       statuses?: ENUM_ITEM_ENTITY_STATUSES[];
       badField?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<ItemController_listResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

@@ -24,7 +24,7 @@ export class CallMethodGenerator {
     const guard = this.buildGuard(method, strategy);
     const { inside, outside } = this.buildApiCall(method, strategy, guard);
     const methodReturn = this.buildMethodReturn(method, strategy);
-    const signature = strategy.buildSignature(method);
+    const signature = strategy.buildSignature(method, this.buildDataType(method));
     const legacyWrapper = strategy.buildLegacyWrapper(method);
 
     return `
@@ -215,6 +215,17 @@ export class CallMethodGenerator {
     // so the call resolves to the body itself — never to a `data` wrapper.
     if (hasEnumResponse || isPrimitiveResponse) return "response";
     return `new ${responseType}({ data: response })`;
+  }
+
+  /** Type of the `data` that `buildMethodReturn` produces — the `T` of the declared `ApiResult<T>`. */
+  private buildDataType(method: CallMethodInput): string {
+    const { attributeType, responseType, hasEnumResponse, isPrimitiveResponse } = method.analyzers.request;
+
+    if (attributeType === "list") return `${responseType}['data']`;
+    if (!responseType) return "null";
+    if (hasEnumResponse) return responseType;
+    if (isPrimitiveResponse) return method.responseTypeInterface;
+    return responseType;
   }
 
   private joinNames(props: AttributeProp[]): string {

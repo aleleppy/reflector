@@ -4,6 +4,7 @@ import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import {
   Behavior,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -40,7 +41,7 @@ export abstract class ArrayModule {
       ApiErrorResponse
     >;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<ArrayController_primitivesResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -109,7 +110,7 @@ export abstract class ArrayModule {
       ApiErrorResponse
     >;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<ArrayController_enumsResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -177,7 +178,7 @@ export abstract class ArrayModule {
       ApiErrorResponse
     >;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<ArrayController_inlineResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -245,7 +246,7 @@ export abstract class ArrayModule {
       ApiErrorResponse
     >;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<ArrayController_genericResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

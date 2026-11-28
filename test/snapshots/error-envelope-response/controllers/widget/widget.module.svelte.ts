@@ -8,6 +8,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -62,7 +63,7 @@ export abstract class WidgetModule {
       page?: string | null;
       limit?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<WidgetController_listResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -125,7 +126,7 @@ export abstract class WidgetModule {
     paths?: {
       widgetId: string;
     };
-  }) {
+  }): Promise<ApiResult<Widget>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -185,7 +186,7 @@ export abstract class WidgetModule {
     paths?: {
       widgetId: string;
     };
-  }) {
+  }): Promise<ApiResult<null>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -238,7 +239,7 @@ export abstract class WidgetModule {
     paths?: {
       widgetId: string;
     };
-  }) {
+  }): Promise<ApiResult<string>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -291,7 +292,7 @@ export abstract class WidgetModule {
     paths?: {
       widgetId: string;
     };
-  }) {
+  }): Promise<ApiResult<ENUM_WIDGET_SHAPE>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

@@ -6,6 +6,7 @@ import {
   Behavior,
   QueryBuilder,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -37,7 +38,7 @@ export abstract class CalendarModule {
     paths?: {
       id: string;
     };
-  }) {
+  }): Promise<ApiResult<CalendarController_getResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

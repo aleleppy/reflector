@@ -6,9 +6,9 @@ export class ApiCallStrategy implements CallStrategy {
     return "data";
   }
 
-  buildSignature(method: CallMethodInput): string {
+  buildSignature(method: CallMethodInput, dataType: string): string {
     const paramsType = this.buildParamsType(method);
-    return `async run(params?: ${paramsType})`;
+    return `async run(params?: ${paramsType}): Promise<ApiResult<${dataType}>>`;
   }
 
   buildLegacyWrapper(method: CallMethodInput): string {

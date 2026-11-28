@@ -7,9 +7,9 @@ export class ModuleCallStrategy implements CallStrategy {
     return `list${method.stateSuffix}`;
   }
 
-  buildSignature(method: CallMethodInput): string {
+  buildSignature(method: CallMethodInput, dataType: string): string {
     const paramsType = this.buildParamsType(method);
-    return `protected async _${method.name}Run(params?: ${paramsType})`;
+    return `protected async _${method.name}Run(params?: ${paramsType}): Promise<ApiResult<${dataType}>>`;
   }
 
   buildLegacyWrapper(method: CallMethodInput): string {

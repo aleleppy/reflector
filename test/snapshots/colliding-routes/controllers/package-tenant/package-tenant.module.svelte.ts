@@ -9,6 +9,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -88,7 +89,7 @@ export abstract class PackageTenantModule {
       page?: string | null;
       limit?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<PackageTenantController_listResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -153,7 +154,7 @@ export abstract class PackageTenantModule {
     paths?: {
       packageId: string;
     };
-  }) {
+  }): Promise<ApiResult<Package>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -219,7 +220,7 @@ export abstract class PackageTenantModule {
     queryOverride?: {
       page?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<PackageTenantController_listResponse2["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -288,7 +289,7 @@ export abstract class PackageTenantModule {
       packageId: string;
       controllerId: string;
     };
-  }) {
+  }): Promise<ApiResult<ControllerItem>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -350,7 +351,7 @@ export abstract class PackageTenantModule {
       packageId: string;
       controllerId: string;
     };
-  }) {
+  }): Promise<ApiResult<ControllerItem>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
