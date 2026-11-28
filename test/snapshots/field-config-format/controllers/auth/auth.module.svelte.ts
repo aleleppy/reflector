@@ -5,6 +5,7 @@ import {
   Behavior,
   isFormValid,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -35,7 +36,7 @@ export abstract class AuthModule {
   protected async _signInRun(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<null>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -85,7 +86,7 @@ export abstract class AuthModule {
   protected async _signUpRun(params?: {
     behavior?: Behavior<null, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<null>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

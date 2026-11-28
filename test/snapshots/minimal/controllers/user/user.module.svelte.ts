@@ -8,6 +8,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -71,7 +72,7 @@ export abstract class UserModule {
     queryOverride?: {
       limit?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<UserController_listResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -136,7 +137,7 @@ export abstract class UserModule {
   protected async _createRun(params?: {
     behavior?: Behavior<UserInterface, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<User>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -189,7 +190,7 @@ export abstract class UserModule {
     paths?: {
       id: string;
     };
-  }) {
+  }): Promise<ApiResult<User>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -252,7 +253,7 @@ export abstract class UserModule {
     queryOverride?: {
       replacementId?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<null>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

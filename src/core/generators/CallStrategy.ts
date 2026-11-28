@@ -19,9 +19,11 @@ export interface CallMethodInput {
  * (per-endpoint Api class vs Module `_methodName` protected method).
  */
 export interface CallStrategy {
-  /** Full signature of the discriminated `run` method incl. params —
-   *  e.g. `async run(params?: ...)` (api) or `protected async _fooRun(params?: ...)` (module). */
-  buildSignature(method: CallMethodInput): string;
+  /** Full signature of the discriminated `run` method incl. params and its declared
+   *  `Promise<ApiResult<dataType>>` return — e.g. `async run(params?: ...): Promise<ApiResult<T>>` (api)
+   *  or `protected async _fooRun(params?: ...): Promise<ApiResult<T>>` (module). The declared
+   *  return keeps `ok` a literal discriminant; inferred, it would widen to `boolean`. */
+  buildSignature(method: CallMethodInput, dataType: string): string;
   /** Full `@deprecated` legacy method that delegates to the `run` variant and
    *  reproduces the old `Res | null | undefined` return shape. Emitted verbatim
    *  after the run method. Api → `call()`; module → `_foo()`. */

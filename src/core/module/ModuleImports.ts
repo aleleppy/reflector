@@ -73,7 +73,7 @@ export class ModuleImports {
     const regularImports = imports.filter((i) => !this.typeOnlyImports.has(i));
     const typeImports = imports.filter((i) => this.typeOnlyImports.has(i));
 
-    let result = `import { ${regularImports.join(", ")}, type ApiErrorResponse`;
+    let result = `import { ${regularImports.join(", ")}, type ApiErrorResponse, type ApiResult`;
     for (const t of typeImports) {
       result += `, type ${t}`;
     }

@@ -8,6 +8,7 @@ import {
   bundleStrict,
   isFormValid,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiCallParams,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -47,7 +48,7 @@ export class ListAll {
       void,
       { limit?: string | null }
     >,
-  ) {
+  ): Promise<ApiResult<UserController_listResponse>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -116,7 +117,7 @@ export class Create {
   form = new UserController_createBody();
 
   /**  */
-  async run(params?: ApiCallParams<UserInterface>) {
+  async run(params?: ApiCallParams<UserInterface>): Promise<ApiResult<User>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -177,7 +178,9 @@ export class Entity {
   paths = new EntityPaths();
 
   /**  */
-  async run(params?: ApiCallParams<UserInterface, { id: string }>) {
+  async run(
+    params?: ApiCallParams<UserInterface, { id: string }>,
+  ): Promise<ApiResult<User>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -258,7 +261,7 @@ export class Remove {
       { id: string },
       { replacementId?: string | null }
     >,
-  ) {
+  ): Promise<ApiResult<null>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

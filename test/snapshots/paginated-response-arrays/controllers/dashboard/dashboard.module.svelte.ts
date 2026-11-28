@@ -7,6 +7,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -45,7 +46,7 @@ export abstract class DashboardModule {
     queryOverride?: {
       page?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<SimplePurchaseResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -107,7 +108,7 @@ export abstract class DashboardModule {
     queryOverride?: {
       page?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<CustomerDashboardResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

@@ -9,6 +9,7 @@ import {
   QueryBuilder,
   bundleStrict,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 import mockedParams from "$reflector/mocked-params.svelte";
@@ -77,7 +78,7 @@ export abstract class AiChatTenantModule {
       page?: string | null;
       limit?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<AiChatTenantController_listResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -139,7 +140,7 @@ export abstract class AiChatTenantModule {
   protected async _createRun(params?: {
     behavior?: Behavior<AiChatInterface, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<AiChat>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 
@@ -198,7 +199,7 @@ export abstract class AiChatTenantModule {
     queryOverride?: {
       page?: string | null;
     };
-  }) {
+  }): Promise<ApiResult<AiChatTenantController_getMessagesResponse["data"]>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

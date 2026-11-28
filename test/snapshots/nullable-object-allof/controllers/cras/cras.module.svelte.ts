@@ -5,6 +5,7 @@ import {
   Behavior,
   isFormValid,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -35,7 +36,7 @@ export abstract class CrasModule {
   protected async _createRun(params?: {
     behavior?: Behavior<CrasInterface, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<Cras>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

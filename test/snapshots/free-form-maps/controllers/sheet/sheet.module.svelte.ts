@@ -4,6 +4,7 @@ import { PUBLIC_ENVIRONMENT } from "$env/static/public";
 import {
   Behavior,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -18,7 +19,7 @@ export abstract class SheetModule {
   protected async _dataRun(params?: {
     behavior?: Behavior<SheetInterface, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<Sheet>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

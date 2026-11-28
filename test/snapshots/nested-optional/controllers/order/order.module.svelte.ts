@@ -5,6 +5,7 @@ import {
   Behavior,
   isFormValid,
   type ApiErrorResponse,
+  type ApiResult,
   type ApiRequestOptions,
 } from "$reflector/reflector.svelte";
 
@@ -35,7 +36,7 @@ export abstract class OrderModule {
   protected async _createRun(params?: {
     behavior?: Behavior<OrderInterface, ApiErrorResponse>;
     request?: ApiRequestOptions;
-  }) {
+  }): Promise<ApiResult<Order>> {
     const behavior = params?.behavior ?? new Behavior();
     const { onError, onSuccess } = behavior;
 

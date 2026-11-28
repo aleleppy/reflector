@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0]
+
+### Changed
+- Every generated call declares its return type: `run(): Promise<ApiResult<T>>`
+  (api mode) and `_xRun(): Promise<ApiResult<T>>` (module mode). Before, the
+  return was inferred from two object literals, which widened `ok` to `boolean`
+  and made `ApiResult` a non-discriminated bag — consumers had to write
+  `res.error!` after `if (!res.ok)`. Now `if (!res.ok)` narrows `res` to
+  `{ ok: false; error: ApiErrorResponse }` and `res.data` to `T` in the other branch.
+
+### Breaking for consumers
+- Reading `res.data` or `res.error` without narrowing on `res.ok` first no longer
+  compiles (the inferred type used to allow it as `error?: never`). Branch on
+  `ok` before touching either field.
+- Helpers typed against the old shape (`{ ok: boolean; error?: ApiErrorResponse }`)
+  keep compiling; retype them to `ApiResult<T>` to drop the `!` on `res.error`.
+
 ## [2.9.0]
 
 ### Added
